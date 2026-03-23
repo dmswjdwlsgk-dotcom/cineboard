@@ -92,6 +92,13 @@ export const STYLES = [
     thumbnail: '/style_thumbs/minhwa.jpg',
   },
   {
+    id: 'senior_real',
+    label: '시니어 리얼 다큐 (Senior Real-Life)',
+    prompt: 'Candid real-life documentary photography, ordinary Korean senior citizens in everyday situations, natural ambient lighting ONLY, no studio lights, no rim light, no dramatic shadows, slightly warm neutral tones, realistic skin with natural wrinkles and age spots, NO skin smoothing, NO beautification, casual everyday Korean clothing, real Korean locations, eye-level angle, shallow depth of field, NOT posed, NOT dramatized, NOT cinematic, single candid moment, edge-to-edge full frame, NO borders, NO split screen.',
+    palette: ['#f5f0eb', '#8b7355', '#4a6741'],
+    thumbnail: '/style_thumbs/senior_real.jpg',
+  },
+  {
     id: 'ghibli',
     label: '지브리풍 (Ghibli)',
     prompt: 'Studio Ghibli anime style, hand-drawn aesthetic, single view movie still, watercolor backgrounds, edge-to-edge, full frame.',
