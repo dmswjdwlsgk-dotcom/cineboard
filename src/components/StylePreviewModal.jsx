@@ -49,7 +49,7 @@ export default function StylePreviewModal({ style, onClose, onSelect }) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">{style.thumbnail}</span>
+            <img src={style.thumbnail} alt={style.label} className="w-12 h-8 object-cover rounded-lg flex-shrink-0" />
             <div>
               <h2 className="text-base font-bold text-gray-100">{style.label}</h2>
               <p className="text-xs text-gray-500 mt-0.5">화풍 미리보기</p>
@@ -64,39 +64,12 @@ export default function StylePreviewModal({ style, onClose, onSelect }) {
         </div>
 
         {/* Image area */}
-        <div className="relative aspect-video bg-gray-950 flex items-center justify-center">
-          {loading ? (
-            <div className="flex flex-col items-center gap-3">
-              <Spinner size="lg" />
-              <p className="text-sm text-gray-500">샘플 이미지 생성 중...</p>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center gap-3 p-6 text-center">
-              <p className="text-sm text-red-400">{error}</p>
-              <button
-                onClick={generatePreview}
-                className="flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-lg transition-colors"
-              >
-                <RefreshCw size={13} />
-                재시도
-              </button>
-            </div>
-          ) : imageUrl ? (
-            <>
-              <img
-                src={imageUrl}
-                alt={style.label}
-                className="w-full h-full object-cover"
-              />
-              <button
-                onClick={generatePreview}
-                title="다시 생성"
-                className="absolute top-2 right-2 w-7 h-7 bg-black/60 hover:bg-black/80 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-colors"
-              >
-                <RefreshCw size={13} />
-              </button>
-            </>
-          ) : null}
+        <div className="relative aspect-video bg-gray-950">
+          <img
+            src={style.thumbnail}
+            alt={style.label}
+            className="w-full h-full object-cover"
+          />
         </div>
 
         {/* Color palette */}

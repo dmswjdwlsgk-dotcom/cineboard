@@ -121,25 +121,16 @@ export default function Step2_Style() {
                   </button>
                 )}
 
-                <div className="text-xs text-gray-500 mb-1 font-mono">{style.id}</div>
+                <div className="w-full aspect-video rounded-lg overflow-hidden mb-3 bg-gray-800">
+                  <img
+                    src={style.thumbnail}
+                    alt={style.label}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
 
-                <div className={`text-sm font-semibold mb-2 leading-tight ${isSelected ? 'text-purple-300' : 'text-gray-300'}`}>
+                <div className={`text-sm font-semibold leading-tight ${isSelected ? 'text-purple-300' : 'text-gray-300'}`}>
                   {style.label}
-                </div>
-
-                <div className="flex gap-1 mb-2">
-                  {style.palette.map((color, i) => (
-                    <div
-                      key={i}
-                      className="w-4 h-4 rounded-full border border-gray-700/60 flex-shrink-0"
-                      style={{ backgroundColor: color }}
-                      title={color}
-                    />
-                  ))}
-                </div>
-
-                <div className="text-xs text-gray-600 line-clamp-2 leading-relaxed group-hover:text-gray-500 transition-colors">
-                  {style.prompt.slice(0, 60)}...
                 </div>
               </div>
             )
@@ -226,7 +217,11 @@ export default function Step2_Style() {
         <div className="bg-gray-900/50 border border-purple-900/40 rounded-xl p-4">
           <p className="text-xs text-gray-500 mb-1">선택된 스타일</p>
           <div className="flex items-start gap-3">
-            <span className="text-2xl">{STYLES.find(s => s.id === selectedStyleId)?.thumbnail}</span>
+            <img
+              src={STYLES.find(s => s.id === selectedStyleId)?.thumbnail}
+              alt=""
+              className="w-16 h-10 object-cover rounded-lg flex-shrink-0"
+            />
             <div>
               <p className="text-sm font-semibold text-purple-300">
                 {STYLES.find(s => s.id === selectedStyleId)?.label}
