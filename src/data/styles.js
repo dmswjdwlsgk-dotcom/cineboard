@@ -1,0 +1,122 @@
+// 원본 index-BgIIKBNf.js At[] 배열에서 추출한 14개 스타일 프리셋
+export const STYLES = [
+  {
+    id: 'cinematic',
+    label: '시네마틱 실사 (Cinematic)',
+    prompt: 'Cinematic movie still, photorealistic, masterpiece, single view, NO SPLIT SCREEN, NO MULTI-PANELS, high-end production value, 8k, edge-to-edge, full frame, professional lighting.',
+    palette: ['#1a0a00', '#6b3a1f', '#c8a96e'],
+    thumbnail: '/style_thumbs/cinematic.jpg',
+  },
+  {
+    id: 'drama',
+    label: 'K-드라마 실사 (Drama)',
+    prompt: 'Korean TV Drama aesthetic, clean single shot, photorealistic, high-end broadcasting quality, bright studio lighting, edge-to-edge, full frame, NO white borders.',
+    palette: ['#fff0f5', '#ffb6c1', '#e8a0b0'],
+    thumbnail: '/style_thumbs/drama.jpg',
+  },
+  {
+    id: 'noir',
+    label: '누아르 (Noir)',
+    prompt: 'Classic Film Noir aesthetic, gritty realism, high contrast monochromatic, extreme chiaroscuro, single cinematic view, deep shadows, 8k, full frame.',
+    palette: ['#0a0a0a', '#3a3a3a', '#c8c8c8'],
+    thumbnail: '/style_thumbs/noir.jpg',
+  },
+  {
+    id: 'webtoon',
+    label: '웹툰 (Webtoon)',
+    prompt: 'Korean Webtoon style illustration, Manhwa aesthetic, single full-screen panel, vibrant colors, sharp lines, 2D, NO comic panels, NO text, full frame edge-to-edge.',
+    palette: ['#ffe0f0', '#ff6fa8', '#a855f7'],
+    thumbnail: '/style_thumbs/webtoon.jpg',
+  },
+  {
+    id: 'animation_3d',
+    label: '3D 애니메이션 (Pixar style)',
+    prompt: '3D Pixar-style animation, high-end Octane render, volumetric lighting, single view still, edge-to-edge, NO white borders.',
+    palette: ['#1a3a6b', '#3b82f6', '#fbbf24'],
+    thumbnail: '/style_thumbs/animation_3d.jpg',
+  },
+  {
+    id: 'clay',
+    label: '클레이 애니메이션 (Clay Animation)',
+    prompt: 'Handcrafted clay animation, some-motion movie still, single cinematic view, vibrant 3D art, edge-to-edge, NO borders.',
+    palette: ['#f97316', '#4ade80', '#facc15'],
+    thumbnail: '/style_thumbs/clay.jpg',
+  },
+  {
+    id: 'fairytale',
+    label: '동화 일러스트 (Fairy Tale)',
+    prompt: 'Whimsical fairy tale book illustration, watercolor style, soft pastel, single view, edge-to-edge, NO borders.',
+    palette: ['#fce7f3', '#fbcfe8', '#c084fc'],
+    thumbnail: '/style_thumbs/fairytale.jpg',
+  },
+  {
+    id: 'wool_felt',
+    label: '동화 양모인형 (Wool Felt)',
+    prompt: 'Stop motion wool felt puppet animation, macro photography, single view still, edge-to-edge, NO borders.',
+    palette: ['#fef3c7', '#f59e0b', '#d97706'],
+    thumbnail: '/style_thumbs/wool_felt.jpg',
+  },
+  {
+    id: 'diorama',
+    label: '디오라마 (Diorama)',
+    prompt: 'Tilt-shift photography, miniature diorama effect, isometric view, single high-quality shot, edge-to-edge.',
+    palette: ['#e0f2fe', '#38bdf8', '#0ea5e9'],
+    thumbnail: '/style_thumbs/diorama.jpg',
+  },
+  {
+    id: 'minhwa_webtoon',
+    label: '민화 웹툰 (Minhwa Webtoon)',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS ILLUSTRATION ARTWORK. Korean Manhwa illustration masterpiece, Joseon dynasty webtoon style, sharp digital line art with vibrant cel-shading, painterly textures, dramatic lighting, emotional character expression, high production value, single view, edge-to-edge full frame, NO text, NO speech bubbles.',
+    palette: ['#7c2d12', '#ef4444', '#fbbf24'],
+    thumbnail: '/style_thumbs/minhwa_webtoon.jpg',
+  },
+  {
+    id: 'history_premium',
+    label: '감성 사극 일러스트 (Emotional Historical)',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS ILLUSTRATION ARTWORK. Masterpiece digital painting illustration, Korean historical drama aesthetic (조선시대 사극), hand-painted brushwork, warm cinematic palette, soft emotional lighting, rich detail, single view, NO SPLIT SCREEN, edge-to-edge full frame.',
+    palette: ['#451a03', '#92400e', '#d97706'],
+    thumbnail: '/style_thumbs/history_premium.jpg',
+  },
+  {
+    id: 'webnovel',
+    label: '웹소설 시그니처 (Web Novel)',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS ILLUSTRATION ARTWORK. Premium Korean web novel cover illustration, digital painting with bold expressive brushwork, vivid saturated colors, dramatic character art, single view, cinematic lighting, full frame, NO borders.',
+    palette: ['#1e1b4b', '#7c3aed', '#ec4899'],
+    thumbnail: '/style_thumbs/webnovel.jpg',
+  },
+  {
+    id: 'minhwa',
+    label: '동양 설화 일러스트 (Oriental Folklore)',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS ILLUSTRATION ARTWORK. Oriental Folklore Illustration masterpiece, traditional East Asian ink wash painting (수묵화), flowing brushstrokes, mystical atmosphere, muted earthy palette with accent colors, single view on Hanji paper texture, edge-to-edge, NO borders.',
+    palette: ['#1c1917', '#78716c', '#d6d3d1'],
+    thumbnail: '/style_thumbs/minhwa.jpg',
+  },
+  {
+    id: 'ghibli',
+    label: '지브리풍 (Ghibli)',
+    prompt: 'Studio Ghibli anime style, hand-drawn aesthetic, single view movie still, watercolor backgrounds, edge-to-edge, full frame.',
+    palette: ['#d1fae5', '#6ee7b7', '#3b82f6'],
+    thumbnail: '/style_thumbs/ghibli.jpg',
+  },
+]
+
+export const MODELS = [
+  {
+    id: 'gemini-2.5-flash-image',
+    label: '나노바나나 1 (1K)',
+    description: '빠른 속도, 극최소 토큰 소모',
+    icon: 'zap',
+  },
+  {
+    id: 'gemini-3.1-flash-image-preview',
+    label: '나노바나나 2 (1K)',
+    description: '프로급 지능 + 속도 최적화',
+    icon: 'zap',
+  },
+  {
+    id: 'gemini-3-pro-image-preview',
+    label: '나노바나나 프로 (2K)',
+    description: '최고 품질, 비용 고가',
+    icon: 'star',
+  },
+]
