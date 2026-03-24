@@ -1,6 +1,19 @@
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 
+function sceneFileName(scene, index, ext = 'png') {
+  const num = String(index + 1).padStart(3, '0')
+  const raw = (scene.fullScriptSegment || scene.scriptReference || scene.action || '')
+    .trim()
+    .split(/[.!?。！？\n]/)[0]
+    .trim()
+    .slice(0, 40)
+    .replace(/[\\/:*?"<>|]/g, '')
+    .trim()
+  const label = raw || `scene_${num}`
+  return `${num}_${label}.${ext}`
+}
+
 function base64ToBlob(dataUrl) {
   const [header, data] = dataUrl.split(',')
   const mimeType = header.match(/:(.*?);/)?.[1] || 'image/png'
@@ -262,7 +275,7 @@ export async function exportZip(state) {
     if (scene?.imageUrl) {
       try {
         const blob = base64ToBlob(scene.imageUrl)
-        scenesFolder.file(`scene_${String(i + 1).padStart(3, '0')}.png`, blob)
+        scenesFolder.file(sceneFileName(scene, i), blob)
       } catch (e) {
         console.warn(`씬 ${i + 1} 이미지 저장 실패:`, e)
       }
