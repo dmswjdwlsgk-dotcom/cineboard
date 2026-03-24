@@ -88,29 +88,56 @@ function cleanSceneOutput(scene, characters) {
 
 // ─── 씬 목록 분할 ─────────────────────────────────────────────────────────────
 
-// 스크립트를 정확히 n개 세그먼트로 프로그래밍 방식 분할 (씬 수 보장)
+// 스크립트를 정확히 n개 세그먼트로 분할 (문장→단어→글자 캐스케이딩)
 function programmaticSplit(scriptText, n) {
-  const cleaned = cleanScript(scriptText)
-  // 문단 단위로 나눈 뒤 n개 청크로 묶기
-  const paras = cleaned.split(/\n{2,}/).map(p => p.trim()).filter(Boolean)
-  if (paras.length === 0) paras.push(cleaned)
+  const cleaned = cleanScript(scriptText).replace(/\s{2,}/g, ' ').trim()
 
-  const perChunk = Math.ceil(paras.length / n)
+  // 1차: 문장 단위 분할
+  let units = cleaned
+    .split(/([.!?。！？]+(?:\s+|$))/)
+    .reduce((acc, part, idx) => {
+      if (idx % 2 === 0) { if (part.trim()) acc.push(part.trim()) }
+      else if (acc.length > 0) acc[acc.length - 1] += part.trimEnd()
+      return acc
+    }, [])
+    .filter(s => s.trim().length > 0)
+
+  let sep = ' '
+
+  // 2차: 문장이 n개보다 적으면 단어 단위로
+  if (units.length < n) {
+    units = cleaned.split(/\s+/).filter(w => w.trim().length > 0)
+  }
+
+  // 3차: 단어도 n개보다 적으면 글자 단위로
+  if (units.length < n) {
+    units = cleaned.split('').filter(c => c.trim().length > 0)
+    sep = ''
+  }
+
+  if (units.length === 0) units = [cleaned || '.']
+
   const chunks = []
+  const base = Math.floor(units.length / n)
+  let remainder = units.length % n
+  let cursor = 0
+
   for (let i = 0; i < n; i++) {
-    const slice = paras.slice(i * perChunk, (i + 1) * perChunk)
-    if (slice.length === 0) break
-    chunks.push(slice.join('\n\n'))
+    const size = base + (remainder > 0 ? 1 : 0)
+    if (remainder > 0) remainder--
+    const seg = units.slice(cursor, cursor + size).join(sep).trim()
+    chunks.push(seg || '.')
+    cursor += size
   }
 
   return chunks.map((seg, i) => {
     const num = String(i + 1).padStart(3, '0')
     return {
       id: `scene_${num}`,
-      scriptReference: seg.slice(0, 30).replace(/\n/g, ' '),
-      scriptAnchor:    seg.slice(0, 30).replace(/\n/g, ' '),
-      startAnchor:     seg.slice(0, 40),
-      setting:         '',
+      scriptReference:  seg.slice(0, 30).replace(/\n/g, ' '),
+      scriptAnchor:     seg.slice(0, 30).replace(/\n/g, ' '),
+      startAnchor:      seg.slice(0, 40),
+      setting:          '',
       fullScriptSegment: seg,
     }
   })
