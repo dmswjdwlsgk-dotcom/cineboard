@@ -87,69 +87,68 @@ function cleanSceneOutput(scene, characters) {
 }
 
 // ─── 씬 목록 분할 ─────────────────────────────────────────────────────────────
-function assignSceneSegments(scenes, scriptText) {
-  const cleaned = cleanScript(scriptText)
-  // 각 씬의 startAnchor로 원문에서 위치를 찾아 fullScriptSegment 추출
-  const positions = scenes.map(scene => {
-    const anchor = (scene.startAnchor || scene.scriptReference || '').slice(0, 40).trim()
-    if (!anchor) return -1
-    const idx = cleaned.indexOf(anchor)
-    return idx !== -1 ? idx : cleaned.indexOf(anchor.slice(0, 15).trim())
-  })
 
-  return scenes.map((scene, i) => {
-    const start = positions[i]
-    // 다음 씬의 시작 위치까지가 이 씬의 끝
-    let end = cleaned.length
-    for (let j = i + 1; j < scenes.length; j++) {
-      if (positions[j] > start) { end = positions[j]; break }
+// 스크립트를 정확히 n개 세그먼트로 프로그래밍 방식 분할 (씬 수 보장)
+function programmaticSplit(scriptText, n) {
+  const cleaned = cleanScript(scriptText)
+  // 문단 단위로 나눈 뒤 n개 청크로 묶기
+  const paras = cleaned.split(/\n{2,}/).map(p => p.trim()).filter(Boolean)
+  if (paras.length === 0) paras.push(cleaned)
+
+  const perChunk = Math.ceil(paras.length / n)
+  const chunks = []
+  for (let i = 0; i < n; i++) {
+    const slice = paras.slice(i * perChunk, (i + 1) * perChunk)
+    if (slice.length === 0) break
+    chunks.push(slice.join('\n\n'))
+  }
+
+  return chunks.map((seg, i) => {
+    const num = String(i + 1).padStart(3, '0')
+    return {
+      id: `scene_${num}`,
+      scriptReference: seg.slice(0, 30).replace(/\n/g, ' '),
+      scriptAnchor:    seg.slice(0, 30).replace(/\n/g, ' '),
+      startAnchor:     seg.slice(0, 40),
+      setting:         '',
+      fullScriptSegment: seg,
     }
-    const segment = start !== -1
-      ? cleaned.slice(start, end).trim()
-      : (scene.scriptReference || '')
-    return { ...scene, fullScriptSegment: segment }
   })
 }
 
-export async function splitScriptToScenes(scriptText, maxScenes = 30) {
-  const client  = await createClient()
-  const cleaned = cleanScript(scriptText)
+// AI로 각 세그먼트의 setting(배경) 보강
+async function enrichSceneSettings(scenes, client) {
+  const prompt = `다음 씬 목록의 각 씬에 대해 "setting"(장소와 시간대, 한국어)을 채워 반환하라.
+씬 내용을 읽고 배경을 추론하라. 알 수 없으면 "미상"으로 쓸 것.
 
-  const prompt = `[SCENE LIST EXTRACTION — CINEMATIC BREAKDOWN]
+씬 목록 (JSON):
+${JSON.stringify(scenes.map(s => ({ id: s.id, text: s.fullScriptSegment.slice(0, 120) })))}
 
-[FULL SCRIPT]:
-${cleaned}
+결과: JSON 배열로 [{"id":"scene_001","setting":"..."},...] 형식만 반환.`
 
-[RULES]:
-1. Extract EXACTLY ${maxScenes} scene segments. You MUST return ${maxScenes} items.
-2. Use scene headers (INT./EXT., 씬 번호) as primary split points.
-3. If no headers: split at emotional/action transitions.
-4. Too few scenes → subdivide long scenes. Too many → merge similar consecutive scenes.
-5. "startAnchor" = the EXACT first 20~40 characters verbatim from the scene's opening line in the script (for position lookup).
-6. "setting" = location + time of day in Korean.
-
-Respond with JSON array ONLY (${maxScenes} items):
-[
-  {
-    "id": "scene_001",
-    "scriptReference": "씬 첫 줄 요약 (30자 이내)",
-    "scriptAnchor": "씬 첫 줄 요약",
-    "startAnchor": "씬 시작 첫 문장 그대로 (20~40자)",
-    "setting": "배경 장소와 시간대"
+  try {
+    const res = await withRetry(() =>
+      client.models.generateContent({
+        model:   TEXT_MODEL,
+        contents: prompt,
+        config:  { safetySettings: SAFETY_SETTINGS, responseMimeType: 'application/json', maxOutputTokens: 4096 },
+      })
+    , 2, '씬 배경 보강')
+    const text     = res?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    const settings = parseJson(text, '씬 배경 보강', [])
+    const map      = Object.fromEntries(settings.map(s => [s.id, s.setting]))
+    return scenes.map(s => ({ ...s, setting: map[s.id] || s.setting || '미상' }))
+  } catch {
+    return scenes
   }
-]`
+}
 
-  const res = await withRetry(() =>
-    client.models.generateContent({
-      model:   TEXT_MODEL,
-      contents: prompt,
-      config:  { safetySettings: SAFETY_SETTINGS, responseMimeType: 'application/json', maxOutputTokens: 16384 },
-    })
-  , 3, '씬 분할')
-
-  const text = res?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-  const scenes = parseJson(text, '씬 분할', [])
-  return assignSceneSegments(scenes, scriptText)
+export async function splitScriptToScenes(scriptText, maxScenes = 30) {
+  const client = await createClient()
+  // 프로그래밍 방식으로 정확히 maxScenes개 분할 (AI 무시 버그 방지)
+  const scenes  = programmaticSplit(scriptText, maxScenes)
+  // 배경 정보만 AI로 보강
+  return enrichSceneSettings(scenes, client)
 }
 
 // ─── 에디토리얼 모드 전용 씬 프롬프트 빌더 ───────────────────────────────────
