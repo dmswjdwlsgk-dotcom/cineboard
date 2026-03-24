@@ -87,6 +87,30 @@ function cleanSceneOutput(scene, characters) {
 }
 
 // ─── 씬 목록 분할 ─────────────────────────────────────────────────────────────
+function assignSceneSegments(scenes, scriptText) {
+  const cleaned = cleanScript(scriptText)
+  // 각 씬의 startAnchor로 원문에서 위치를 찾아 fullScriptSegment 추출
+  const positions = scenes.map(scene => {
+    const anchor = (scene.startAnchor || scene.scriptReference || '').slice(0, 40).trim()
+    if (!anchor) return -1
+    const idx = cleaned.indexOf(anchor)
+    return idx !== -1 ? idx : cleaned.indexOf(anchor.slice(0, 15).trim())
+  })
+
+  return scenes.map((scene, i) => {
+    const start = positions[i]
+    // 다음 씬의 시작 위치까지가 이 씬의 끝
+    let end = cleaned.length
+    for (let j = i + 1; j < scenes.length; j++) {
+      if (positions[j] > start) { end = positions[j]; break }
+    }
+    const segment = start !== -1
+      ? cleaned.slice(start, end).trim()
+      : (scene.scriptReference || '')
+    return { ...scene, fullScriptSegment: segment }
+  })
+}
+
 export async function splitScriptToScenes(scriptText, maxScenes = 30) {
   const client  = await createClient()
   const cleaned = cleanScript(scriptText)
@@ -101,17 +125,17 @@ ${cleaned}
 2. Use scene headers (INT./EXT., 씬 번호) as primary split points.
 3. If no headers: split at emotional/action transitions.
 4. Too few scenes → subdivide long scenes. Too many → merge similar consecutive scenes.
-5. Each "fullScriptSegment" = the COMPLETE verbatim text of that scene from the original script.
+5. "startAnchor" = the EXACT first 20~40 characters verbatim from the scene's opening line in the script (for position lookup).
 6. "setting" = location + time of day in Korean.
 
 Respond with JSON array ONLY (${maxScenes} items):
 [
   {
     "id": "scene_001",
-    "scriptReference": "첫 줄 (위치 식별용, 30자 이내)",
+    "scriptReference": "씬 첫 줄 요약 (30자 이내)",
     "scriptAnchor": "씬 첫 줄 요약",
-    "setting": "배경 장소와 시간대",
-    "fullScriptSegment": "씬 전체 원문"
+    "startAnchor": "씬 시작 첫 문장 그대로 (20~40자)",
+    "setting": "배경 장소와 시간대"
   }
 ]`
 
@@ -124,7 +148,8 @@ Respond with JSON array ONLY (${maxScenes} items):
   , 3, '씬 분할')
 
   const text = res?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-  return parseJson(text, '씬 분할', [])
+  const scenes = parseJson(text, '씬 분할', [])
+  return assignSceneSegments(scenes, scriptText)
 }
 
 // ─── 에디토리얼 모드 전용 씬 프롬프트 빌더 ───────────────────────────────────
