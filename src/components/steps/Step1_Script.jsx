@@ -4,7 +4,7 @@ import Button from '../ui/Button.jsx'
 import Spinner from '../ui/Spinner.jsx'
 import { useAppStore } from '../../store/useAppStore.js'
 import { GENRES, TONES, VIEWPOINTS, SCRIPT_LENGTHS } from '../../data/genres.js'
-import { suggestTopics, generateSynopsis, generateFullScript, factCheckScript } from '../../api/scriptApi.js'
+import { suggestTopics, generateSynopsis, generateFullScript, factCheckScript, fixFactCheckScript } from '../../api/scriptApi.js'
 import { detectLanguage } from '../../utils/languageDetect.js'
 import { hasApiKey } from '../../api/gemini.js'
 
@@ -56,7 +56,8 @@ export default function Step1_Script() {
 
   // 팩트체크 상태
   const [factChecking, setFactChecking] = useState(false)
-  const [factResults, setFactResults] = useState(null)
+  const [factResults, setFactResults]   = useState(null)
+  const [fixingFact, setFixingFact]     = useState(false)
 
   const [copied, setCopied] = useState(false)
 
@@ -171,6 +172,22 @@ export default function Step1_Script() {
       setError('팩트체크 실패: ' + err.message)
     } finally {
       setFactChecking(false)
+    }
+  }
+
+  const handleFixFactCheck = async () => {
+    if (!factResults || factResults.length === 0) return
+    if (!checkApiKey()) return
+    clearError()
+    setFixingFact(true)
+    try {
+      const fixed = await fixFactCheckScript(scriptText, factResults)
+      setScriptText(fixed)
+      setFactResults(null)
+    } catch (err) {
+      setError('자동 수정 실패: ' + err.message)
+    } finally {
+      setFixingFact(false)
     }
   }
 
@@ -516,9 +533,12 @@ export default function Step1_Script() {
                     <div key={i} className="bg-gray-800/50 rounded-lg p-3">
                       <div className="flex items-start gap-2">
                         <span className={`text-xs font-bold px-2 py-0.5 rounded flex-shrink-0 ${
-                          item.verdict === '사실' ? 'bg-emerald-900/60 text-emerald-400' :
-                          item.verdict === '오류' ? 'bg-red-900/60 text-red-400' :
-                          item.verdict === '불확실' ? 'bg-yellow-900/60 text-yellow-400' :
+                          item.verdict === 'TRUE'      ? 'bg-emerald-900/60 text-emerald-400' :
+                          item.verdict === 'FALSE'     ? 'bg-red-900/60 text-red-400' :
+                          item.verdict === 'UNCERTAIN' ? 'bg-yellow-900/60 text-yellow-400' :
+                          item.verdict === '사실'      ? 'bg-emerald-900/60 text-emerald-400' :
+                          item.verdict === '오류'      ? 'bg-red-900/60 text-red-400' :
+                          item.verdict === '불확실'    ? 'bg-yellow-900/60 text-yellow-400' :
                           'bg-gray-700 text-gray-400'
                         }`}>
                           {item.verdict}
@@ -533,6 +553,18 @@ export default function Step1_Script() {
                       </div>
                     </div>
                   ))}
+                  {factResults.some(r => r.verdict === 'FALSE' || r.verdict === 'UNCERTAIN' || r.verdict === '오류' || r.verdict === '불확실') && (
+                    <Button
+                      onClick={handleFixFactCheck}
+                      loading={fixingFact}
+                      variant="primary"
+                      size="sm"
+                      className="mt-2 w-full"
+                    >
+                      <Wand2 size={14} />
+                      {fixingFact ? '대본 자동 수정 중...' : 'AI로 대본 자동 수정'}
+                    </Button>
+                  )}
                 </div>
               )}
             </div>

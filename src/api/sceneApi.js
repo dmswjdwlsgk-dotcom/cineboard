@@ -131,9 +131,8 @@ function programmaticSplit(scriptText, n) {
   }
 
   return chunks.map((seg, i) => {
-    const num = String(i + 1).padStart(3, '0')
     return {
-      id: `scene_${num}`,
+      id: `P${String(i + 1).padStart(2, '0')}`,
       scriptReference:  seg.slice(0, 30).replace(/\n/g, ' '),
       scriptAnchor:     seg.slice(0, 30).replace(/\n/g, ' '),
       startAnchor:      seg.slice(0, 40),
@@ -151,7 +150,7 @@ async function enrichSceneSettings(scenes, client) {
 씬 목록 (JSON):
 ${JSON.stringify(scenes.map(s => ({ id: s.id, text: s.fullScriptSegment.slice(0, 120) })))}
 
-결과: JSON 배열로 [{"id":"scene_001","setting":"..."},...] 형식만 반환.`
+결과: JSON 배열로 [{"id":"P01","setting":"..."},...] 형식만 반환.`
 
   try {
     const res = await withRetry(() =>

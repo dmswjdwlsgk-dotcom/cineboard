@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { ChevronRight, ChevronLeft, Check, Search, Zap, Star, Edit3 } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { ChevronRight, ChevronLeft, Check, Search, Zap, Star, Edit3, Upload, X } from 'lucide-react'
 import Button from '../ui/Button.jsx'
 import { useAppStore } from '../../store/useAppStore.js'
 import { STYLES, MODELS } from '../../data/styles.js'
@@ -10,22 +10,41 @@ const ASPECT_RATIOS = [
   { id: '9:16', label: '9:16 세로형', desc: '쇼츠/릴스/틱톡' },
 ]
 
-const MODES = [
-  { id: 'normal',    label: '일반 모드',        desc: 'AI 자동 씬 생성',         icon: Zap },
-  { id: 'editorial', label: '에디토리얼 모드',   desc: '인포그래픽 콘텐츠 최적화', icon: Star },
-  { id: 'precision', label: '정밀 편집 모드',    desc: '씬별 수동 조정 가능',      icon: Edit3 },
+const VISUAL_MODES = [
+  { id: 'auto',       label: '🤖 오토',         desc: 'AI가 씬별 자동 판단' },
+  { id: 'character',  label: '👤 캐릭터',        desc: '인물 중심 드라마틱 연출' },
+  { id: 'content',    label: '📊 콘텐츠',        desc: '정보 전달 최적화' },
+  { id: 'infoviz',    label: '📈 인포비즈',      desc: '인포그래픽/데이터 시각화' },
+  { id: 'immersive',  label: '🌍 이머시브',      desc: '배경/환경 몰입형' },
+  { id: 'docu',       label: '🎙️ 다큐',          desc: '다큐멘터리 스타일' },
+  { id: 'webtoon',    label: '🎨 웹툰',          desc: '웹툰/만화 스타일' },
+  { id: 'mv',         label: '🎵 뮤직비디오',    desc: 'MV/감성 영상 스타일' },
+]
+
+const FIXED_CHAR_STYLES = [
+  { id: 'countryball', label: '🌐 국가공',    desc: '공 모양 국기 캐릭터' },
+  { id: 'stickman',    label: '🖊️ 막대인간',  desc: '심플 스틱맨' },
+  { id: 'mascot',      label: '🐻 마스코트',  desc: '샘플 이미지로 고정' },
+  { id: 'chibi',       label: '🌸 치비',      desc: 'SD/치비 애니 스타일' },
+  { id: 'custom',      label: '🎨 커스텀',    desc: '샘플 이미지 스타일 추출' },
 ]
 
 export default function Step2_Style() {
   const {
     selectedStyleId, setStyle,
     selectedModel, setModel,
+    imageEngine, setImageEngine,
     aspectRatio, setAspectRatio,
     currentMode, setCurrentMode,
+    visualMode, setVisualMode,
+    isFixedCharMode, setFixedCharMode,
+    fixedCharStyleType, setFixedCharStyleType,
+    fixedCharSampleImage, setFixedCharSampleImage,
     setStep, setError, clearError,
   } = useAppStore()
 
   const [previewStyle, setPreviewStyle] = useState(null)
+  const sampleImgRef = useRef(null)
 
   const handleNext = () => {
     if (!selectedStyleId) {
@@ -36,7 +55,22 @@ export default function Step2_Style() {
     setStep(3)
   }
 
+  const handleModelChange = (idx) => {
+    setModel(idx)
+    setImageEngine(MODELS[idx]?.id || MODELS[0].id)
+  }
+
+  const handleSampleImageUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => setFixedCharSampleImage(ev.target.result)
+    reader.readAsDataURL(file)
+  }
+
   const error = useAppStore(s => s.error)
+
+  const needsSampleImage = fixedCharStyleType === 'mascot' || fixedCharStyleType === 'custom'
 
   return (
     <div className="space-y-6">
@@ -52,39 +86,99 @@ export default function Step2_Style() {
         </div>
       )}
 
-      {/* 생성 모드 선택 */}
+      {/* 비주얼 모드 */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">생성 모드</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {MODES.map(mode => {
-            const Icon = mode.icon
-            return (
-              <label
-                key={mode.id}
-                className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all
-                  ${currentMode === mode.id
-                    ? 'bg-indigo-900/30 border-indigo-500'
-                    : 'bg-gray-800/40 border-gray-700 hover:border-gray-600'
-                  }`}
-              >
-                <input
-                  type="radio"
-                  name="mode"
-                  checked={currentMode === mode.id}
-                  onChange={() => setCurrentMode(mode.id)}
-                  className="mt-0.5 accent-indigo-500"
-                />
-                <div className="flex items-start gap-2">
-                  <Icon size={14} className={currentMode === mode.id ? 'text-indigo-400 mt-0.5' : 'text-gray-500 mt-0.5'} />
-                  <div>
-                    <div className={`text-sm font-semibold ${currentMode === mode.id ? 'text-indigo-300' : 'text-gray-300'}`}>{mode.label}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{mode.desc}</div>
-                  </div>
-                </div>
-              </label>
-            )
-          })}
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">비주얼 모드</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {VISUAL_MODES.map(mode => (
+            <button
+              key={mode.id}
+              onClick={() => setVisualMode(mode.id)}
+              className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all
+                ${visualMode === mode.id
+                  ? 'bg-indigo-900/30 border-indigo-500'
+                  : 'bg-gray-800/40 border-gray-700 hover:border-gray-600'
+                }`}
+            >
+              <div className={`text-sm font-semibold ${visualMode === mode.id ? 'text-indigo-300' : 'text-gray-300'}`}>
+                {mode.label}
+              </div>
+              <div className="text-xs text-gray-500 mt-0.5 leading-tight">{mode.desc}</div>
+            </button>
+          ))}
         </div>
+      </div>
+
+      {/* 캐릭터 고정 모드 */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">캐릭터 고정 모드</h2>
+          <button
+            onClick={() => setFixedCharMode(!isFixedCharMode)}
+            className={`relative w-10 h-5 rounded-full transition-colors ${isFixedCharMode ? 'bg-purple-600' : 'bg-gray-700'}`}
+          >
+            <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isFixedCharMode ? 'translate-x-5' : 'translate-x-0.5'}`} />
+          </button>
+        </div>
+
+        {isFixedCharMode && (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">모든 씬의 캐릭터를 특정 스타일로 고정합니다.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {FIXED_CHAR_STYLES.map(style => (
+                <button
+                  key={style.id}
+                  onClick={() => setFixedCharStyleType(style.id)}
+                  className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all
+                    ${fixedCharStyleType === style.id
+                      ? 'bg-purple-900/30 border-purple-500'
+                      : 'bg-gray-800/40 border-gray-700 hover:border-gray-600'
+                    }`}
+                >
+                  <div className={`text-sm font-semibold ${fixedCharStyleType === style.id ? 'text-purple-300' : 'text-gray-300'}`}>
+                    {style.label}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5 leading-tight">{style.desc}</div>
+                </button>
+              ))}
+            </div>
+
+            {/* 샘플 이미지 업로드 (mascot/custom) */}
+            {needsSampleImage && (
+              <div className="mt-2 space-y-2">
+                <p className="text-xs text-gray-400">
+                  {fixedCharStyleType === 'mascot'
+                    ? '마스코트 참조 이미지를 업로드하세요. 이 스타일로 모든 캐릭터를 고정합니다.'
+                    : '스타일 참조 이미지를 업로드하세요. 이미지의 아트 스타일을 추출해 모든 씬에 적용합니다.'}
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => sampleImgRef.current?.click()}
+                    className="flex items-center gap-2 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2 rounded-lg transition-colors"
+                  >
+                    <Upload size={13} />
+                    이미지 선택
+                  </button>
+                  {fixedCharSampleImage && (
+                    <>
+                      <img src={fixedCharSampleImage} alt="sample" className="w-12 h-12 object-cover rounded-lg border border-gray-600" />
+                      <button onClick={() => setFixedCharSampleImage(null)} className="text-gray-500 hover:text-red-400">
+                        <X size={14} />
+                      </button>
+                    </>
+                  )}
+                  <input
+                    ref={sampleImgRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleSampleImageUpload}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Style grid */}
@@ -141,7 +235,7 @@ export default function Step2_Style() {
       {/* Model selection */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-3">
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">이미지 생성 모델</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {MODELS.map((model, i) => (
             <label
               key={i}
@@ -157,7 +251,7 @@ export default function Step2_Style() {
                 type="radio"
                 name="model"
                 checked={selectedModel === i}
-                onChange={() => setModel(i)}
+                onChange={() => handleModelChange(i)}
                 className="mt-0.5 accent-purple-500"
               />
               <div>
@@ -199,7 +293,6 @@ export default function Step2_Style() {
                 </div>
                 <div className="text-xs text-gray-500">{ratio.desc}</div>
               </div>
-              {/* Ratio visual */}
               <div className="ml-auto">
                 {ratio.id === '16:9' ? (
                   <div className="w-10 h-6 border-2 border-gray-600 rounded" />

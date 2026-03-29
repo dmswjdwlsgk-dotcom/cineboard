@@ -2,9 +2,10 @@ import { GoogleGenAI } from '@google/genai'
 import { HarmCategory, HarmBlockThreshold } from '@google/genai'
 
 // ─── 스토리지 키 ───────────────────────────────────────────────────────────────
-const API_KEY_STORAGE  = 'cineboard_user_gemini_api_key'
-const API_MODE_STORAGE = 'cineboard_api_mode'
-const VERTEX_JSON_KEY  = 'cineboard_vertex_json'
+const API_KEY_STORAGE   = 'cineboard_user_gemini_api_key'
+const API_MODE_STORAGE  = 'cineboard_api_mode'
+const VERTEX_JSON_KEY   = 'cineboard_vertex_json'
+const ZIMAGE_TOKEN_KEY  = 'cineboard_z_image_token'
 
 // ─── API 키 관리 ───────────────────────────────────────────────────────────────
 export function getApiKey() {
@@ -37,6 +38,35 @@ export function removeApiKey() {
 
 export function hasApiKey() {
   return !!getApiKey()
+}
+
+// ─── Z-Image (KIE AI) 토큰 관리 ──────────────────────────────────────────────
+export function getZImageToken() {
+  try {
+    const raw = localStorage.getItem(ZIMAGE_TOKEN_KEY)
+    if (!raw) return null
+    return atob(raw).trim() || null
+  } catch {
+    return null
+  }
+}
+
+export function saveZImageToken(token) {
+  if (token) {
+    try {
+      localStorage.setItem(ZIMAGE_TOKEN_KEY, btoa(token.trim()))
+    } catch (e) {
+      console.error('[ZIMAGE_TOKEN] Failed to save:', e)
+    }
+  }
+}
+
+export function removeZImageToken() {
+  localStorage.removeItem(ZIMAGE_TOKEN_KEY)
+}
+
+export function hasZImageToken() {
+  return !!getZImageToken()
 }
 
 // ─── API 모드 (gemini / vertex) ────────────────────────────────────────────────

@@ -126,4 +126,10 @@ export const MODELS = [
     description: '최고 품질, 비용 고가',
     icon: 'star',
   },
+  {
+    id: 'z-image-turbo',
+    label: 'Z-Image Turbo (KIE AI)',
+    description: '외부 AI 이미지 엔진, 최고 품질',
+    icon: 'zap',
+  },
 ]

@@ -200,6 +200,42 @@ ${scriptText.slice(0, 15000)}
   }
 }
 
+// ─── 팩트체크 자동 수정 ────────────────────────────────────────────────────────
+export async function fixFactCheckScript(scriptText, factResults) {
+  const client = await createClient()
+  const falseItems = factResults.filter(r => r.verdict === 'FALSE' || r.verdict === 'UNCERTAIN')
+  if (falseItems.length === 0) return scriptText
+
+  const fixList = falseItems.map((r, i) =>
+    `${i + 1}. [주장]: "${r.claim}"\n   [판정]: ${r.verdict}\n   [근거]: ${r.explanation}`
+  ).join('\n\n')
+
+  const prompt = `당신은 전문 편집자입니다. 아래 대본에서 팩트 오류가 확인된 내용을 수정해주세요.
+
+[원본 대본]:
+${scriptText.slice(0, 15000)}
+
+[수정 대상 오류 목록]:
+${fixList}
+
+[수정 규칙]:
+- 오류로 확인된 주장만 최소한으로 수정하세요.
+- 대본의 전체적인 흐름, 문체, 구조는 유지하세요.
+- 수정이 불가능하거나 소설적 표현인 경우 그대로 두세요.
+- 수정된 대본 전문만 출력하세요. 설명이나 메타데이터 없이.
+- TTS/자막 호환 규칙 유지: **, [], (), {}, #, -, *, ~, 이모지 사용 금지.`
+
+  const res = await withRetry(() =>
+    client.models.generateContent({
+      model:   TEXT_MODEL,
+      contents: prompt,
+      config:  { safetySettings: SAFETY_SETTINGS, maxOutputTokens: 16384 },
+    })
+  , 3, 'fixFactCheckScript')
+
+  return res?.candidates?.[0]?.content?.parts?.[0]?.text || scriptText
+}
+
 // ─── generateFullScriptPrompt (장르별 대본 프롬프트 빌더) ─────────────────────
 export function buildScriptPrompt(genreType, genreLabel, topic, tone, viewpoint, targetChars, customLabel) {
   const label = customLabel || genreLabel.replace(/^[^\s]+\s/, '')

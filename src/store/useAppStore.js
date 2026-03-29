@@ -17,9 +17,15 @@ const initialState = {
   // ─── 2단계: 스타일 ────────────────────────────────────────────────────
   selectedStyleId: 'cinematic',
   selectedModel: 0,           // MODELS 배열 인덱스
+  imageEngine: 'gemini-2.5-flash-image', // 실제 모델 ID
   aspectRatio: '16:9',
   targetSceneCount: 20,
   currentMode: 'normal',      // 'normal' | 'editorial' | 'precision'
+  visualMode: 'auto',         // 'auto'|'character'|'content'|'infoviz'|'immersive'|'docu'|'webtoon'|'mv'
+  isFixedCharMode: false,     // 캐릭터 고정 모드
+  fixedCharStyleType: 'countryball', // 'countryball'|'stickman'|'mascot'|'chibi'|'custom'
+  fixedCharSampleImage: null, // base64 샘플 이미지 (custom/mascot용)
+  isEmotionalArcMode: false,  // 감정 아크 모드
 
   // ─── 3단계: 바이블 ────────────────────────────────────────────────────
   continuityBible: null,
@@ -69,11 +75,17 @@ export const useAppStore = create(
       setDetectedLanguage: (lang)      => set({ detectedLanguage: lang }),
 
       // ── 스타일 ──────────────────────────────────────────────────────
-      setStyle:           (styleId)   => set({ selectedStyleId: styleId }),
-      setModel:           (modelIdx)  => set({ selectedModel: modelIdx }),
-      setAspectRatio:     (ratio)     => set({ aspectRatio: ratio }),
-      setTargetSceneCount: (n)        => set({ targetSceneCount: n }),
-      setCurrentMode:     (mode)      => set({ currentMode: mode }),
+      setStyle:              (styleId)   => set({ selectedStyleId: styleId }),
+      setModel:              (modelIdx)  => set({ selectedModel: modelIdx }),
+      setImageEngine:        (engine)    => set({ imageEngine: engine }),
+      setAspectRatio:        (ratio)     => set({ aspectRatio: ratio }),
+      setTargetSceneCount:   (n)         => set({ targetSceneCount: n }),
+      setCurrentMode:        (mode)      => set({ currentMode: mode }),
+      setVisualMode:         (mode)      => set({ visualMode: mode }),
+      setFixedCharMode:      (flag)      => set({ isFixedCharMode: flag }),
+      setFixedCharStyleType: (type)      => set({ fixedCharStyleType: type }),
+      setFixedCharSampleImage: (img)     => set({ fixedCharSampleImage: img }),
+      setEmotionalArcMode:   (flag)      => set({ isEmotionalArcMode: flag }),
 
       // ── 바이블 ──────────────────────────────────────────────────────
       setBible: (bible) => set({ continuityBible: bible }),
@@ -153,12 +165,17 @@ export const useAppStore = create(
         selectedTone:        state.selectedTone,
         selectedViewpoint:   state.selectedViewpoint,
         selectedLength:      state.selectedLength,
-        selectedStyleId:     state.selectedStyleId,
-        selectedModel:       state.selectedModel,
-        aspectRatio:         state.aspectRatio,
-        targetSceneCount:    state.targetSceneCount,
-        currentMode:         state.currentMode,
-        detectedLanguage:    state.detectedLanguage,
+        selectedStyleId:        state.selectedStyleId,
+        selectedModel:          state.selectedModel,
+        imageEngine:            state.imageEngine,
+        aspectRatio:            state.aspectRatio,
+        targetSceneCount:       state.targetSceneCount,
+        currentMode:            state.currentMode,
+        visualMode:             state.visualMode,
+        isFixedCharMode:        state.isFixedCharMode,
+        fixedCharStyleType:     state.fixedCharStyleType,
+        isEmotionalArcMode:     state.isEmotionalArcMode,
+        detectedLanguage:       state.detectedLanguage,
         // continuityBible에서 대용량 charImageUrl 제외하고 저장
         continuityBible: state.continuityBible ? {
           ...state.continuityBible,

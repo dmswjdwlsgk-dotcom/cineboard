@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { ChevronRight, ChevronLeft, Play, RefreshCw, Copy, Check, Image, AlertTriangle, Zap, Edit3 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ChevronRight, ChevronLeft, Play, RefreshCw, Copy, Check, Image, AlertTriangle, Zap, Edit3, Upload, FileText } from 'lucide-react'
 import Button from '../ui/Button.jsx'
 import Spinner from '../ui/Spinner.jsx'
 import ProgressBar from '../ui/ProgressBar.jsx'
@@ -168,17 +168,19 @@ function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPro
 
 export default function Step4_Scenes() {
   const {
-    scriptText, selectedStyleId, selectedModel, aspectRatio,
+    scriptText, selectedStyleId, selectedModel, imageEngine, aspectRatio,
     continuityBible, detectedLanguage,
     scenes, setScenes, updateScene,
     generationProgress, setProgress,
     isGenerating, setGenerating,
-    targetSceneCount, currentMode,
+    targetSceneCount, currentMode, visualMode,
+    isFixedCharMode, fixedCharStyleType, fixedCharSampleImage,
     setStep, setError, clearError,
   } = useAppStore()
 
-  const [copiedIdx, setCopiedIdx] = useState(null)
+  const [copiedIdx, setCopiedIdx]           = useState(null)
   const [generatingImages, setGeneratingImages] = useState(false)
+  const bulkImgRef = useRef(null)
 
   // 이전 세션에서 isGenerating이 stuck된 경우 초기화
   useEffect(() => {
@@ -186,8 +188,20 @@ export default function Step4_Scenes() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const style   = STYLES.find(s => s.id === selectedStyleId) || STYLES[0]
-  const modelId = MODELS[selectedModel]?.id || MODELS[0].id
+  const modelId = imageEngine || MODELS[selectedModel]?.id || MODELS[0].id
   const error   = useAppStore(s => s.error)
+
+  // visualMode → 씬 생성 모드 매핑
+  const VISUAL_TO_MODE = {
+    auto: 'normal', character: 'normal', content: 'editorial',
+    infoviz: 'editorial', immersive: 'normal', docu: 'editorial',
+    webtoon: 'normal', mv: 'normal',
+  }
+  const effectiveMode = VISUAL_TO_MODE[visualMode] || currentMode
+
+  const fixedCharArgs = isFixedCharMode
+    ? [fixedCharStyleType || 'countryball', fixedCharSampleImage || null]
+    : [null, null]
 
   const handleGenerateAllScenes = async () => {
     if (!hasApiKey()) { setError('API 키가 설정되지 않았습니다.'); return }
@@ -202,7 +216,7 @@ export default function Step4_Scenes() {
         detectedLanguage,
         (current, total) => setProgress(current, total),
         targetSceneCount ?? 30,
-        currentMode
+        effectiveMode
       )
       setScenes(result)
       setProgress(result.length, result.length)
@@ -237,7 +251,8 @@ export default function Step4_Scenes() {
           modelId,
           aspectRatio,
           false,
-          currentMode
+          currentMode,
+          ...fixedCharArgs
         )
         updateScene(idx, { imageUrl: url, generating: false, imageError: null })
       } catch (err) {
@@ -245,7 +260,10 @@ export default function Step4_Scenes() {
       }
       completed++
       setProgress(completed, sceneList.length)
-      if (idx < sceneList.length - 1) await new Promise(r => setTimeout(r, 1000))
+      if (idx < sceneList.length - 1) {
+        const isZImage = modelId === 'z-image-turbo'
+        await new Promise(r => setTimeout(r, isZImage ? 500 : 1000))
+      }
     }
 
     setGeneratingImages(false)
@@ -264,7 +282,9 @@ export default function Step4_Scenes() {
         style,
         modelId,
         aspectRatio,
-        false
+        false,
+        currentMode,
+        ...fixedCharArgs
       )
       updateScene(idx, { imageUrl: url, generating: false, imageError: null })
     } catch (err) {
@@ -289,6 +309,105 @@ export default function Step4_Scenes() {
     } catch (err) {
       updateScene(idx, { generating: false, imageError: err.message })
     }
+  }
+
+  const handleBulkImageImport = async (e) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const updatedScenes = [...scenes]
+    let matched = 0
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const m = file.name.match(/P[-_]?(\d+)/i)
+      if (m) {
+        const sceneIdx = parseInt(m[1], 10) - 1
+        if (sceneIdx >= 0 && sceneIdx < updatedScenes.length) {
+          const dataUrl = await new Promise(resolve => {
+            const reader = new FileReader()
+            reader.onload = ev => resolve(ev.target.result)
+            reader.readAsDataURL(file)
+          })
+          updatedScenes[sceneIdx] = { ...updatedScenes[sceneIdx], imageUrl: dataUrl, generating: false, imageError: null }
+          matched++
+        }
+      }
+    }
+    if (matched > 0) {
+      setScenes(updatedScenes)
+      alert(`✅ 총 ${matched}장의 외부 이미지가 씬에 일괄 등록되었습니다.`)
+    } else {
+      alert('❌ 파일명에서 P1, P2 등 씬 번호를 찾을 수 없거나 매칭되는 씬이 없습니다.\n(예시 파일명: P01_image.png)')
+    }
+    e.target.value = ''
+  }
+
+  const handleExtractPrompts = (type = 'main') => {
+    const sceneList = type === 'shorts' ? [] : scenes // shorts/intro는 미구현시 빈 배열
+    if (sceneList.length === 0) { alert('다운로드할 프롬프트가 없습니다.'); return }
+
+    const bible = continuityBible || { characters: [], environment: {} }
+    const isEditorial = effectiveMode === 'editorial'
+    const tagPrefix  = isEditorial ? 'KEY' : 'ACTOR'
+
+    // ACTOR 태그 → 실제 이름 치환
+    const replaceActorTags = (text) => {
+      if (!text || !bible) return text || ''
+      let result = text
+      ;(bible.characters || []).forEach((char, i) => {
+        const letter = String.fromCharCode(65 + i)
+        ;[
+          new RegExp(`\\[${tagPrefix}-${letter}\\]`, 'gi'),
+          new RegExp(`\\(${tagPrefix}-${letter}\\)`, 'gi'),
+          new RegExp(`${tagPrefix}[-_]${letter}`, 'gi'),
+          new RegExp(`${tagPrefix}${letter}`, 'gi'),
+        ].forEach(re => { result = result.replace(re, `@${char.name}`) })
+      })
+      return result
+    }
+
+    // 완성 이미지 프롬프트 조립
+    const buildFullPrompt = (scene) => {
+      const styleStr = style.prompt.replace(/\n+/g, ' ').trim()
+      const envStr   = (bible.environment?.visualPrompt || '').replace(/\n+/g, ' ').trim()
+      const sceneStr = replaceActorTags(scene.imagePrompt || '').replace(/\n+/g, ' ').trim()
+      let full = [styleStr, envStr, sceneStr, 'cinematic lighting, 8k resolution, 100% full bleed, absolutely no text or watermarks']
+        .filter(Boolean).join(', ')
+      if (isEditorial && scene.screenText) {
+        full += `, include text overlay EXACTLY as: "${scene.screenText}"`
+      }
+      return full.replace(/\s{2,}/g, ' ')
+    }
+
+    // 파일명 prefix
+    const date   = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const prefix = `${date}_${type}`
+
+    const download = (content, filename) => {
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+      const a    = document.createElement('a')
+      a.href     = URL.createObjectURL(blob)
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(a.href)
+    }
+
+    // IMG.txt — 완성 이미지 프롬프트
+    const imgContent = sceneList.map(s => `--- ${s.id} ---\n${buildFullPrompt(s)}`).join('\n\n')
+    download(imgContent, `${prefix}_IMG.txt`)
+
+    // GROK.txt — 이미지+영상+대사 (Grok/AI영상툴용), 500ms 후
+    setTimeout(() => {
+      const grokContent = sceneList.map(s => {
+        const imgPart    = replaceActorTags(s.imagePrompt || '').replace(/\n+/g, ' ').trim()
+        const motionPart = s.videoPromptEn ? `Motion: ${replaceActorTags(s.videoPromptEn).replace(/\n+/g, ' ').trim()}` : ''
+        const dialogPart = s.dialogue ? `Speech Dialog (Korean): "${replaceActorTags(s.dialogue).replace(/\n+/g, ' ').trim()}"` : ''
+        const combined   = [imgPart, motionPart, dialogPart].filter(Boolean).join(', ')
+        return `--- ${s.id} ---\n${combined}`
+      }).join('\n\n')
+      download(grokContent, `${prefix}_GROK.txt`)
+    }, 500)
   }
 
   const handleCopyPrompt = (idx, prompt) => {
@@ -340,6 +459,40 @@ export default function Step4_Scenes() {
             <Image size={16} />
             {generatingImages ? '이미지 생성 중...' : '전체 이미지 생성'}
           </Button>
+        )}
+
+        {scenes.length > 0 && (
+          <>
+            <Button
+              onClick={() => bulkImgRef.current?.click()}
+              disabled={isGenerating || generatingImages}
+              variant="secondary"
+              size="lg"
+            >
+              <Upload size={16} />
+              외부 이미지 일괄등록
+            </Button>
+            <input
+              ref={bulkImgRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleBulkImageImport}
+            />
+
+            <button
+              onClick={() => handleExtractPrompts('main')}
+              disabled={isGenerating || generatingImages}
+              className="flex flex-col items-center gap-0.5 bg-amber-900/20 hover:bg-amber-900/40 text-amber-500 font-bold py-2 px-4 rounded-xl border border-amber-700/30 transition-all disabled:opacity-50 text-xs"
+            >
+              <div className="flex items-center gap-1.5">
+                <FileText size={13} />
+                <span>프롬프트 추출</span>
+              </div>
+              <span className="text-[9px] text-amber-500/70 font-medium">AutoFlow용 (.txt)</span>
+            </button>
+          </>
         )}
       </div>
 

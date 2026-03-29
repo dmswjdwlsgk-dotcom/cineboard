@@ -1,6 +1,12 @@
-import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, parseJson } from './gemini.js'
+import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken } from './gemini.js'
 
 const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
+const ZIMAGE_API_BASE     = 'https://api.kie.ai/api/v1'
+const ZIMAGE_UPLOAD_URL   = 'https://kieai.redpandaai.co/api/file-stream-upload'
+const ZIMAGE_MAX_PROMPT   = 800
+
+// 업로드 캐시 (2시간)
+const _uploadCache = new Map()
 
 // ─── 모델별 이미지 설정 ───────────────────────────────────────────────────────
 function getImageConfig(model, aspectRatio) {
@@ -22,13 +28,197 @@ function getTimeout(model) {
   return model === 'gemini-3-pro-image-preview' ? 120000 : 60000
 }
 
-// ─── 씬 이미지 생성 (원본 St 함수 이식) ──────────────────────────────────────
-export async function generateSceneImage(scene, bible, stylePreset, model = DEFAULT_IMAGE_MODEL, aspectRatio = '16:9', useReferenceImages = false, currentMode = 'normal') {
+// ─── 고정 캐릭터 스타일 프롬프트 ─────────────────────────────────────────────
+const FIXED_CHAR_PROMPTS = {
+  countryball: `[🌐 COUNTRYBALL / POLANDBALL CHARACTER STYLE — MANDATORY]
+⚠️ ALL characters in this scene MUST be rendered as PERFECTLY SPHERICAL BALLS with no exceptions.
+[BODY SHAPE]: perfectly round sphere with flag pattern wrapping the entire surface. NO arms, NO legs attached to body — only very short thin black line limbs.
+[EYES]: black sunglasses or large round white eyes with small black dot pupils. NO realistic eyes.
+[LIMBS]: very short thin BLACK LINES protruding from the sphere sides (arms) and bottom (legs). Small black circles or ovals for hands and feet.
+[CULTURAL ATTIRE]: Korea=Gat hat or Dobok, USA=Cowboy hat or top hat, Japan=Samurai kabuto or school uniform, UK=Bowler hat, China=Conical straw hat, France=Beret, Germany=Pickelhaube.
+[ART STYLE]: 2D vector cartoon, clean bold black outlines, flat vibrant colors, minimal shading. NO photorealism. NO 3D rendering.
+[SCENE ADAPTATION]: Countryball characters interact with environment props and objects normally. Objects remain realistic; ONLY characters are balls.`,
+
+  stickman: `[🖊️ STICKMAN CHARACTER STYLE — MANDATORY]
+⚠️ ALL characters in this scene MUST be rendered as classic STICK FIGURES.
+[BODY]: simple circle head + straight vertical line body. NO detailed facial features except minimal dot eyes and simple curve smile/frown.
+[LIMBS]: straight or slightly bent line arms and legs. Simple oval or mitten-shape hands. Simple oval feet.
+[CLOTHING]: optional minimal color fill or simple geometric clothing shapes (colored rectangle for shirt, colored rectangle for pants).
+[ART STYLE]: clean black lines on white or colored background, 2D flat illustration. Retro doodle/whiteboard aesthetic.
+[SCENE ADAPTATION]: Stickman characters interact with fully detailed environments. Objects remain realistic; ONLY characters are stickmen.`,
+
+  mascot: `[🐻 CUSTOM MASCOT STYLE — MANDATORY]
+⚠️ ALL characters in this scene MUST be rendered in the EXACT visual style of the provided reference mascot character.
+[STYLE LOCK]: Replicate the reference character's design precisely — same shape language, color palette, facial proportions, limb style, and overall art style. NO deviation.
+[CONSISTENCY]: Every character in every scene must maintain identical visual design to the reference. Only poses and expressions change.
+[ART STYLE]: Match the reference image exactly — whether it's flat vector, 3D render, watercolor, or any other style.`,
+
+  chibi: `[🌸 CHIBI / SUPER-DEFORMED STYLE — MANDATORY]
+⚠️ ALL characters in this scene MUST be rendered in CHIBI / SUPER-DEFORMED proportions.
+[HEAD]: oversized head taking up 40-50% of total body height. Large expressive eyes (60-70% of face area). Tiny simple nose. Small mouth.
+[BODY]: very short stubby body, tiny hands and feet. Maximum 2-3 head heights total.
+[EXPRESSION]: exaggerated emotional expressions — huge sparkling eyes when happy, cross-shaped pupils when angry, waterfall tears when sad, sweat drops for embarrassment.
+[ART STYLE]: clean anime line art, flat cel-shading, vibrant pastel colors, soft rounded shapes everywhere. NO realistic anatomy.
+[SCENE ADAPTATION]: Chibi characters interact with normal-scale environments (making them appear even cuter by contrast).`,
+
+  custom: `[🎨 CUSTOM REFERENCE STYLE — MANDATORY]
+⚠️ ALL characters in this scene MUST be rendered in the EXACT visual style shown in the provided sample image.
+[STYLE EXTRACTION]: Analyze the sample image carefully — replicate its art style, line weight, coloring technique, shading approach, and character design language precisely.
+[CONSISTENCY]: Apply this extracted style uniformly to ALL characters in the scene. Maintain identical art style across all scenes.`,
+}
+
+function getFixedCharPrompt(fixedCharStyleType, fixedCharSampleImage) {
+  const base = FIXED_CHAR_PROMPTS[fixedCharStyleType] || FIXED_CHAR_PROMPTS.countryball
+  if ((fixedCharStyleType === 'custom' || fixedCharStyleType === 'mascot') && fixedCharSampleImage) {
+    return base // 참조 이미지는 contents에 별도 삽입됨
+  }
+  return base
+}
+
+// ─── Z-Image: base64 → URL 업로드 ─────────────────────────────────────────────
+async function uploadImageToZImage(base64DataUrl) {
+  const cacheKey = base64DataUrl.slice(0, 100)
+  const cached   = _uploadCache.get(cacheKey)
+  if (cached && cached.expiry > Date.now()) return cached.url
+
+  const token = getZImageToken()
+  if (!token) throw new Error('Z-Image 토큰이 없습니다. API 설정에서 KIE AI 토큰을 입력해주세요.')
+
+  const [header, data] = base64DataUrl.split(',')
+  const mimeMatch      = header.match(/data:([^;]+)/)
+  const mimeType       = mimeMatch ? mimeMatch[1] : 'image/png'
+  const ext            = mimeType.split('/')[1] || 'png'
+  const fileName       = `ref_${Date.now()}.${ext}`
+
+  const binary  = atob(data)
+  const bytes   = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  const blob = new Blob([bytes], { type: mimeType })
+
+  const formData = new FormData()
+  formData.append('file', blob, fileName)
+
+  const res = await fetch(ZIMAGE_UPLOAD_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  })
+  if (!res.ok) throw new Error(`이미지 업로드 실패: HTTP ${res.status}`)
+  const json = await res.json()
+  const url  = json.data?.url || json.url
+  if (!url) throw new Error('이미지 업로드 실패: URL을 받지 못했습니다.')
+
+  _uploadCache.set(cacheKey, { url, expiry: Date.now() + 2 * 60 * 60 * 1000 })
+  return url
+}
+
+// ─── Z-Image: 프롬프트 길이 제한 ──────────────────────────────────────────────
+function truncatePrompt(text, maxLen = ZIMAGE_MAX_PROMPT) {
+  if (text.length <= maxLen) return text
+  const truncated = text.slice(0, maxLen)
+  const lastSpace = truncated.lastIndexOf(' ')
+  return lastSpace > maxLen * 0.8 ? truncated.slice(0, lastSpace) : truncated
+}
+
+// ─── Z-Image: 태스크 생성 + 폴링 ──────────────────────────────────────────────
+async function generateZImage(prompt, aspectRatio = '16:9', imageUrl = null, denoise = 0.65) {
+  const token = getZImageToken()
+  if (!token) throw new Error('Z-Image 토큰이 없습니다. API 설정에서 KIE AI 토큰을 입력해주세요.')
+
+  const truncatedPrompt = truncatePrompt(prompt)
+  const arMap = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1' }
+  const ar    = arMap[aspectRatio] || '16:9'
+
+  const input = { prompt: truncatedPrompt, aspect_ratio: ar, nsfw_checker: true }
+  if (imageUrl) { input.image_url = imageUrl; input.denoise = denoise }
+
+  const createRes = await fetch(`${ZIMAGE_API_BASE}/jobs/createTask`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ model: 'z-image', input }),
+  })
+  if (!createRes.ok) {
+    const errText = await createRes.text().catch(() => '')
+    throw new Error(`Z-Image 태스크 생성 실패: HTTP ${createRes.status} — ${errText.slice(0, 100)}`)
+  }
+  const createData = await createRes.json()
+  const taskId     = createData?.data?.taskId
+  if (!taskId) throw new Error('Z-Image 태스크 ID를 받지 못했습니다.')
+
+  // 폴링 (30회 × 1초)
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 1000))
+    const pollRes = await fetch(`${ZIMAGE_API_BASE}/jobs/recordInfo?taskId=${taskId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!pollRes.ok) continue
+    const pollData = await pollRes.json()
+    const rec      = pollData?.data || pollData
+    const state    = rec?.state || rec?.status
+
+    if (state === 'success') {
+      let resultUrl = null
+      try {
+        const parsed = typeof rec.resultJson === 'string' ? JSON.parse(rec.resultJson) : rec.resultJson
+        resultUrl    = parsed?.resultUrls?.[0] || rec?.resultUrls?.[0]
+      } catch {
+        resultUrl = rec?.resultUrls?.[0]
+      }
+      if (!resultUrl) throw new Error('Z-Image 결과 URL을 파싱할 수 없습니다.')
+      return resultUrl
+    }
+    if (state === 'failed') {
+      throw new Error(`Z-Image 생성 실패: ${rec?.failMsg || rec?.failCode || '알 수 없는 오류'}`)
+    }
+  }
+  throw new Error('Z-Image 생성 시간 초과 (30초)')
+}
+
+// ─── 씬 이미지 생성 ───────────────────────────────────────────────────────────
+export async function generateSceneImage(
+  scene,
+  bible,
+  stylePreset,
+  model            = DEFAULT_IMAGE_MODEL,
+  aspectRatio      = '16:9',
+  useReferenceImages = false,
+  currentMode      = 'normal',
+  fixedCharStyleType   = null,
+  fixedCharSampleImage = null,
+) {
+  const isZImage = model === 'z-image-turbo'
+
+  // ── Z-Image 엔진 분기 ──────────────────────────────────────────────────────
+  if (isZImage) {
+    return generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType, fixedCharSampleImage)
+  }
+
+  // ── Gemini 엔진 ────────────────────────────────────────────────────────────
   const client = await createClient()
+
+  // 고정 캐릭터 모드
+  const fixedCharPrompt = fixedCharStyleType ? getFixedCharPrompt(fixedCharStyleType, fixedCharSampleImage) : null
 
   // 캐릭터 참조 이미지 수집 (I2I)
   const referenceImages = []
-  if (useReferenceImages && bible.characters) {
+
+  // custom/mascot 고정 캐릭터 샘플 이미지
+  if (fixedCharSampleImage && (fixedCharStyleType === 'custom' || fixedCharStyleType === 'mascot')) {
+    try {
+      const data = await resizeBase64Image(fixedCharSampleImage, 512)
+      if (data) {
+        referenceImages.push({ text: '[STYLE REFERENCE — MANDATORY]: This is the character/mascot style you MUST replicate for ALL characters.' })
+        referenceImages.push({ inlineData: { mimeType: 'image/png', data } })
+      }
+    } catch (e) {
+      console.warn('⚠️ 고정캐릭터 샘플 이미지 처리 실패:', e)
+    }
+  }
+
+  if (useReferenceImages && bible.characters && !fixedCharStyleType) {
     const sceneChars = (scene.involvedCharacters || [])
       .map(name => bible.characters.find(c => c.name === name))
       .filter(Boolean)
@@ -62,13 +252,13 @@ export async function generateSceneImage(scene, bible, stylePreset, model = DEFA
       }).join('\n')
     : '(no specific characters - focus on environment and atmosphere)'
 
-  const consistencyNote = referenceImages.length > 0
+  const consistencyNote = referenceImages.length > 0 && !fixedCharStyleType
     ? `[CHARACTER CONSISTENCY (CRITICAL)]: You MUST strictly maintain the visual identity of the characters provided in the reference images. Their HAIR STYLE, HAIR COLOR, EYE SHAPE, and DISTINCTIVE OUTFIT MUST remain identical to the reference image in every single scene.`
     : `[CHARACTER CONSISTENCY]: Maintain each character's described appearance exactly — same hair, outfit, beard, body.`
 
-  const charCount   = sceneChars.length
+  const charCount    = sceneChars.length
   const charCountStr = charCount > 0 ? String(charCount) : ''
-  const noExtraMode = scene.excludeExtras ? `[ISOLATION MODE - STRICT]: THE USER HAS DISABLED EXTRAS. ABSOLUTELY NO BACKGROUND CHARACTERS. YOU MUST RENDER EXACTLY ${charCountStr} PERSON/PEOPLE.` : ''
+  const noExtraMode  = scene.excludeExtras ? `[ISOLATION MODE - STRICT]: THE USER HAS DISABLED EXTRAS. ABSOLUTELY NO BACKGROUND CHARACTERS. YOU MUST RENDER EXACTLY ${charCountStr} PERSON/PEOPLE.` : ''
 
   const textRule = `⚠️ [imagePrompt ABSOLUTE PROHIBITION — NO EXCEPTIONS]:
 - NO visible text, letters, words, signs, signage, banners, posters, newspapers, books with visible text, chalkboards, whiteboards, or any surface displaying readable characters.
@@ -78,7 +268,7 @@ export async function generateSceneImage(scene, bible, stylePreset, model = DEFA
   const imagePromptText = scene.imagePrompt || scene.imagePromptKo || ''
   const actionText      = scene.action || ''
 
-  // 에디토리얼 모드: 인포그래픽 전용 프롬프트
+  // 에디토리얼 모드
   if (currentMode === 'editorial') {
     const editorialPrompt = `[STYLE] ${stylePreset.prompt}
 
@@ -118,7 +308,7 @@ ${imagePromptText || actionText}
   }
 
   const compositePrompt = `[STYLE] ${stylePreset.prompt} (NON-NEGOTIABLE)
-
+${fixedCharPrompt ? `\n${fixedCharPrompt}\n` : ''}
 [CONTEXT] "${(scene.dialogue || scene.scriptReference || '').slice(0, 150).replace(/"/g, "'")}"
 [WORLD] ${bible.environment?.visualPrompt || ''}
 ${scene.setting ? `[LOCATION]: ${scene.setting}` : ''}
@@ -169,9 +359,54 @@ ${textRule}`.trim()
   }, 5, `generateSceneImage(${scene.id})`)
 }
 
-// ─── 단순 이미지 생성 (원본 un 함수 이식) ────────────────────────────────────
+// ─── Z-Image 씬 이미지 생성 ───────────────────────────────────────────────────
+async function generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType, fixedCharSampleImage) {
+  const sceneChars = resolveSceneCharacters(scene, bible)
+  const castInfo   = sceneChars.length > 0
+    ? sceneChars.map(c => `${c.name}: ${c.visualPrompt}`).join(', ')
+    : ''
+
+  const fixedCharPrompt = fixedCharStyleType ? getFixedCharPrompt(fixedCharStyleType, fixedCharSampleImage) : ''
+
+  const imagePromptText = scene.imagePrompt || scene.imagePromptKo || ''
+  const actionText      = scene.action || ''
+
+  let prompt = ''
+  if (currentMode === 'editorial') {
+    prompt = `${stylePreset.prompt}, ${imagePromptText || actionText}, professional infographic layout, Korean text labels allowed, full bleed, no borders`
+  } else {
+    prompt = [
+      stylePreset.prompt,
+      fixedCharPrompt,
+      castInfo ? `Characters: ${castInfo}` : '',
+      scene.setting ? `Location: ${scene.setting}` : '',
+      imagePromptText,
+      actionText,
+      'full bleed, no borders, no letterboxing, single frame',
+    ].filter(Boolean).join('. ')
+  }
+
+  // 고정캐릭터 샘플 이미지 업로드 (I2I)
+  let uploadedImageUrl = null
+  if (fixedCharSampleImage && (fixedCharStyleType === 'custom' || fixedCharStyleType === 'mascot')) {
+    try {
+      uploadedImageUrl = await uploadImageToZImage(fixedCharSampleImage)
+    } catch (e) {
+      console.warn('⚠️ Z-Image 샘플 이미지 업로드 실패, I2I 없이 진행:', e)
+    }
+  }
+
+  return generateZImage(prompt, aspectRatio, uploadedImageUrl, 0.65)
+}
+
+// ─── 단순 이미지 생성 ─────────────────────────────────────────────────────────
 export async function generateImage(promptText, stylePreset, model = DEFAULT_IMAGE_MODEL, aspectRatio = '16:9', allowText = false) {
-  const client = await createClient()
+  if (model === 'z-image-turbo') {
+    const prompt = `${stylePreset.prompt}, ${promptText}, full bleed, no borders, single frame`
+    return generateZImage(prompt, aspectRatio)
+  }
+
+  const client  = await createClient()
   const textRule = allowText
     ? 'Clean infographic text MAY be included if relevant to the content. NO random watermarks or signatures.'
     : 'The image MUST NOT contain ANY text, typography, letters, watermarks, or signatures. PURE VISUALS ONLY.'
@@ -200,7 +435,7 @@ export async function generateImage(promptText, stylePreset, model = DEFAULT_IMA
   }, 3, 'generateImage')
 }
 
-// ─── 썸네일 생성 3종 (원본 za 함수 이식) ─────────────────────────────────────
+// ─── 썸네일 생성 3종 ──────────────────────────────────────────────────────────
 export async function generateThumbnails(bible, stylePreset, model = DEFAULT_IMAGE_MODEL, aspectRatio = '16:9') {
   const client = await createClient()
 
@@ -231,7 +466,6 @@ export async function generateThumbnails(bible, stylePreset, model = DEFAULT_IMA
     },
   ]
 
-  // 참조 이미지 수집
   const refImages = []
   for (const char of bible.characters.slice(0, 3)) {
     const ref = char.referenceThumb || char.referenceImage
@@ -316,7 +550,6 @@ function resolveSceneCharacters(scene, bible) {
     })
     .filter(Boolean)
 
-  // 중복 제거
   const seen = new Set()
   return chars.filter(c => { if (seen.has(c.name)) return false; seen.add(c.name); return true })
 }
