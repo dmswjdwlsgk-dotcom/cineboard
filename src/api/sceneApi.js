@@ -88,12 +88,56 @@ function cleanSceneOutput(scene, characters) {
 
 // ─── 씬 목록 분할 ─────────────────────────────────────────────────────────────
 
-// 스크립트를 정확히 n개 세그먼트로 분할 (문장→단어→글자 캐스케이딩)
+// 스크립트를 정확히 n개 세그먼트로 분할 (문장 경계 우선 스냅)
 function programmaticSplit(scriptText, n) {
   const cleaned = cleanScript(scriptText).replace(/\s{2,}/g, ' ').trim()
+  if (!cleaned || n <= 0) return []
+
+  // ── 헬퍼: 유닛 배열을 n개 청크로 그루핑 ───────────────────────────────────
+  const groupIntoN = (units, count, sep = ' ') => {
+    const chunks = []
+    const base   = Math.floor(units.length / count)
+    let rem      = units.length % count
+    let cursor   = 0
+    for (let i = 0; i < count; i++) {
+      const size = base + (rem-- > 0 ? 1 : 0)
+      chunks.push(units.slice(cursor, cursor + size).join(sep).trim())
+      cursor += size
+    }
+    return chunks.filter(Boolean)
+  }
+
+  // ── 헬퍼: 단어 배열을 n개 청크로, 문장/절 경계 우선 스냅 ─────────────────
+  const groupWordsRespectBoundary = (words, count) => {
+    if (words.length <= count) return words.map(w => w)
+    const targetLen = words.length / count
+    const chunks    = []
+    let start       = 0
+    for (let i = 0; i < count - 1; i++) {
+      const idealEnd = Math.round((i + 1) * targetLen)
+      const radius   = Math.max(2, Math.floor(targetLen * 0.45))
+      const lo       = Math.max(start + 1, idealEnd - radius)
+      const hi       = Math.min(words.length - (count - i - 1), idealEnd + radius)
+      let breakAt    = idealEnd
+      // 뒤에서부터 문장 끝 단어 탐색 (.!?。！？)
+      for (let j = hi; j >= lo; j--) {
+        if (/[.!?。！？]$/.test(words[j - 1])) { breakAt = j; break }
+      }
+      // 없으면 쉼표/절 경계
+      if (breakAt === idealEnd) {
+        for (let j = hi; j >= lo; j--) {
+          if (/[,，、;；]$/.test(words[j - 1])) { breakAt = j; break }
+        }
+      }
+      chunks.push(words.slice(start, breakAt).join(' ').trim())
+      start = breakAt
+    }
+    chunks.push(words.slice(start).join(' ').trim())
+    return chunks.filter(Boolean)
+  }
 
   // 1차: 문장 단위 분할
-  let units = cleaned
+  const sentences = cleaned
     .split(/([.!?。！？]+(?:\s+|$))/)
     .reduce((acc, part, idx) => {
       if (idx % 2 === 0) { if (part.trim()) acc.push(part.trim()) }
@@ -102,44 +146,44 @@ function programmaticSplit(scriptText, n) {
     }, [])
     .filter(s => s.trim().length > 0)
 
-  let sep = ' '
-
-  // 2차: 문장이 n개보다 적으면 단어 단위로
-  if (units.length < n) {
-    units = cleaned.split(/\s+/).filter(w => w.trim().length > 0)
+  if (sentences.length >= n) {
+    // 문장이 충분 → 문장 단위 그루핑
+    const chunks = groupIntoN(sentences, n, ' ')
+    return makeScenes(chunks)
   }
 
-  // 3차: 단어도 n개보다 적으면 글자 단위로
-  if (units.length < n) {
-    units = cleaned.split('').filter(c => c.trim().length > 0)
-    sep = ''
+  // 2차: 쉼표/절 단위로도 추가 분할
+  const clauses = sentences.flatMap(s =>
+    s.split(/(?<=[,，、;；])\s*/).map(c => c.trim()).filter(Boolean)
+  )
+
+  if (clauses.length >= n) {
+    const chunks = groupIntoN(clauses, n, ' ')
+    return makeScenes(chunks)
   }
 
-  if (units.length === 0) units = [cleaned || '.']
-
-  const chunks = []
-  const base = Math.floor(units.length / n)
-  let remainder = units.length % n
-  let cursor = 0
-
-  for (let i = 0; i < n; i++) {
-    const size = base + (remainder > 0 ? 1 : 0)
-    if (remainder > 0) remainder--
-    const seg = units.slice(cursor, cursor + size).join(sep).trim()
-    chunks.push(seg || '.')
-    cursor += size
+  // 3차: 단어 단위 + 문장 경계 스냅
+  const words = cleaned.split(/\s+/).filter(Boolean)
+  if (words.length >= n) {
+    const chunks = groupWordsRespectBoundary(words, n)
+    return makeScenes(chunks)
   }
 
-  return chunks.map((seg, i) => {
-    return {
-      id: `P${String(i + 1).padStart(2, '0')}`,
-      scriptReference:  seg.slice(0, 30).replace(/\n/g, ' '),
-      scriptAnchor:     seg.slice(0, 30).replace(/\n/g, ' '),
-      startAnchor:      seg.slice(0, 40),
-      setting:          '',
-      fullScriptSegment: seg,
-    }
-  })
+  // 4차: 글자 단위 (극단적 케이스)
+  const chars  = cleaned.split('').filter(c => c.trim().length > 0)
+  const chunks = groupIntoN(chars, Math.min(n, chars.length), '')
+  return makeScenes(chunks)
+}
+
+function makeScenes(chunks) {
+  return chunks.map((seg, i) => ({
+    id:               `P${String(i + 1).padStart(2, '0')}`,
+    scriptReference:  seg.slice(0, 30).replace(/\n/g, ' '),
+    scriptAnchor:     seg.slice(0, 30).replace(/\n/g, ' '),
+    startAnchor:      seg.slice(0, 40),
+    setting:          '',
+    fullScriptSegment: seg,
+  }))
 }
 
 // AI로 각 세그먼트의 setting(배경) 보강
