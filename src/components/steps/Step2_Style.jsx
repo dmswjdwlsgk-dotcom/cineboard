@@ -35,7 +35,6 @@ export default function Step2_Style() {
     selectedModel, setModel,
     imageEngine, setImageEngine,
     aspectRatio, setAspectRatio,
-    currentMode, setCurrentMode,
     visualMode, setVisualMode,
     isFixedCharMode, setFixedCharMode,
     fixedCharStyleType, setFixedCharStyleType,

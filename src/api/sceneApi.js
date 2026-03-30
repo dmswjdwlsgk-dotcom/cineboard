@@ -221,6 +221,148 @@ export async function splitScriptToScenes(scriptText, maxScenes = 30) {
   return enrichSceneSettings(scenes, client)
 }
 
+// ─── 비주얼 모드 지침 생성 (원본 Cr 함수 이식) ────────────────────────────────
+function getVisualModeInstruction(visualMode, withTextIntegration = false) {
+  switch (visualMode) {
+    case 'content': return `
+[📊 CONTENT VISUALIZATION MODE — OVERRIDE]
+⚠️ THIS IS NOT CHARACTER MODE. DO NOT focus on character faces or emotions.
+The imagePrompt MUST visualize the TOPIC/CONCEPT being discussed, NOT the people speaking.
+${withTextIntegration ? `
+[📝 INFOGRAPHIC TEXT INTEGRATION — ACTIVE]
+⚠️ This image SHOULD include KEY DATA POINTS as INTEGRATED visual text elements.
+Rules for text integration:
+- Render the EXACT text from the "screenText" field as BOLD, HIGH-CONTRAST typography
+- Text style: Clean modern sans-serif font (like Noto Sans, Pretendard, or Helvetica Neue)
+- Text placement: BOTTOM-CENTER or TOP-LEFT of the frame, with semi-transparent dark backdrop
+- Text must be ORGANICALLY INTEGRATED into the infographic layout — NOT randomly floating
+- Color-code data context: 🔴 Red accent for negative/danger/decrease, 🟢 Green for positive/growth, 🔵 Blue for neutral/informational
+- Use geometric containers (rounded rectangles, circles) to frame key numbers
+- Think like a PREMIUM NEWS GRAPHICS DESIGNER (Bloomberg Terminal, The Economist, 삼프로TV)
+- Include supporting visual elements: simplified icons, arrows (↑↓), mini chart silhouettes
+- The overall composition should look like a high-end broadcast news graphic or data dashboard
+` : ''}
+Rules:
+- Focus on INFOGRAPHIC-STYLE compositions: graphs, charts, data visualizations, abstract concepts made visual
+- Show OBJECTS, ENVIRONMENTS, and SYMBOLIC imagery representing the CONTENT of the narration
+- Characters should be MINIMAL or ABSENT from the frame. If present, show them from behind, silhouetted, or as small figures
+- Use METAPHORICAL imagery: e.g., if discussing "rising prices" → show towering stacks of coins, if "environmental crisis" → show contrasting landscapes
+- Think like a NEWS GRAPHICS DESIGNER, not a portrait photographer
+- The 'involvedCharacters' array should usually be EMPTY [] unless a character physically appears
+- Prefer WIDE SHOTS and BIRD'S EYE views over close-ups
+`
+    case 'immersive': return `
+[🎬 IMMERSIVE ENVIRONMENT MODE — OVERRIDE]
+⚠️ The ENVIRONMENT is the PROTAGONIST. Every frame must make the viewer feel PHYSICALLY PRESENT in the space.
+
+[DEPTH LAYERING — MANDATORY 3-LAYER COMPOSITION]:
+- FOREGROUND (0-2m): A textured element slightly OUT OF FOCUS creating tactile proximity — wet leaves on ground, stone fence edge, rain droplets on glass surface, candlelight flame, wooden railing, blowing curtain fabric
+- MIDGROUND (2-20m): The PRIMARY environmental subject — the path, the building, the landscape feature, the atmospheric event
+- BACKGROUND (20m+): Atmospheric depth receding into distance — mountain silhouettes, city skyline glow, fog bank, cloud formations, distant forest treeline
+
+[ATMOSPHERIC PRESENCE — MANDATORY]:
+- Render VOLUMETRIC ATMOSPHERE visible in the frame: fog particles catching light, dust motes floating in sunbeams, rain streaks angled by wind, snow flurries, steam rising from ground, heat haze shimmer
+- Light MUST interact with atmosphere: god rays piercing through forest canopy, neon sign reflections on wet pavement, firelight dancing on cave walls, moonlight filtering through clouds
+
+[HUMAN SCALE REFERENCE]:
+- Characters appear as SMALL FIGURES occupying LESS THAN 15% of the frame
+- Show them from BEHIND walking away, SILHOUETTED against landscape, or as TINY specks
+- Their POSTURE and BODY LANGUAGE tells the emotional story, NOT their faces
+- 'involvedCharacters' can include names but the imagePrompt renders them distant/small
+`
+    case 'docu': return `
+[📰 DOCUMENTARY RECONSTRUCTION MODE — OVERRIDE]
+⚠️ Recreate scenes as if captured by an ARCHIVAL CAMERA of the depicted era. The image must feel like a DISCOVERED PHOTOGRAPH or DOCUMENTARY FILM STILL.
+
+[CINEMATIC GRADING — MANDATORY FILM TREATMENT]:
+- Apply visible FILM GRAIN texture (ISO 800-1600 equivalent noise pattern)
+- Add subtle VIGNETTING: 15-25% edge darkening that draws attention to center
+- DESATURATED color palette: reduce saturation 30-40% below normal vibrant levels
+- COLOR TEMPERATURE by era: Pre-1900s=SEPIA TONES, 1900s-1950s=HIGH-CONTRAST B&W, 1960s-1970s=FADED KODACHROME, 1980s-1990s=WARM VHS, 2000s+=COLD DIGITAL
+
+[COMPOSITION — DOCUMENTARY OBSERVATIONAL FRAMING]:
+- CANDID positioning: subjects placed slightly OFF-CENTER, natural compositions that feel UNPOSED
+- Characters appear UNAWARE of the camera — documentary observational gaze, not portrait posing
+- MEDIUM SHOTS (waist-up) and MEDIUM-WIDE shots are the PRIMARY framing choices
+- Every frame MUST contain at least 3 ERA-SPECIFIC OBJECTS (period furniture, tools, vehicles, clothing styles, architecture)
+- Think like an EBS DOCUMENTARY DIRECTOR or HISTORY CHANNEL RECONSTRUCTION SUPERVISOR
+`
+    case 'webtoon': return `
+[📖 KOREAN WEBTOON / MANHWA MODE — OVERRIDE]
+⚠️ This is a KOREAN WEBTOON (한국 웹툰) key panel, NOT Japanese manga and NOT Western comic book.
+
+[VISUAL STYLE — KOREAN WEBTOON AESTHETIC]:
+- CLEAN DIGITAL LINEART: consistent medium-weight lines, smooth anti-aliased curves
+- KOREAN WEBTOON COLOR PALETTE: vibrant but NOT neon — rich saturated colors with soft pastel gradients in shadow areas
+- CEL-SHADING with SOFT GRADIENT SHADOWS — smooth color transitions
+- Character proportions: 6-7 head-tall REALISTIC-STYLIZED hybrid
+
+[EMOTIONAL AMPLIFICATION — MANDATORY BACKGROUND EFFECTS]:
+- 😱 SHOCK: Radiating SPEED LINES exploding outward + WHITE or DARK background wipe-out
+- 😡 ANGER: Dark RED-BLACK gradient aura, ground CRACKING beneath feet
+- 💕 ROMANCE: Floating SPARKLES and soft BOKEH circles, warm PINK-PEACH gradient
+- 😢 SADNESS: RAIN EFFECT with visible streaks, heavily DESATURATED muted palette
+- ⚡ ACTION: Bold MOTION BLUR lines, ZOOM-BURST effect, HIGH CONTRAST lighting
+
+[🖼️ FULL-BLEED CANVAS MANDATE]: The illustration MUST extend to ALL FOUR EDGES with ZERO white space.
+`
+    case 'mv': return `
+[🎵 MUSIC VIDEO (MV) MODE — OVERRIDE]
+⚠️ THIS IS A MUSIC VIDEO SHOOT. Every frame must feel like a K-POP / cinematic music video key frame.
+
+[🎤 LYRICS-TO-VISUAL TRANSLATION]:
+Analyze the EMOTIONAL FREQUENCY and determine the song section:
+- VERSE: Cinematic establishing shots, cool muted tones (teal/slate blue), slow steady tracking
+- PRE-CHORUS: Tighter framing, increasing visual density, building tension
+- CHORUS: MAXIMUM ENERGY — explosive wide shots, saturated vivid colors, dramatic lighting, motion blur
+- BRIDGE: Introspective — lone performer in vast space, moody color grade, intimate framing
+
+[VISUAL TREATMENT]:
+- Concert-grade stage lighting: laser grids, volumetric haze, colored strobes
+- Heavy CINEMATIC COLOR GRADE: teal+orange for drama, pink+purple for romance, red+black for intensity
+- Performer silhouettes against dramatic backdrops
+- Dynamic foreshortening and extreme angles
+`
+    case 'auto': return `
+[⚡ SMART AUTO MODE — AI DIRECTOR'S CHOICE]
+You are the DIRECTOR. Analyze the script narration content of each scene and CHOOSE the single most impactful visual approach.
+
+[DECISION CRITERIA — ANALYZE THE NARRATION AND PICK ONE]:
+1. If the narration describes a CHARACTER'S EMOTIONAL MOMENT (crying, arguing, confessing, reacting):
+   → Use CHARACTER mode: Close-up on face, dramatic single-source lighting, emotion-driven composition
+2. If the narration presents DATA, STATISTICS, COMPARISONS, or ABSTRACT CONCEPTS (economy, science, analysis):
+   → Use CONTENT mode: Infographic-style imagery, symbolic metaphors, charts/graphs, objects representing concepts
+3. If the narration describes a LOCATION, LANDSCAPE, JOURNEY, or ATMOSPHERE (a place, weather, scenery):
+   → Use IMMERSIVE mode: 3-layer depth composition, wide environmental shot, tiny human figures
+4. If the narration references HISTORICAL EVENTS, PAST ERAS, or REAL-WORLD RECONSTRUCTION:
+   → Use DOCU mode: Film grain texture, desaturated period-appropriate color grading, observational angle
+5. If the narration contains SONG LYRICS, MUSICAL PERFORMANCE, or RHYTHM-DRIVEN CONTENT:
+   → Use MV mode: Concert-grade lighting, performer silhouettes, dynamic camera movement
+
+[COMPOSITION EXECUTION]:
+- After choosing the mode, apply ALL visual rules of that mode fully
+- Commit 100% to the chosen approach — do NOT blend or compromise between modes
+- The imagePrompt must clearly reflect the chosen visual strategy
+`
+    case 'infoviz': return `
+[🧬 INFOVIZ MODE — 정보 시각화 최우선 · INFORMATION IS THE PROTAGONIST]
+⚠️ CRITICAL OVERRIDE: The INFORMATION ELEMENT is the HERO of every frame.
+⚠️ DO NOT draw any human characters (narrators, doctors, experts, presenters). ZERO HUMANS in the frame.
+⚠️ DO NOT generate flat infographics, boring charts, or PowerPoint-style layouts. This is CINEMATIC 3D VISUALIZATION.
+
+[🎭 VISUAL METAPHOR ENGINE]:
+Transform ABSTRACT INFORMATION into PHYSICAL, DRAMATIC, CINEMATIC ACTION scenes.
+1. ANTHROPOMORPHISM: Give the information element a PERSONALITY — eyes, expression, body language, pose
+2. CONTEXT SPACE: Place the element inside the ENVIRONMENT where it naturally acts (inside human body, financial cityscape, molecular world)
+3. ACTION VERB: The element must be DOING something dramatic — fighting, protecting, building, destroying, healing, growing
+
+[USE INFO-X TAGS]: Your imagePrompt and action MUST use [INFO-X] tags to refer to information elements.
+[MANDATORY]: involvedCharacters MUST list ALL information elements relevant to this scene's script segment.
+`
+    default: return '' // 'character' → 기본 cinematographer 모드 지침으로 처리
+  }
+}
+
 // ─── 에디토리얼 모드 전용 씬 프롬프트 빌더 ───────────────────────────────────
 function buildEditorialScenePrompt(sceneRef, bible, stylePreset, langConfig) {
   const conceptRoster = (bible.characters || []).map((char, i) => {
@@ -254,17 +396,26 @@ RESILIENCE: If content is blocked, return a safe/neutral version. NEVER return n
 }
 
 // ─── 씬 생성 공통 프롬프트 빌더 ───────────────────────────────────────────────
-function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate = false) {
+function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate = false, visualMode = 'character', isEditorialMode = false) {
   const isIllustration = /illustration|artwork|painting|manhwa|webtoon|anime|ghibli|watercolor|ink wash|clay|wool|diorama|fairy|folklore|3d.*anim|pixar/i.test(stylePreset.prompt)
   const directorMode   = isIllustration
     ? '[🎨 MASTER ILLUSTRATOR/WEBTOON DIRECTOR MODE]'
     : '[🎬 MASTER CINEMATOGRAPHER MODE]'
 
-  const characterRoster = (bible.characters || []).map((char, i) => {
-    const tag = `ACTOR-${String.fromCharCode(65 + i)}`
-    const protagonist = char.isProtagonist ? ' [★PROTAGONIST — 대본의 "나(I)", "저(I-formal)", "주인공" 모두 이 인물을 지칭]' : ''
-    return `- [${tag}: ${char.name}]${protagonist}; // DO NOT hallucinate their clothes or age. Focus strictly on their actions.`
-  }).join('\n')
+  const isInfoviz = visualMode === 'infoviz'
+  const withTextInt = isEditorialMode && (visualMode === 'content' || visualMode === 'infoviz')
+  const visualModeInstruction = getVisualModeInstruction(visualMode, withTextInt)
+
+  const characterRoster = isInfoviz
+    ? (bible.characters || []).map((char, i) => {
+        const tag = `INFO-${String.fromCharCode(65 + i)}`
+        return `- [${tag}: ${char.name}] — ${char.description || '정보 요소'}; VISUAL: ${(char.visualPrompt || 'anthropomorphic 3D character').slice(0, 80)}`
+      }).join('\n')
+    : (bible.characters || []).map((char, i) => {
+        const tag = `ACTOR-${String.fromCharCode(65 + i)}`
+        const protagonist = char.isProtagonist ? ' [★PROTAGONIST — 대본의 "나(I)", "저(I-formal)", "주인공" 모두 이 인물을 지칭]' : ''
+        return `- [${tag}: ${char.name}]${protagonist}; // DO NOT hallucinate their clothes or age. Focus strictly on their actions.`
+      }).join('\n')
 
   const locationInfo = (() => {
     if (!bible.locations || bible.locations.length === 0) return '(no predefined locations)'
@@ -313,9 +464,17 @@ ${(sceneRef.scriptReference || '').slice(0, 60)}
 [LOCATION - THIS SCENE'S SETTING]:
 ${locationInfo}
 
-[CHARACTER ROSTER (Names Only) - ONLY THESE CHARACTERS EXIST IN THIS SCENE]:
-[FULL CHARACTER ROSTER - CHOOSE WHO APPEARS IN THIS SCENE]:
+${isInfoviz
+  ? `[INFORMATION ELEMENT ROSTER — ASSIGN AGGRESSIVELY]:
 ${characterRoster}
+
+⚠️ CRITICAL INFOVIZ ASSIGNMENT RULE:
+- You MUST assign EVERY information element mentioned in the script segment to the "involvedCharacters" array.
+- SCAN the script segment for ALL mentions of roster elements and include ALL of them.
+- Use INFO-X tags in imagePrompt and action fields.`
+  : `[CHARACTER ROSTER (Names Only) - ONLY THESE CHARACTERS EXIST IN THIS SCENE]:
+[FULL CHARACTER ROSTER - CHOOSE WHO APPEARS IN THIS SCENE]:
+${characterRoster}`}
 
 ${langConfig.outputInstruction}
 
@@ -380,6 +539,7 @@ GOOD imagePrompt: "EXTREME CLOSE-UP: trembling hands clutching crumpled prescrip
 ⚠️ PRESERVE ABSENT NAMES IN TEXT: If a character is absent but mentioned in the script, MUST preserve their true Korean name in the 'action' and 'description'.
 ⚠️ NEVER output twins, clones, or multiple generic figures if only ONE named character is acting.
 
+${visualModeInstruction}
 ${langConfig.costumeHierarchy || ''}
 [STYLE]: ${stylePreset.prompt}
 
@@ -387,11 +547,11 @@ ${resilienceNote}`
 }
 
 // ─── 씬 1개 생성 ──────────────────────────────────────────────────────────────
-export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, langConfig, currentMode = 'normal') {
+export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, langConfig, currentMode = 'normal', visualMode = 'character', isEditorialMode = false) {
   const client = await createClient()
   const prompt = currentMode === 'editorial'
     ? buildEditorialScenePrompt(sceneRef, bible, stylePreset, langConfig)
-    : buildScenePrompt(sceneRef, bible, stylePreset, langConfig, false)
+    : buildScenePrompt(sceneRef, bible, stylePreset, langConfig, false, visualMode, isEditorialMode)
 
   const res = await withRetry(() =>
     safeGenerate(client, {
@@ -451,6 +611,7 @@ export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, lang
     scriptReference:  sceneRef.scriptReference || '',
     scriptAnchor:     (sceneRef.scriptReference || '').replace(/\n/g, ' ').trim().slice(0, 30),
     fullScriptSegment: sceneRef.fullScriptSegment || sceneRef.scriptReference || '',
+    visualMode:       visualMode,
     imageUrl:         null,
     imageError:       null,
   }
@@ -531,7 +692,7 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
 }
 
 // ─── 전체 씬 생성 (어댑티브 동시성) ──────────────────────────────────────────
-export async function generateAllScenes(scriptText, bible, stylePreset, lang, onProgress, maxScenes = 30, currentMode = 'normal') {
+export async function generateAllScenes(scriptText, bible, stylePreset, lang, onProgress, maxScenes = 30, currentMode = 'normal', visualMode = 'character', isEditorialMode = false) {
   const langConfig   = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
   const bibleCtx     = { ...bible, _fullScript: scriptText }
   const rawScenes    = await splitScriptToScenes(scriptText, maxScenes)
@@ -551,7 +712,7 @@ export async function generateAllScenes(scriptText, bible, stylePreset, lang, on
 
     try {
       const settled = await Promise.allSettled(
-        chunk.map((scene, j) => generateSingleSceneInfo(scene, bibleCtx, stylePreset, langConfig, currentMode))
+        chunk.map((scene, j) => generateSingleSceneInfo(scene, bibleCtx, stylePreset, langConfig, currentMode, visualMode, isEditorialMode))
       )
 
       for (let k = 0; k < settled.length; k++) {

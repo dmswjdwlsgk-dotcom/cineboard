@@ -21,7 +21,8 @@ const initialState = {
   aspectRatio: '16:9',
   targetSceneCount: 20,
   currentMode: 'normal',      // 'normal' | 'editorial' | 'precision'
-  visualMode: 'auto',         // 'auto'|'character'|'content'|'infoviz'|'immersive'|'docu'|'webtoon'|'mv'
+  visualMode: 'character',    // 'auto'|'character'|'content'|'infoviz'|'immersive'|'docu'|'webtoon'|'mv'
+  isEditorialMode: false,     // content/infoviz/docu → true, 나머지 → false, auto/immersive → 변경없음
   isFixedCharMode: false,     // 캐릭터 고정 모드
   fixedCharStyleType: 'countryball', // 'countryball'|'stickman'|'mascot'|'chibi'|'custom'
   fixedCharSampleImage: null, // base64 샘플 이미지 (custom/mascot용)
@@ -81,7 +82,13 @@ export const useAppStore = create(
       setAspectRatio:        (ratio)     => set({ aspectRatio: ratio }),
       setTargetSceneCount:   (n)         => set({ targetSceneCount: n }),
       setCurrentMode:        (mode)      => set({ currentMode: mode }),
-      setVisualMode:         (mode)      => set({ visualMode: mode }),
+      setVisualMode: (mode) => {
+        // auto/immersive는 isEditorialMode 변경 안 함 (원본 동일)
+        const editorialMap = { content: true, infoviz: true, docu: true, character: false, webtoon: false, mv: false }
+        const update = { visualMode: mode }
+        if (editorialMap[mode] !== undefined) update.isEditorialMode = editorialMap[mode]
+        set(update)
+      },
       setFixedCharMode:      (flag)      => set({ isFixedCharMode: flag }),
       setFixedCharStyleType: (type)      => set({ fixedCharStyleType: type }),
       setFixedCharSampleImage: (img)     => set({ fixedCharSampleImage: img }),
@@ -174,6 +181,7 @@ export const useAppStore = create(
         visualMode:             state.visualMode,
         isFixedCharMode:        state.isFixedCharMode,
         fixedCharStyleType:     state.fixedCharStyleType,
+        isEditorialMode:        state.isEditorialMode,
         isEmotionalArcMode:     state.isEmotionalArcMode,
         detectedLanguage:       state.detectedLanguage,
         // continuityBible에서 대용량 charImageUrl 제외하고 저장

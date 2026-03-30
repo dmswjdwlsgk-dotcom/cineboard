@@ -173,7 +173,7 @@ export default function Step4_Scenes() {
     scenes, setScenes, updateScene,
     generationProgress, setProgress,
     isGenerating, setGenerating,
-    targetSceneCount, currentMode, visualMode,
+    targetSceneCount, currentMode, visualMode, isEditorialMode,
     isFixedCharMode, fixedCharStyleType, fixedCharSampleImage,
     setStep, setError, clearError,
   } = useAppStore()
@@ -191,13 +191,9 @@ export default function Step4_Scenes() {
   const modelId = imageEngine || MODELS[selectedModel]?.id || MODELS[0].id
   const error   = useAppStore(s => s.error)
 
-  // visualMode → 씬 생성 모드 매핑
-  const VISUAL_TO_MODE = {
-    auto: 'normal', character: 'normal', content: 'editorial',
-    infoviz: 'editorial', immersive: 'normal', docu: 'editorial',
-    webtoon: 'normal', mv: 'normal',
-  }
-  const effectiveMode = VISUAL_TO_MODE[visualMode] || currentMode
+  // editorial 모드 결정 (content/infoviz/docu → editorial 프롬프트 사용)
+  const EDITORIAL_MODES = new Set(['content', 'infoviz', 'docu'])
+  const effectiveMode = EDITORIAL_MODES.has(visualMode) ? 'editorial' : 'normal'
 
   const fixedCharArgs = isFixedCharMode
     ? [fixedCharStyleType || 'countryball', fixedCharSampleImage || null]
@@ -216,7 +212,9 @@ export default function Step4_Scenes() {
         detectedLanguage,
         (current, total) => setProgress(current, total),
         targetSceneCount ?? 30,
-        effectiveMode
+        effectiveMode,
+        visualMode,
+        isEditorialMode
       )
       setScenes(result)
       setProgress(result.length, result.length)
