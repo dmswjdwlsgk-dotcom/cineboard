@@ -323,6 +323,31 @@ Analyze the EMOTIONAL FREQUENCY and determine the song section:
 - Performer silhouettes against dramatic backdrops
 - Dynamic foreshortening and extreme angles
 `
+    case 'documix': return `
+[📰 DOCUMIX MODE — DOCUMENTARY + CONTENT HYBRID]
+You are directing a Korean INFORMATION CHANNEL (정보 채널). Your audience is general public, including older viewers.
+Analyze each scene's narration and choose ONE of two visual approaches:
+
+[DECISION RULE]:
+- If the narration mentions NUMBERS, STATISTICS, PERCENTAGES, COMPARISONS, RANKINGS, DATES with data, or POLICY DETAILS:
+  → Use CONTENT mode: Infographic-style layout, charts, symbolic objects representing the data, minimal or NO human figures
+- Otherwise (real-world scenes, people, places, events, stories):
+  → Use DOCU mode: Documentary observational framing, candid medium shots, film grain texture, era-appropriate color grade
+
+[DOCU EXECUTION when chosen]:
+- Candid, unposed framing — subjects slightly off-center
+- Film grain texture, subtle vignette, desaturated palette
+- Medium/medium-wide shots, at least 3 realistic environmental props
+- Feel like an EBS or KBS 다큐멘터리 still frame
+
+[CONTENT EXECUTION when chosen]:
+- Infographic-style composition: charts, graphs, icons, symbolic metaphors
+- Objects and environments represent the DATA, not people
+- Clean, modern graphic design feel — think 삼프로TV or JTBC 뉴스룸 graphics
+- Characters ABSENT or shown as small/silhouetted background figures
+
+[COMMIT FULLY]: Once you choose a mode for a scene, apply ALL its rules. Do NOT blend the two.
+`
     case 'auto': return `
 [⚡ SMART AUTO MODE — AI DIRECTOR'S CHOICE]
 You are the DIRECTOR. Analyze the script narration content of each scene and CHOOSE the single most impactful visual approach.

@@ -19,6 +19,7 @@ const VISUAL_MODES = [
   { id: 'docu',       label: '🎙️ 다큐',          desc: '다큐멘터리 스타일' },
   { id: 'webtoon',    label: '🎨 웹툰',          desc: '웹툰/만화 스타일' },
   { id: 'mv',         label: '🎵 뮤직비디오',    desc: 'MV/감성 영상 스타일' },
+  { id: 'documix',    label: '📰 다큐믹스',       desc: '실사 다큐 + 정보 그래픽 혼합' },
 ]
 
 const FIXED_CHAR_STYLES = [
