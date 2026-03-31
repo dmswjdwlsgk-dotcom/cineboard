@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { ChevronRight, ChevronLeft, Play, RefreshCw, Copy, Check, Image, AlertTriangle, Zap, Edit3, Upload, FileText } from 'lucide-react'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
+import { ChevronRight, ChevronLeft, Play, RefreshCw, Copy, Check, Image, AlertTriangle, Zap, Edit3, Upload, FileText, Download } from 'lucide-react'
 import Button from '../ui/Button.jsx'
 import Spinner from '../ui/Spinner.jsx'
 import ProgressBar from '../ui/ProgressBar.jsx'
@@ -10,7 +12,7 @@ import { generateSceneImage } from '../../api/imageApi.js'
 import { LANG_CONFIGS } from '../../data/languages.js'
 import { hasApiKey } from '../../api/gemini.js'
 
-function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPrompt, copiedIdx, onSavePrompt, aspectRatio }) {
+function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPrompt, copiedIdx, onSavePrompt, aspectRatio, onSaveImage }) {
   const [editingPrompt, setEditingPrompt] = useState(false)
   const [promptDraft, setPromptDraft] = useState('')
 
@@ -70,6 +72,15 @@ function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPro
 
         {/* Action buttons (show on hover) */}
         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {scene.imageUrl && (
+            <button
+              onClick={() => onSaveImage(idx)}
+              title="이미지 저장"
+              className="w-6 h-6 bg-black/70 hover:bg-emerald-700 rounded flex items-center justify-center text-white transition-colors"
+            >
+              <Download size={11} />
+            </button>
+          )}
           <button
             onClick={() => onRegenerateImage(idx)}
             title="이미지 재생성"
@@ -408,6 +419,30 @@ export default function Step4_Scenes() {
     }, 500)
   }
 
+  const handleSaveImage = (idx) => {
+    const scene = scenes[idx]
+    if (!scene?.imageUrl) return
+    const a = document.createElement('a')
+    a.href = scene.imageUrl
+    a.download = `scene_${String(idx + 1).padStart(2, '0')}.png`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
+  const handleSaveAllImages = async () => {
+    const withImages = scenes.filter(s => s.imageUrl)
+    if (withImages.length === 0) { alert('저장할 이미지가 없습니다.'); return }
+    const zip = new JSZip()
+    withImages.forEach((scene, i) => {
+      const idx = scenes.indexOf(scene)
+      const base64 = scene.imageUrl.split(',')[1]
+      zip.file(`scene_${String(idx + 1).padStart(2, '0')}.png`, base64, { base64: true })
+    })
+    const blob = await zip.generateAsync({ type: 'blob' })
+    saveAs(blob, `scenes_${new Date().toISOString().slice(0, 10)}.zip`)
+  }
+
   const handleCopyPrompt = (idx, prompt) => {
     navigator.clipboard.writeText(prompt)
     setCopiedIdx(idx)
@@ -490,6 +525,20 @@ export default function Step4_Scenes() {
               </div>
               <span className="text-[9px] text-amber-500/70 font-medium">AutoFlow용 (.txt)</span>
             </button>
+
+            {scenes.some(s => s.imageUrl) && (
+              <button
+                onClick={handleSaveAllImages}
+                disabled={isGenerating || generatingImages}
+                className="flex flex-col items-center gap-0.5 bg-emerald-900/20 hover:bg-emerald-900/40 text-emerald-400 font-bold py-2 px-4 rounded-xl border border-emerald-700/30 transition-all disabled:opacity-50 text-xs"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Download size={13} />
+                  <span>이미지 일괄저장</span>
+                </div>
+                <span className="text-[9px] text-emerald-400/70 font-medium">(.zip)</span>
+              </button>
+            )}
           </>
         )}
       </div>
@@ -525,6 +574,7 @@ export default function Step4_Scenes() {
               onCopyPrompt={handleCopyPrompt}
               copiedIdx={copiedIdx}
               onSavePrompt={(i, newPrompt) => updateScene(i, { imagePrompt: newPrompt })}
+              onSaveImage={handleSaveImage}
               aspectRatio={aspectRatio}
             />
           ))}
