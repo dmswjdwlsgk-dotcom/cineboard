@@ -341,10 +341,19 @@ Analyze each scene's narration and choose ONE of two visual approaches:
 - Feel like an EBS or KBS 다큐멘터리 still frame
 
 [CONTENT EXECUTION when chosen]:
-- Infographic-style composition: charts, graphs, icons, symbolic metaphors
-- Objects and environments represent the DATA, not people
-- Clean, modern graphic design feel — think 삼프로TV or JTBC 뉴스룸 graphics
-- Characters ABSENT or shown as small/silhouetted background figures
+⚠️ THIS IS NOT CHARACTER MODE. DO NOT focus on character faces or emotions.
+The imagePrompt MUST visualize the TOPIC/CONCEPT being discussed, NOT the people speaking.
+- Focus on INFOGRAPHIC-STYLE compositions: graphs, charts, data visualizations, abstract concepts made visual
+- Show OBJECTS, ENVIRONMENTS, and SYMBOLIC imagery representing the CONTENT of the narration
+- Characters should be MINIMAL or ABSENT from the frame. If present, show them from behind, silhouetted, or as small figures
+- Use METAPHORICAL imagery: e.g., if discussing "rising prices" → show towering stacks of coins, if "environmental crisis" → show contrasting landscapes
+- Think like a NEWS GRAPHICS DESIGNER — Bloomberg Terminal, The Economist, 삼프로TV, JTBC 뉴스룸 aesthetic
+- Rising/falling stats → PHYSICAL HEIGHT changes (rocket launch for growth, cliff-fall for crash)
+- Large numbers → GIANT 3D NUMERALS towering over environments like skyscrapers
+- Comparisons → Side-by-side physical scale contrasts, balance scale metaphors
+- Policy/law → Architectural metaphors (walls, gates, stamps, official seals)
+- Prefer WIDE SHOTS and BIRD'S EYE views over close-ups
+- The 'involvedCharacters' array should usually be EMPTY [] unless a character physically appears
 
 [COMMIT FULLY]: Once you choose a mode for a scene, apply ALL its rules. Do NOT blend the two.
 `
