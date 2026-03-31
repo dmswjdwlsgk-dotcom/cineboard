@@ -371,15 +371,63 @@ You are the DIRECTOR. Analyze the script narration content of each scene and CHO
 `
     case 'infoviz': return `
 [🧬 INFOVIZ MODE — 정보 시각화 최우선 · INFORMATION IS THE PROTAGONIST]
-⚠️ CRITICAL OVERRIDE: The INFORMATION ELEMENT is the HERO of every frame.
+⚠️ CRITICAL OVERRIDE: This is NOT character mode, NOT content mode. The INFORMATION ELEMENT is the HERO of every frame.
 ⚠️ DO NOT draw any human characters (narrators, doctors, experts, presenters). ZERO HUMANS in the frame.
 ⚠️ DO NOT generate flat infographics, boring charts, or PowerPoint-style layouts. This is CINEMATIC 3D VISUALIZATION.
 
-[🎭 VISUAL METAPHOR ENGINE]:
+[🎭 VISUAL METAPHOR ENGINE — CORE PRINCIPLE]:
 Transform ABSTRACT INFORMATION into PHYSICAL, DRAMATIC, CINEMATIC ACTION scenes.
-1. ANTHROPOMORPHISM: Give the information element a PERSONALITY — eyes, expression, body language, pose
-2. CONTEXT SPACE: Place the element inside the ENVIRONMENT where it naturally acts (inside human body, financial cityscape, molecular world)
+Every piece of information must become a VISUAL STORY with:
+1. ANTHROPOMORPHISM: Give the information element (food, chemical, concept) a PERSONALITY — eyes, expression, body language, pose
+2. CONTEXT SPACE: Place the element inside the ENVIRONMENT where it naturally acts (inside human body, financial cityscape, molecular world, neural pathways)
 3. ACTION VERB: The element must be DOING something dramatic — fighting, protecting, building, destroying, healing, growing
+
+[🏥 HEALTH/MEDICAL DOMAIN PATTERNS]:
+- Food ingredients/nutrients → Anthropomorphized 3D HERO CHARACTERS with the food's natural color/texture as their "skin"
+  · Cabbage → Green knight with leaf-armor shielding stomach wall from acid attacks
+  · Broccoli → Forest-green warrior wielding antioxidant energy sword against dark bacteria monsters
+  · Flaxseed → Golden liquid character coating and healing damaged intestinal walls
+  · Vitamin C → Glowing orange orb powering up white blood cell warriors
+- Human organs → 3D rendered INTERIOR ENVIRONMENTS (pink mucous membrane walls, blood vessel tunnels, neural highway networks)
+- Diseases/bacteria → VILLAIN characters (dark purple/black, menacing, spiky forms)
+- Healing/protection → Light shields, energy barriers, golden coating effects, regeneration particles
+- Data/statistics → Health bars, power gauges, level-up particle effects floating in the scene
+
+[📈 ECONOMY/FINANCE DOMAIN PATTERNS]:
+- Rising/falling metrics → PHYSICAL HEIGHT changes (rocket launch for growth, cliff-fall for crash)
+- Interest rates/exchange rates → GIANT 3D NUMBERS towering over cityscapes like skyscrapers
+- Inflation → Everyday objects (bread, house, car) INFLATING like balloons, stretching impossibly
+- Companies/markets → Chess pieces, gladiator arena, racing track metaphors
+- Crisis/boom → Weather metaphors (tsunami wave of red numbers, golden sunshine through clouds)
+
+[🔬 SCIENCE/TECHNOLOGY DOMAIN PATTERNS]:
+- Molecules/atoms → MICROSCOPIC WORLD rendered as grand architecture (atom = cathedral, DNA = spiral staircase)
+- Physical laws → COSMIC-SCALE dramatic scenes (gravity = giant hand pulling planets, light = golden river flowing)
+- AI/computing → Glowing circuits, neural network highways, data streams as rivers of light particles
+- Experiments → Moments of discovery — explosive light revelations, doorways to unknown dimensions
+
+[🧠 PSYCHOLOGY/SELF-HELP DOMAIN PATTERNS]:
+- Emotions → Color and weather (anger = volcanic eruption, sadness = underwater drowning, joy = sunrise explosion)
+- Mental mechanisms → Architectural inner world (walls = mental barriers, doors = opportunities, mirrors = self-reflection, mazes = confusion)
+- Growth/change → Butterfly metamorphosis, seed→giant tree, dark cave→bright exit, caterpillar→aircraft
+- Relationships → Bridges, threads connecting, shadows merging, mirror reflections
+
+[📐 COMPOSITION RULES — MANDATORY]:
+- Information element = 60%+ of the frame area (HERO SHOT, not a small detail)
+- Camera: LOW ANGLE looking UP at the information hero for POWER and IMPORTANCE
+- Lighting: DRAMATIC RIM LIGHT + VOLUMETRIC GOD RAYS highlighting the information element
+- Background: Context space rendered in full 3D detail but slightly DEPTH-BLURRED (bokeh) to keep focus on hero
+- Style preference: 3D Pixar/DreamWorks quality render, vibrant saturated colors, subsurface scattering on organic materials
+- NO text in the image (text is handled by separate overlay system)
+- ONE information element per frame (do NOT crowd multiple concepts into one image)
+
+[❌ ABSOLUTE PROHIBITIONS]:
+- ❌ Human characters (narrators, doctors, experts, TV presenters, audience)
+- ❌ Plain product photography (just a cabbage on white background = FAIL)
+- ❌ Flat 2D infographics (pie charts, bar graphs on plain background = FAIL)
+- ❌ PowerPoint/slide-style layouts with text boxes
+- ❌ Stock photo aesthetics (generic, lifeless, corporate)
+- ❌ The information element just sitting there doing nothing (MUST be in ACTION)
 
 [USE INFO-X TAGS]: Your imagePrompt and action MUST use [INFO-X] tags to refer to information elements.
 [MANDATORY]: involvedCharacters MUST list ALL information elements relevant to this scene's script segment.
