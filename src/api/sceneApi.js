@@ -225,31 +225,49 @@ export async function splitScriptToScenes(scriptText, maxScenes = 30) {
 function getVisualModeInstruction(visualMode, withTextIntegration = false) {
   switch (visualMode) {
     case 'content': return `
-[📊 CONTENT VISUALIZATION MODE — OVERRIDE]
+[📊 CONTENT VISUALIZATION MODE — HIGHEST PRIORITY — OVERRIDES ALL OTHER MODES]
 ⚠️ THIS IS NOT CHARACTER MODE. DO NOT focus on character faces or emotions.
 The imagePrompt MUST visualize the TOPIC/CONCEPT being discussed, NOT the people speaking.
-${withTextIntegration ? `
-[📝 INFOGRAPHIC TEXT INTEGRATION — ACTIVE]
+You are a VISUAL INFORMATION DIRECTOR. Every scene must deliver a DIFFERENT, SURPRISING visual metaphor.
+
+[🎨 VISUAL PATTERN LIBRARY — PICK THE MOST FITTING, NEVER REPEAT THE SAME PATTERN]:
+- Rising/falling stats → PHYSICAL HEIGHT drama: rocket bursting through clouds, cliff-edge free-fall, staircase ascending into light
+- Large numbers/percentages → GIANT 3D NUMERALS towering over cityscapes like skyscrapers, glowing neon
+- Comparisons/rankings → Side-by-side SCALE CONTRASTS: tiny vs enormous objects, balance scale tipping, podium with height differences
+- Money/economy → Coin towers, flowing gold rivers, stock ticker tape storms, vault doors, crumbling buildings of cash
+- Policy/law/regulation → Architectural metaphors: massive walls, iron gates slamming, official stamp crushing, courthouse columns
+- Time/history → Clocks, hourglasses, calendar pages flying, tree rings, layered geological strata
+- Health/medicine → Body interior environments, cellular battles, DNA strands, organ cross-sections
+- Technology/AI → Glowing circuit networks, neural pathway highways, data streams as rivers of light
+- Environment/nature → Contrasting split-frame (before/after), ecosystem collapse or bloom, weather metaphors
+- Population/society → Crowd density maps, human silhouette arrays, migration flow arrows as rivers
+- Crisis/danger → Dark storm clouds massing, red warning signals, cracking infrastructure, flood metaphors
+- Growth/success → Seed sprouting into giant tree, sunrise over horizon, construction rising, green shoots in concrete
+
+[📐 COMPOSITION — CINEMATIC INFOGRAPHIC]:
+- Information concept fills 60%+ of the frame — make it MONUMENTAL, not a small detail
+- Prefer DRAMATIC PERSPECTIVES: low angle looking up, bird's eye looking down, forced perspective
+- Lighting: high contrast, dramatic — use light to direct focus to the KEY data point
+- Color language: 🔴 red/orange = danger/decline, 🟢 green/gold = growth/positive, 🔵 blue = neutral/data, purple = power/authority
+- Background: context environment rendered in 3D depth, slight bokeh to keep focus on hero concept
+- Style: cinematic 3D render OR premium motion graphics aesthetic — NOT flat clipart, NOT stock photo
+
+${withTextIntegration ? `[📝 INFOGRAPHIC TEXT INTEGRATION — ACTIVE]
 ⚠️ This image SHOULD include KEY DATA POINTS as INTEGRATED visual text elements.
-Rules for text integration:
 - Render the EXACT text from the "screenText" field as BOLD, HIGH-CONTRAST typography
-- Text style: Clean modern sans-serif font (like Noto Sans, Pretendard, or Helvetica Neue)
-- Text placement: BOTTOM-CENTER or TOP-LEFT of the frame, with semi-transparent dark backdrop
-- Text must be ORGANICALLY INTEGRATED into the infographic layout — NOT randomly floating
-- Color-code data context: 🔴 Red accent for negative/danger/decrease, 🟢 Green for positive/growth, 🔵 Blue for neutral/informational
+- Text style: Clean modern sans-serif (Noto Sans, Pretendard, Helvetica Neue)
+- Text placement: BOTTOM-CENTER or TOP-LEFT, with semi-transparent dark backdrop
+- Text must be ORGANICALLY INTEGRATED — NOT randomly floating
+- Color-code: 🔴 Red for negative/danger, 🟢 Green for positive/growth, 🔵 Blue for neutral
 - Use geometric containers (rounded rectangles, circles) to frame key numbers
-- Think like a PREMIUM NEWS GRAPHICS DESIGNER (Bloomberg Terminal, The Economist, 삼프로TV)
-- Include supporting visual elements: simplified icons, arrows (↑↓), mini chart silhouettes
-- The overall composition should look like a high-end broadcast news graphic or data dashboard
+- Think: Bloomberg Terminal, The Economist, 삼프로TV, JTBC 뉴스룸 broadcast graphics
 ` : ''}
-Rules:
-- Focus on INFOGRAPHIC-STYLE compositions: graphs, charts, data visualizations, abstract concepts made visual
-- Show OBJECTS, ENVIRONMENTS, and SYMBOLIC imagery representing the CONTENT of the narration
-- Characters should be MINIMAL or ABSENT from the frame. If present, show them from behind, silhouetted, or as small figures
-- Use METAPHORICAL imagery: e.g., if discussing "rising prices" → show towering stacks of coins, if "environmental crisis" → show contrasting landscapes
-- Think like a NEWS GRAPHICS DESIGNER, not a portrait photographer
-- The 'involvedCharacters' array should usually be EMPTY [] unless a character physically appears
-- Prefer WIDE SHOTS and BIRD'S EYE views over close-ups
+[❌ PROHIBITIONS]:
+- ❌ Human characters as subject (presenter, narrator, expert talking to camera)
+- ❌ Flat 2D clipart or PowerPoint-style graphics
+- ❌ Generic stock photo aesthetics (objects on white background)
+- ❌ Same visual pattern used in the previous scene — VARY the metaphor each time
+- The 'involvedCharacters' array should be EMPTY [] unless a character physically appears
 `
     case 'immersive': return `
 [🎬 IMMERSIVE ENVIRONMENT MODE — OVERRIDE]
@@ -324,23 +342,27 @@ Analyze the EMOTIONAL FREQUENCY and determine the song section:
 - Dynamic foreshortening and extreme angles
 `
     case 'documix': return `
-[📰 DOCUMIX MODE — DOCUMENTARY + CONTENT HYBRID]
+[📰 DOCUMIX DIRECTOR MODE — DOCUMENTARY + CONTENT HYBRID — HIGHEST PRIORITY — OVERRIDES ALL OTHER MODES]
 You are directing a Korean INFORMATION CHANNEL (정보 채널). Your audience is general public, including older viewers.
-Analyze each scene's narration and choose ONE of two visual approaches:
 
-[DECISION RULE]:
-- If the narration mentions NUMBERS, STATISTICS, PERCENTAGES, COMPARISONS, RANKINGS, DATES with data, or POLICY DETAILS:
-  → Use CONTENT mode: Infographic-style layout, charts, symbolic objects representing the data, minimal or NO human figures
-- Otherwise (real-world scenes, people, places, events, stories):
-  → Use DOCU mode: Documentary observational framing, candid medium shots, film grain texture, era-appropriate color grade
+STEP 1 — ANALYZE the narration and DECIDE which mode to apply for this scene:
+- NUMBERS, STATISTICS, PERCENTAGES, COMPARISONS, RANKINGS, DATES with data, POLICY DETAILS → CONTENT mode
+- Real-world scenes, people, places, events, emotional moments, stories → DOCU mode
 
-[DOCU EXECUTION when chosen]:
-- Candid, unposed framing — subjects slightly off-center
+STEP 2A — [DOCU EXECUTION when chosen]:
+You are a DOCUMENTARY CINEMATOGRAPHER. Capture the single most powerful observational moment.
+- Candid, unposed framing — subjects slightly off-center, unaware of camera
 - Film grain texture, subtle vignette, desaturated palette
 - Medium/medium-wide shots, at least 3 realistic environmental props
 - Feel like an EBS or KBS 다큐멘터리 still frame
+- Find the EMOTIONAL PEAK of the scene: a revealing expression, a decisive gesture, a human moment
+- GRIEF / DESPAIR → Extreme Close-Up on face or hands. Desaturated blue-grey palette.
+- HOPE / DETERMINATION → Wide Shot, subject small against meaningful environment. Warm backlight.
+- TENSION / CONFRONTATION → Over-the-shoulder. Harsh side lighting. High contrast.
+- TENDERNESS / DAILY LIFE → Close-Up, soft diffused natural light. Warm tones.
+- Camera angle: low or eye-level. Never high-angle unless showing isolation.
 
-[CONTENT EXECUTION when chosen]:
+STEP 2B — [CONTENT EXECUTION when chosen]:
 ⚠️ THIS IS NOT CHARACTER MODE. DO NOT focus on character faces or emotions.
 The imagePrompt MUST visualize the TOPIC/CONCEPT being discussed, NOT the people speaking.
 - Focus on INFOGRAPHIC-STYLE compositions: graphs, charts, data visualizations, abstract concepts made visual
@@ -355,7 +377,7 @@ The imagePrompt MUST visualize the TOPIC/CONCEPT being discussed, NOT the people
 - Prefer WIDE SHOTS and BIRD'S EYE views over close-ups
 - The 'involvedCharacters' array should usually be EMPTY [] unless a character physically appears
 
-[COMMIT FULLY]: Once you choose a mode for a scene, apply ALL its rules. Do NOT blend the two.
+[COMMIT FULLY]: Once you choose DOCU or CONTENT for a scene, apply ALL its rules. Do NOT blend the two.
 `
     case 'auto': return `
 [⚡ SMART AUTO MODE — AI DIRECTOR'S CHOICE]
@@ -560,7 +582,9 @@ ${characterRoster}`}
 
 ${langConfig.outputInstruction}
 
-[ACTOR RULES]:
+${isInfoviz || visualMode === 'documix' || visualMode === 'content' ? `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${visualModeInstruction}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` : `[ACTOR RULES]:
 ⚠️ NAMED actors listed above are the FOCAL POINT. Their appearance (age/outfit/hair) is ISOLATED — do NOT mix between actors.
 ⚠️ IF Historical Drama (사극): dragon robes(용포) = royalty ONLY. IF Modern: NO traditional clothes.
 ⚠️ CRITICAL APPEARANCE OVERRIDE: YOU MUST COMPLETELY IGNORE the script's clothing descriptions.
@@ -619,9 +643,7 @@ GOOD imagePrompt: "EXTREME CLOSE-UP: trembling hands clutching crumpled prescrip
 ⚠️ For the "involvedCharacters" array, you MUST use the exact ORIGINAL KOREAN NAMES (e.g., "민기", "지은"), NOT the "ACTOR-X" labels. Return an empty array [] if no humans are in the scene.
 ⚠️ CRITICAL PRESENCE CHECK: ONLY include characters who are PHYSICALLY PRESENT AND VISIBLE.
 ⚠️ PRESERVE ABSENT NAMES IN TEXT: If a character is absent but mentioned in the script, MUST preserve their true Korean name in the 'action' and 'description'.
-⚠️ NEVER output twins, clones, or multiple generic figures if only ONE named character is acting.
-
-${visualModeInstruction}
+⚠️ NEVER output twins, clones, or multiple generic figures if only ONE named character is acting.`}
 ${langConfig.costumeHierarchy || ''}
 [STYLE]: ${stylePreset.prompt}
 
