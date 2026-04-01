@@ -251,6 +251,7 @@ You are a VISUAL INFORMATION DIRECTOR. Every scene must deliver a DIFFERENT, SUR
 - Color language: 🔴 red/orange = danger/decline, 🟢 green/gold = growth/positive, 🔵 blue = neutral/data, purple = power/authority
 - Background: context environment rendered in 3D depth, slight bokeh to keep focus on hero concept
 - Style: cinematic 3D render OR premium motion graphics aesthetic — NOT flat clipart, NOT stock photo
+- VARY shot types per scene: close-up on a key object, low angle on towering numbers, bird's eye on crowds, dramatic medium on symbolic objects — do NOT use wide shot every scene
 
 ${withTextIntegration ? `[📝 INFOGRAPHIC TEXT INTEGRATION — ACTIVE]
 ⚠️ This image SHOULD include KEY DATA POINTS as INTEGRATED visual text elements.
@@ -374,7 +375,6 @@ The imagePrompt MUST visualize the TOPIC/CONCEPT being discussed, NOT the people
 - Large numbers → GIANT 3D NUMERALS towering over environments like skyscrapers
 - Comparisons → Side-by-side physical scale contrasts, balance scale metaphors
 - Policy/law → Architectural metaphors (walls, gates, stamps, official seals)
-- Prefer WIDE SHOTS and BIRD'S EYE views over close-ups
 - The 'involvedCharacters' array should usually be EMPTY [] unless a character physically appears
 
 [COMMIT FULLY]: Once you choose DOCU or CONTENT for a scene, apply ALL its rules. Do NOT blend the two.
