@@ -105,6 +105,13 @@ export const STYLES = [
     palette: ['#d1fae5', '#6ee7b7', '#3b82f6'],
     thumbnail: 'style_thumbs/ghibli.png',
   },
+  {
+    id: 'flat_editorial',
+    label: '플랫 에디토리얼 (Flat Editorial)',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS FLAT VECTOR ILLUSTRATION ARTWORK. Flat vector editorial illustration, no outlines, bold flat color blocks, sharp-edged geometric shadow blocks (never soft gradients), muted blue-gray-orange-teal palette, geometric simplification of all forms. TWO RENDERING MODES — cinematographer chooses per scene: EMOTION SCENES → extreme close-up, detailed expressive face fills 50%+ of frame, visible eyes/tears/wrinkles/stubble, warm skin tones with sharp geometric shadow planes. CONTEXT/ATMOSPHERE SCENES → characters rendered as pure BLACK SILHOUETTES against vivid flat-color environmental backgrounds, figures occupy less than 30% of frame, wide cinematic composition. ALL SCENES: no visible outlines, editorial magazine aesthetic, 8k, full bleed, NO text, NO speech bubbles, single view, edge-to-edge full frame.',
+    palette: ['#2d3a4a', '#c8773a', '#4a7a8a'],
+    thumbnail: 'style_thumbs/flat_editorial.png',
+  },
 ]
 
 export const MODELS = [
