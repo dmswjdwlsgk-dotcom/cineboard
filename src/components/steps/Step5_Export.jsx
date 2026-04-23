@@ -7,7 +7,7 @@ import { STYLES, MODELS } from '../../data/styles.js'
 import { generateYoutubeMetadata, generateGlobalBGM, generateMultiTrackBGM } from '../../api/metadataApi.js'
 import { generateThumbnail } from '../../api/imageApi.js'
 import { exportZip } from '../../utils/exportZip.js'
-import { hasApiKey } from '../../api/gemini.js'
+import { isApiReady } from '../../api/gemini.js'
 import { GENRES } from '../../data/genres.js'
 
 function CopyButton({ text, label = '복사' }) {
@@ -54,7 +54,7 @@ export default function Step5_Export() {
     : '장르 미선택'
 
   const checkApiKey = () => {
-    if (!hasApiKey()) {
+    if (!isApiReady()) {
       setError('API 키가 설정되지 않았습니다.')
       return false
     }

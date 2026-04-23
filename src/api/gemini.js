@@ -40,6 +40,10 @@ export function hasApiKey() {
   return !!getApiKey()
 }
 
+export function isApiReady() {
+  return getApiMode() === 'vertex' ? hasVertexJson() : hasApiKey()
+}
+
 // ─── Z-Image (KIE AI) 토큰 관리 ──────────────────────────────────────────────
 export function getZImageToken() {
   try {

@@ -6,7 +6,7 @@ import { useAppStore } from '../../store/useAppStore.js'
 import { GENRES, TONES, VIEWPOINTS, SCRIPT_LENGTHS } from '../../data/genres.js'
 import { suggestTopics, generateSynopsis, generateFullScript, factCheckScript, fixFactCheckScript } from '../../api/scriptApi.js'
 import { detectLanguage } from '../../utils/languageDetect.js'
-import { hasApiKey } from '../../api/gemini.js'
+import { isApiReady } from '../../api/gemini.js'
 
 const TABS = ['직접입력', 'AI 소재추천', 'AI 대본생성']
 
@@ -62,7 +62,7 @@ export default function Step1_Script() {
   const [copied, setCopied] = useState(false)
 
   const checkApiKey = () => {
-    if (!hasApiKey()) {
+    if (!isApiReady()) {
       setError('API 키가 설정되지 않았습니다. 우측 상단의 API Key 버튼을 클릭하여 설정해주세요.')
       return false
     }

@@ -10,7 +10,7 @@ import { STYLES, MODELS } from '../../data/styles.js'
 import { generateAllScenes, generateSingleSceneInfo, regenerateScene } from '../../api/sceneApi.js'
 import { generateSceneImage } from '../../api/imageApi.js'
 import { LANG_CONFIGS } from '../../data/languages.js'
-import { hasApiKey } from '../../api/gemini.js'
+import { isApiReady } from '../../api/gemini.js'
 
 function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPrompt, copiedIdx, onSavePrompt, aspectRatio, onSaveImage }) {
   const [editingPrompt, setEditingPrompt] = useState(false)
@@ -211,7 +211,7 @@ export default function Step4_Scenes() {
     : [null, null]
 
   const handleGenerateAllScenes = async () => {
-    if (!hasApiKey()) { setError('API 키가 설정되지 않았습니다.'); return }
+    if (!isApiReady()) { setError('API 키가 설정되지 않았습니다.'); return }
     clearError()
     setGenerating(true)
     setProgress(0, 0)
@@ -237,7 +237,7 @@ export default function Step4_Scenes() {
   }
 
   const handleGenerateAllImages = async () => {
-    if (!hasApiKey()) { setError('API 키가 설정되지 않았습니다.'); return }
+    if (!isApiReady()) { setError('API 키가 설정되지 않았습니다.'); return }
     clearError()
     setGeneratingImages(true)
 
@@ -302,7 +302,7 @@ export default function Step4_Scenes() {
   }
 
   const handleRegenerateScene = async (idx) => {
-    if (!hasApiKey()) return
+    if (!isApiReady()) return
     clearError()
     const langConfig = LANG_CONFIGS[detectedLanguage] || LANG_CONFIGS.ko
     updateScene(idx, { generating: true })

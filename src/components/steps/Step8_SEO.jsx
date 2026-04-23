@@ -5,7 +5,7 @@ import { useAppStore } from '../../store/useAppStore.js'
 import { STYLES, MODELS } from '../../data/styles.js'
 import { generateYoutubeMetadata } from '../../api/seoApi.js'
 import { generateThumbnails } from '../../api/imageApi.js'
-import { hasApiKey } from '../../api/gemini.js'
+import { isApiReady } from '../../api/gemini.js'
 import { exportZip } from '../../utils/exportZip.js'
 
 function CopyButton({ text, label = '복사' }) {
@@ -40,7 +40,7 @@ export default function Step8_SEO() {
   const [selectedTitleIdx, setSelectedTitleIdx] = useState(0)
 
   const handleGenMeta = async () => {
-    if (!hasApiKey()) { setError('API 키를 먼저 설정하세요.'); return }
+    if (!isApiReady()) { setError('API 키를 먼저 설정하세요.'); return }
     setLoadingMeta(true)
     clearError()
     try {
@@ -54,7 +54,7 @@ export default function Step8_SEO() {
   }
 
   const handleGenThumbs = async () => {
-    if (!hasApiKey()) { setError('API 키를 먼저 설정하세요.'); return }
+    if (!isApiReady()) { setError('API 키를 먼저 설정하세요.'); return }
     if (!continuityBible) { setError('먼저 캐릭터 바이블을 생성하세요.'); return }
     setLoadingThumbs(true)
     clearError()

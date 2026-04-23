@@ -5,7 +5,7 @@ import { useAppStore } from '../../store/useAppStore.js'
 import { STYLES, MODELS } from '../../data/styles.js'
 import { generateIntroExpansion } from '../../api/introApi.js'
 import { generateSceneImage } from '../../api/imageApi.js'
-import { hasApiKey } from '../../api/gemini.js'
+import { isApiReady } from '../../api/gemini.js'
 
 export default function Step6_Intro() {
   const {
@@ -26,7 +26,7 @@ export default function Step6_Intro() {
   const [loadingImageId, setLoadingImageId] = useState(null)
 
   const handleGenScene = async (scene, batchIdx) => {
-    if (!hasApiKey()) { setError('API 키를 먼저 설정하세요.'); return }
+    if (!isApiReady()) { setError('API 키를 먼저 설정하세요.'); return }
     setLoadingSceneId(scene.id)
     clearError()
     try {
@@ -40,7 +40,7 @@ export default function Step6_Intro() {
   }
 
   const handleGenAll = async () => {
-    if (!hasApiKey()) { setError('API 키를 먼저 설정하세요.'); return }
+    if (!isApiReady()) { setError('API 키를 먼저 설정하세요.'); return }
     setLoadingAll(true)
     clearError()
     try {
@@ -58,7 +58,7 @@ export default function Step6_Intro() {
   }
 
   const handleGenImage = async (clip) => {
-    if (!hasApiKey()) { setError('API 키를 먼저 설정하세요.'); return }
+    if (!isApiReady()) { setError('API 키를 먼저 설정하세요.'); return }
     setLoadingImageId(clip.id)
     // 클립에 로딩 상태 표시
     setIntroClips(useAppStore.getState().introClips.map(c =>

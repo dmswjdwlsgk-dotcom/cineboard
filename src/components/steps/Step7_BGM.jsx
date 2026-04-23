@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Music, Loader2, Copy, Check } from 'lucide-r
 import Button from '../ui/Button.jsx'
 import { useAppStore } from '../../store/useAppStore.js'
 import { generateGlobalBGM, generateMultiTrackBGM } from '../../api/bgmApi.js'
-import { hasApiKey } from '../../api/gemini.js'
+import { isApiReady } from '../../api/gemini.js'
 
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false)
@@ -32,7 +32,7 @@ export default function Step7_BGM() {
   const [activeTab, setActiveTab]             = useState('global')
 
   const handleGenGlobal = async () => {
-    if (!hasApiKey()) { setError('API 키를 먼저 설정하세요.'); return }
+    if (!isApiReady()) { setError('API 키를 먼저 설정하세요.'); return }
     setLoadingGlobal(true)
     clearError()
     try {
@@ -46,7 +46,7 @@ export default function Step7_BGM() {
   }
 
   const handleGenMulti = async () => {
-    if (!hasApiKey()) { setError('API 키를 먼저 설정하세요.'); return }
+    if (!isApiReady()) { setError('API 키를 먼저 설정하세요.'); return }
     setLoadingMulti(true)
     clearError()
     try {

@@ -5,7 +5,7 @@ import { useAppStore } from '../../store/useAppStore.js'
 import { STYLES, MODELS } from '../../data/styles.js'
 import { generateShortsFromScene } from '../../api/shortsApi.js'
 import { generateSceneImage } from '../../api/imageApi.js'
-import { hasApiKey } from '../../api/gemini.js'
+import { isApiReady } from '../../api/gemini.js'
 
 export default function Step5_Shorts() {
   const {
@@ -27,7 +27,7 @@ export default function Step5_Shorts() {
 
   // 씬 1개 → 쇼츠 변환
   const handleGenScene = async (scene, batchIdx) => {
-    if (!hasApiKey()) { setError('API 키를 먼저 설정하세요.'); return }
+    if (!isApiReady()) { setError('API 키를 먼저 설정하세요.'); return }
     setLoadingSceneId(scene.id)
     clearError()
     try {
@@ -43,7 +43,7 @@ export default function Step5_Shorts() {
 
   // 전체 씬 쇼츠 변환
   const handleGenAll = async () => {
-    if (!hasApiKey()) { setError('API 키를 먼저 설정하세요.'); return }
+    if (!isApiReady()) { setError('API 키를 먼저 설정하세요.'); return }
     setLoadingAll(true)
     clearError()
     try {
@@ -62,7 +62,7 @@ export default function Step5_Shorts() {
 
   // 클립 이미지 생성
   const handleGenImage = async (clip, clipIdx) => {
-    if (!hasApiKey()) { setError('API 키를 먼저 설정하세요.'); return }
+    if (!isApiReady()) { setError('API 키를 먼저 설정하세요.'); return }
     setLoadingImageId(clip.id)
     try {
       const url = await generateSceneImage(clip, continuityBible, style, modelId, '9:16', false)

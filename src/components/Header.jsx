@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Key, Film, RotateCcw, Download } from 'lucide-react'
-import { hasApiKey } from '../api/gemini.js'
+import { isApiReady } from '../api/gemini.js'
 import { useAppStore } from '../store/useAppStore.js'
 import VrewExportModal from './VrewExportModal.jsx'
 
@@ -10,7 +10,7 @@ export default function Header({ onApiKeyClick }) {
   const currentStep = useAppStore(s => s.currentStep)
   const resetAll = useAppStore(s => s.resetAll)
   const scenes = useAppStore(s => s.scenes)
-  const apiKeySet = hasApiKey()
+  const apiKeySet = isApiReady()
   const [confirming, setConfirming] = useState(false)
   const [showVrewModal, setShowVrewModal] = useState(false)
   const hasImages = scenes.some(s => s.imageUrl)

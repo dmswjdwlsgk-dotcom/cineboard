@@ -6,7 +6,7 @@ import { useAppStore } from '../../store/useAppStore.js'
 import { STYLES, MODELS } from '../../data/styles.js'
 import { generateContinuityBible, analyzeCharacterImage } from '../../api/bibleApi.js'
 import { generateImage } from '../../api/imageApi.js'
-import { hasApiKey } from '../../api/gemini.js'
+import { isApiReady } from '../../api/gemini.js'
 
 function EditableField({ value, onChange, multiline = false, className = '' }) {
   const [editing, setEditing] = useState(false)
@@ -73,7 +73,7 @@ export default function Step3_Bible() {
   const style = STYLES.find(s => s.id === selectedStyleId) || STYLES[0]
 
   const handleAnalyze = async () => {
-    if (!hasApiKey()) {
+    if (!isApiReady()) {
       setError('API 키가 설정되지 않았습니다.')
       return
     }
@@ -139,7 +139,7 @@ export default function Step3_Bible() {
   }
 
   const handleGenerateCharImage = async (idx, char) => {
-    if (!hasApiKey()) { setError('API 키가 설정되지 않았습니다.'); return }
+    if (!isApiReady()) { setError('API 키가 설정되지 않았습니다.'); return }
     setGeneratingCharImages(prev => ({ ...prev, [idx]: true }))
     try {
       const modelId = MODELS[selectedModel]?.id || MODELS[0].id
