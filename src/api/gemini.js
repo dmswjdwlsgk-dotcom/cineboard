@@ -196,18 +196,45 @@ function patchFetch() {
   }
 }
 
-// ─── Vertex AI 모델 ID 매핑 ───────────────────────────────────────────────────
-// Gemini Developer API 전용 모델명은 Vertex AI에 존재하지 않음 → 대응 모델로 변환
-const VERTEX_IMAGE_MODEL_MAP = {
-  'gemini-2.5-flash-image':         'gemini-2.5-flash',
-  'gemini-3.1-flash-image-preview': 'gemini-3.1-flash-preview',
-  'gemini-3-pro-image-preview':     'gemini-3-pro-preview',
+// ─── Vertex AI Imagen REST API 직접 호출 ─────────────────────────────────────
+// generateContent + responseModalities: IMAGE 방식은 Vertex AI 미지원
+// Vertex AI는 imagen-4.0-generate-001 모델의 :predict 엔드포인트를 사용해야 함
+const VERTEX_IMAGEN_MODEL  = 'imagen-4.0-generate-001'
+const VERTEX_IMAGEN_REGION = 'us-central1'
+
+export async function generateVertexAIImage(prompt, aspectRatio = '16:9') {
+  const sa    = getVertexJson()
+  if (!sa) throw new Error('Vertex AI 서비스 계정 JSON이 등록되지 않았습니다.')
+  const token = await getVertexAccessToken(sa)
+
+  const url = `https://${VERTEX_IMAGEN_REGION}-aiplatform.googleapis.com/v1/projects/${sa.project_id}/locations/${VERTEX_IMAGEN_REGION}/publishers/google/models/${VERTEX_IMAGEN_MODEL}:predict`
+
+  const arMap = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1' }
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      instances:  [{ prompt }],
+      parameters: { sampleCount: 1, aspectRatio: arMap[aspectRatio] || '16:9' },
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(JSON.stringify(err))
+  }
+
+  const data       = await res.json()
+  const imageBytes = data.predictions?.[0]?.bytesBase64Encoded
+  if (!imageBytes) throw new Error('Vertex AI 이미지 생성 실패: 응답에 이미지가 없습니다.')
+  const mime = data.predictions?.[0]?.mimeType || 'image/png'
+  return `data:${mime};base64,${imageBytes}`
 }
 
-export function resolveModelId(modelId) {
-  if (getApiMode() !== 'vertex') return modelId
-  return VERTEX_IMAGE_MODEL_MAP[modelId] || modelId
-}
+export function resolveModelId(modelId) { return modelId }
 
 // ─── 클라이언트 생성 ───────────────────────────────────────────────────────────
 export async function createClient() {

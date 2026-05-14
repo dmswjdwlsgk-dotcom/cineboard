@@ -1,4 +1,4 @@
-import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken, resolveModelId } from './gemini.js'
+import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken, resolveModelId, generateVertexAIImage, getApiMode } from './gemini.js'
 
 const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
 const ZIMAGE_API_BASE     = 'https://api.kie.ai/api/v1'
@@ -189,11 +189,17 @@ export async function generateSceneImage(
   fixedCharStyleType   = null,
   fixedCharSampleImage = null,
 ) {
-  const isZImage = model === 'z-image-turbo'
+  const isZImage  = model === 'z-image-turbo'
+  const isVertex  = getApiMode() === 'vertex'
 
   // ── Z-Image 엔진 분기 ──────────────────────────────────────────────────────
   if (isZImage) {
     return generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType, fixedCharSampleImage)
+  }
+
+  // ── Vertex AI 분기: Imagen REST API 직접 호출 ─────────────────────────────
+  if (isVertex) {
+    return generateSceneImageVertex(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType)
   }
 
   // ── Gemini 엔진 ────────────────────────────────────────────────────────────
@@ -359,6 +365,38 @@ ${textRule}`.trim()
   }, 5, `generateSceneImage(${scene.id})`)
 }
 
+// ─── Vertex AI 씬 이미지 생성 (Imagen REST API) ───────────────────────────────
+async function generateSceneImageVertex(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType) {
+  const sceneChars = resolveSceneCharacters(scene, bible)
+  const castInfo   = sceneChars.length > 0
+    ? sceneChars.map(c => `${c.name}: ${c.visualPrompt}`).join(', ')
+    : ''
+  const fixedCharPrompt = fixedCharStyleType ? getFixedCharPrompt(fixedCharStyleType, null) : ''
+  const imagePromptText = scene.imagePrompt || scene.imagePromptKo || ''
+  const actionText      = scene.action || ''
+
+  let prompt = ''
+  if (currentMode === 'editorial') {
+    prompt = `${stylePreset.prompt}, ${imagePromptText || actionText}, professional infographic layout, full bleed, no borders`
+  } else {
+    prompt = [
+      stylePreset.prompt,
+      fixedCharPrompt,
+      castInfo ? `Characters: ${castInfo}` : '',
+      scene.setting ? `Location: ${scene.setting}` : '',
+      imagePromptText,
+      actionText,
+      'full bleed, no borders, no letterboxing, single frame, photorealistic, cinematic',
+    ].filter(Boolean).join('. ')
+  }
+
+  return withRetry(
+    () => generateVertexAIImage(prompt, aspectRatio),
+    3,
+    `generateSceneImageVertex(${scene.id})`
+  )
+}
+
 // ─── Z-Image 씬 이미지 생성 ───────────────────────────────────────────────────
 async function generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType, fixedCharSampleImage) {
   const sceneChars = resolveSceneCharacters(scene, bible)
@@ -404,6 +442,11 @@ export async function generateImage(promptText, stylePreset, model = DEFAULT_IMA
   if (model === 'z-image-turbo') {
     const prompt = `${stylePreset.prompt}, ${promptText}, full bleed, no borders, single frame`
     return generateZImage(prompt, aspectRatio)
+  }
+
+  if (getApiMode() === 'vertex') {
+    const prompt = `${stylePreset.prompt}, ${promptText}, full bleed, no borders, single frame`
+    return withRetry(() => generateVertexAIImage(prompt, aspectRatio), 3, 'generateImage[vertex]')
   }
 
   const client  = await createClient()
