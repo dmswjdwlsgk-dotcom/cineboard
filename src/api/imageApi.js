@@ -1,4 +1,4 @@
-import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken, resolveModelId, generateVertexAIImage, getApiMode } from './gemini.js'
+import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken, resolveModelId, generateVertexContent, generateVertexAIImage, getApiMode } from './gemini.js'
 
 const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
 const ZIMAGE_API_BASE     = 'https://api.kie.ai/api/v1'
@@ -197,9 +197,9 @@ export async function generateSceneImage(
     return generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType, fixedCharSampleImage)
   }
 
-  // ── Vertex AI 분기: Imagen REST API 직접 호출 ─────────────────────────────
+  // ── Vertex AI 분기: Gemini REST 직접 → Imagen 폴백 ───────────────────────
   if (isVertex) {
-    return generateSceneImageVertex(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType)
+    return generateSceneImageVertex(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType, model)
   }
 
   // ── Gemini 엔진 ────────────────────────────────────────────────────────────
@@ -366,7 +366,8 @@ ${textRule}`.trim()
 }
 
 // ─── Vertex AI 씬 이미지 생성 (Imagen REST API) ───────────────────────────────
-async function generateSceneImageVertex(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType) {
+// Vertex AI: Gemini 직접 REST 호출 → 실패 시 Imagen 폴백
+async function generateSceneImageVertex(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType, model) {
   const sceneChars = resolveSceneCharacters(scene, bible)
   const castInfo   = sceneChars.length > 0
     ? sceneChars.map(c => `${c.name}: ${c.visualPrompt}`).join(', ')
@@ -375,26 +376,42 @@ async function generateSceneImageVertex(scene, bible, stylePreset, aspectRatio, 
   const imagePromptText = scene.imagePrompt || scene.imagePromptKo || ''
   const actionText      = scene.action || ''
 
-  let prompt = ''
+  let promptText = ''
   if (currentMode === 'editorial') {
-    prompt = `${stylePreset.prompt}, ${imagePromptText || actionText}, professional infographic layout, full bleed, no borders`
+    promptText = `${stylePreset.prompt}, ${imagePromptText || actionText}, professional infographic layout, full bleed, no borders`
   } else {
-    prompt = [
+    promptText = [
       stylePreset.prompt,
       fixedCharPrompt,
       castInfo ? `Characters: ${castInfo}` : '',
       scene.setting ? `Location: ${scene.setting}` : '',
       imagePromptText,
       actionText,
-      'full bleed, no borders, no letterboxing, single frame, photorealistic, cinematic',
+      'full bleed, no borders, no letterboxing, single frame',
     ].filter(Boolean).join('. ')
   }
 
-  return withRetry(
-    () => generateVertexAIImage(prompt, aspectRatio),
-    3,
-    `generateSceneImageVertex(${scene.id})`
-  )
+  // 1차: 선택한 Gemini 이미지 모델로 직접 REST 호출
+  try {
+    const result = await withRetry(async () => {
+      const data = await generateVertexContent(model, promptText, {
+        responseModalities: ['IMAGE'],
+        imageConfig: getImageConfig(model, aspectRatio),
+      })
+      const imgPart = data?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)
+      if (!imgPart) throw new Error('이미지 파트 없음')
+      return `data:image/png;base64,${imgPart.inlineData.data}`
+    }, 2, `generateSceneImageVertex(${scene.id})`)
+    return result
+  } catch (e) {
+    // 2차: Imagen 폴백
+    console.warn(`[Vertex] Gemini 이미지 생성 실패, Imagen으로 폴백: ${e.message}`)
+    return withRetry(
+      () => generateVertexAIImage(promptText, aspectRatio),
+      3,
+      `generateSceneImageVertex[imagen](${scene.id})`
+    )
+  }
 }
 
 // ─── Z-Image 씬 이미지 생성 ───────────────────────────────────────────────────

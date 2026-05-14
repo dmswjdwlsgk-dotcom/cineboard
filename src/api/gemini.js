@@ -196,26 +196,54 @@ function patchFetch() {
   }
 }
 
-// ─── Vertex AI Imagen REST API 직접 호출 ─────────────────────────────────────
-// generateContent + responseModalities: IMAGE 방식은 Vertex AI 미지원
-// Vertex AI는 imagen-4.0-generate-001 모델의 :predict 엔드포인트를 사용해야 함
-const VERTEX_IMAGEN_MODEL  = 'imagen-4.0-generate-001'
-const VERTEX_IMAGEN_REGION = 'us-central1'
+// ─── Vertex AI generateContent 직접 REST 호출 (SDK 우회) ─────────────────────
+// SDK의 apiKey 핵이 URL/헤더를 잘못 처리할 수 있으므로 직접 fetch로 호출
+const VERTEX_REGION = 'us-central1'
 
-export async function generateVertexAIImage(prompt, aspectRatio = '16:9') {
+export async function generateVertexContent(modelId, contents, generationConfig) {
   const sa    = getVertexJson()
   if (!sa) throw new Error('Vertex AI 서비스 계정 JSON이 등록되지 않았습니다.')
   const token = await getVertexAccessToken(sa)
 
-  const url = `https://${VERTEX_IMAGEN_REGION}-aiplatform.googleapis.com/v1/projects/${sa.project_id}/locations/${VERTEX_IMAGEN_REGION}/publishers/google/models/${VERTEX_IMAGEN_MODEL}:predict`
+  const url = `https://${VERTEX_REGION}-aiplatform.googleapis.com/v1beta1/projects/${sa.project_id}/locations/${VERTEX_REGION}/publishers/google/models/${modelId}:generateContent`
 
-  const arMap = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1' }
+  // contents가 string이면 단순 텍스트 파트로 변환
+  const contentsBody = typeof contents === 'string'
+    ? [{ role: 'user', parts: [{ text: contents }] }]
+    : Array.isArray(contents)
+      ? contents
+      : contents?.parts
+        ? [{ role: 'user', parts: contents.parts }]
+        : [{ role: 'user', parts: [{ text: String(contents) }] }]
+
   const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
+    body: JSON.stringify({ contents: contentsBody, generationConfig }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(JSON.stringify(err))
+  }
+  return res.json()
+}
+
+// Vertex AI Imagen REST API (generateContent가 안 될 때 fallback)
+export async function generateVertexAIImage(prompt, aspectRatio = '16:9') {
+  const sa    = getVertexJson()
+  if (!sa) throw new Error('Vertex AI 서비스 계정 JSON이 등록되지 않았습니다.')
+  const token = await getVertexAccessToken(sa)
+
+  const url = `https://${VERTEX_REGION}-aiplatform.googleapis.com/v1/projects/${sa.project_id}/locations/${VERTEX_REGION}/publishers/google/models/imagen-4.0-generate-001:predict`
+
+  const arMap = { '16:9': '16:9', '9:16': '9:16', '1:1': '1:1' }
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify({
       instances:  [{ prompt }],
       parameters: { sampleCount: 1, aspectRatio: arMap[aspectRatio] || '16:9' },
@@ -226,7 +254,6 @@ export async function generateVertexAIImage(prompt, aspectRatio = '16:9') {
     const err = await res.json().catch(() => ({}))
     throw new Error(JSON.stringify(err))
   }
-
   const data       = await res.json()
   const imageBytes = data.predictions?.[0]?.bytesBase64Encoded
   if (!imageBytes) throw new Error('Vertex AI 이미지 생성 실패: 응답에 이미지가 없습니다.')
