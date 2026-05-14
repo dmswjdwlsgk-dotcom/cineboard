@@ -196,6 +196,19 @@ function patchFetch() {
   }
 }
 
+// ─── Vertex AI 모델 ID 매핑 ───────────────────────────────────────────────────
+// Gemini Developer API 전용 모델명은 Vertex AI에 존재하지 않음 → 대응 모델로 변환
+const VERTEX_IMAGE_MODEL_MAP = {
+  'gemini-2.5-flash-image':         'gemini-2.0-flash-exp',
+  'gemini-3.1-flash-image-preview': 'gemini-2.0-flash-exp',
+  'gemini-3-pro-image-preview':     'gemini-2.0-flash-exp',
+}
+
+export function resolveModelId(modelId) {
+  if (getApiMode() !== 'vertex') return modelId
+  return VERTEX_IMAGE_MODEL_MAP[modelId] || modelId
+}
+
 // ─── 클라이언트 생성 ───────────────────────────────────────────────────────────
 export async function createClient() {
   if (getApiMode() === 'vertex') {

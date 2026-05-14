@@ -1,4 +1,4 @@
-import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken } from './gemini.js'
+import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken, resolveModelId } from './gemini.js'
 
 const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
 const ZIMAGE_API_BASE     = 'https://api.kie.ai/api/v1'
@@ -288,7 +288,7 @@ ${imagePromptText || actionText}
       const timeoutMs = getTimeout(model)
       const res = await withTimeout(
         safeGenerate(client, {
-          model,
+          model: resolveModelId(model),
           contents: editorialPrompt,
           config: {
             safetySettings: SAFETY_SETTINGS,
@@ -339,7 +339,7 @@ ${textRule}`.trim()
     const timeoutMs = getTimeout(model)
     const res = await withTimeout(
       safeGenerate(client, {
-        model,
+        model: resolveModelId(model),
         contents,
         config: {
           safetySettings: SAFETY_SETTINGS,
@@ -416,7 +416,7 @@ export async function generateImage(promptText, stylePreset, model = DEFAULT_IMA
     const timeoutMs = getTimeout(model)
     const res = await withTimeout(
       safeGenerate(client, {
-        model,
+        model: resolveModelId(model),
         contents: fullPrompt,
         config: {
           safetySettings: SAFETY_SETTINGS,
@@ -505,7 +505,7 @@ ${refImages.length > 0 ? '⚠️ CRITICAL: The character reference images above 
         const timeoutMs = getTimeout(model)
         const res = await withTimeout(
           safeGenerate(client, {
-            model,
+            model: resolveModelId(model),
             contents,
             config: {
               safetySettings: SAFETY_SETTINGS,
