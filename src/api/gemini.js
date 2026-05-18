@@ -196,6 +196,21 @@ function patchFetch() {
   }
 }
 
+// ─── Vertex AI 사용 가능 모델 목록 조회 (디버그용) ───────────────────────────
+export async function listVertexModels() {
+  const sa = getVertexJson()
+  if (!sa) return
+  const token = await getVertexAccessToken(sa)
+  const url = `https://us-central1-aiplatform.googleapis.com/v1beta1/projects/${sa.project_id}/locations/us-central1/publishers/google/models`
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  const data = await res.json()
+  const imageModels = (data.models || []).filter(m =>
+    m.name?.includes('gemini') || m.name?.includes('imagen')
+  )
+  console.log('[Vertex 사용가능 이미지 모델]', imageModels.map(m => m.name))
+  return imageModels
+}
+
 // ─── 클라이언트 생성 ───────────────────────────────────────────────────────────
 export async function createClient() {
   if (getApiMode() === 'vertex') {
@@ -248,6 +263,10 @@ export async function safeGenerate(client, params, label) {
       if (level < 3) continue
     } catch (err) {
       const msg = err.message || ''
+      if (msg.includes('404') && getApiMode() === 'vertex' && level === 1) {
+        console.error(`[Vertex 404] 모델을 찾을 수 없음. 사용 가능한 모델 목록:`)
+        listVertexModels().catch(() => {})
+      }
       if ((msg.toLowerCase().includes('safety') || msg.includes('blocked') || msg.includes('RECITATION') || msg.includes('EMPTY_RESPONSE')) && level < 3) continue
       throw err
     }
