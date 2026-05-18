@@ -1,4 +1,4 @@
-import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken, resolveModelId, generateVertexContent, generateVertexAIImage, getApiMode } from './gemini.js'
+import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken } from './gemini.js'
 
 const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
 const ZIMAGE_API_BASE     = 'https://api.kie.ai/api/v1'
@@ -189,17 +189,11 @@ export async function generateSceneImage(
   fixedCharStyleType   = null,
   fixedCharSampleImage = null,
 ) {
-  const isZImage  = model === 'z-image-turbo'
-  const isVertex  = getApiMode() === 'vertex'
+  const isZImage = model === 'z-image-turbo'
 
   // ── Z-Image 엔진 분기 ──────────────────────────────────────────────────────
   if (isZImage) {
     return generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType, fixedCharSampleImage)
-  }
-
-  // ── Vertex AI 분기: Gemini REST 직접 → Imagen 폴백 ───────────────────────
-  if (isVertex) {
-    return generateSceneImageVertex(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType, model)
   }
 
   // ── Gemini 엔진 ────────────────────────────────────────────────────────────
@@ -294,7 +288,7 @@ ${imagePromptText || actionText}
       const timeoutMs = getTimeout(model)
       const res = await withTimeout(
         safeGenerate(client, {
-          model: resolveModelId(model),
+          model,
           contents: editorialPrompt,
           config: {
             safetySettings: SAFETY_SETTINGS,
@@ -345,7 +339,7 @@ ${textRule}`.trim()
     const timeoutMs = getTimeout(model)
     const res = await withTimeout(
       safeGenerate(client, {
-        model: resolveModelId(model),
+        model,
         contents,
         config: {
           safetySettings: SAFETY_SETTINGS,
@@ -363,55 +357,6 @@ ${textRule}`.trim()
     if (!imgPart) throw new Error(`이미지 생성 실패 (Scene ${scene.id}): 안전 필터에 의해 차단되었거나 응답이 비어있습니다.`)
     return `data:image/png;base64,${imgPart.inlineData.data}`
   }, 5, `generateSceneImage(${scene.id})`)
-}
-
-// ─── Vertex AI 씬 이미지 생성 (Imagen REST API) ───────────────────────────────
-// Vertex AI: Gemini 직접 REST 호출 → 실패 시 Imagen 폴백
-async function generateSceneImageVertex(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType, model) {
-  const sceneChars = resolveSceneCharacters(scene, bible)
-  const castInfo   = sceneChars.length > 0
-    ? sceneChars.map(c => `${c.name}: ${c.visualPrompt}`).join(', ')
-    : ''
-  const fixedCharPrompt = fixedCharStyleType ? getFixedCharPrompt(fixedCharStyleType, null) : ''
-  const imagePromptText = scene.imagePrompt || scene.imagePromptKo || ''
-  const actionText      = scene.action || ''
-
-  let promptText = ''
-  if (currentMode === 'editorial') {
-    promptText = `${stylePreset.prompt}, ${imagePromptText || actionText}, professional infographic layout, full bleed, no borders`
-  } else {
-    promptText = [
-      stylePreset.prompt,
-      fixedCharPrompt,
-      castInfo ? `Characters: ${castInfo}` : '',
-      scene.setting ? `Location: ${scene.setting}` : '',
-      imagePromptText,
-      actionText,
-      'full bleed, no borders, no letterboxing, single frame',
-    ].filter(Boolean).join('. ')
-  }
-
-  // 1차: 선택한 Gemini 이미지 모델로 직접 REST 호출
-  try {
-    const result = await withRetry(async () => {
-      const data = await generateVertexContent(model, promptText, {
-        responseModalities: ['IMAGE'],
-        imageConfig: getImageConfig(model, aspectRatio),
-      })
-      const imgPart = data?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)
-      if (!imgPart) throw new Error('이미지 파트 없음')
-      return `data:image/png;base64,${imgPart.inlineData.data}`
-    }, 2, `generateSceneImageVertex(${scene.id})`)
-    return result
-  } catch (e) {
-    // 2차: Imagen 폴백
-    console.warn(`[Vertex] Gemini 이미지 생성 실패, Imagen으로 폴백: ${e.message}`)
-    return withRetry(
-      () => generateVertexAIImage(promptText, aspectRatio),
-      3,
-      `generateSceneImageVertex[imagen](${scene.id})`
-    )
-  }
 }
 
 // ─── Z-Image 씬 이미지 생성 ───────────────────────────────────────────────────
@@ -461,11 +406,6 @@ export async function generateImage(promptText, stylePreset, model = DEFAULT_IMA
     return generateZImage(prompt, aspectRatio)
   }
 
-  if (getApiMode() === 'vertex') {
-    const prompt = `${stylePreset.prompt}, ${promptText}, full bleed, no borders, single frame`
-    return withRetry(() => generateVertexAIImage(prompt, aspectRatio), 3, 'generateImage[vertex]')
-  }
-
   const client  = await createClient()
   const textRule = allowText
     ? 'Clean infographic text MAY be included if relevant to the content. NO random watermarks or signatures.'
@@ -476,7 +416,7 @@ export async function generateImage(promptText, stylePreset, model = DEFAULT_IMA
     const timeoutMs = getTimeout(model)
     const res = await withTimeout(
       safeGenerate(client, {
-        model: resolveModelId(model),
+        model,
         contents: fullPrompt,
         config: {
           safetySettings: SAFETY_SETTINGS,
@@ -565,7 +505,7 @@ ${refImages.length > 0 ? '⚠️ CRITICAL: The character reference images above 
         const timeoutMs = getTimeout(model)
         const res = await withTimeout(
           safeGenerate(client, {
-            model: resolveModelId(model),
+            model,
             contents,
             config: {
               safetySettings: SAFETY_SETTINGS,
