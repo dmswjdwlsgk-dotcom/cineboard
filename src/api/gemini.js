@@ -272,13 +272,13 @@ export async function createClient() {
     const sa = getVertexJson()
     if (!sa) throw new Error('Vertex AI 서비스 계정 JSON이 등록되지 않았습니다.\n우측 상단 API 설정에서 등록해주세요.')
     const token  = await getVertexAccessToken(sa)
-    const region = 'us-central1'
+    // Express 엔드포인트 사용 — 리전 제한 없이 모든 Gemini 모델 접근 가능
     patchFetch()
     return new GoogleGenAI({
       apiKey: 'VERTEX_MODE',
       httpOptions: {
-        baseUrl:    `https://${region}-aiplatform.googleapis.com`,
-        apiVersion: `v1beta1/projects/${sa.project_id}/locations/${region}/publishers/google`,
+        baseUrl:    'https://aiplatform.googleapis.com',
+        apiVersion: `v1beta1/projects/${sa.project_id}/locations/us-central1/publishers/google`,
         headers:    { Authorization: `Bearer ${token}` },
       },
     })
