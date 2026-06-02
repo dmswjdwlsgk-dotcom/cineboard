@@ -118,13 +118,33 @@ export function hasVertexJson() {
 }
 
 // ─── Vertex AI 모델 ID 변환 ────────────────────────────────────────────────────
-// Gemini Developer API 모델명의 -image / -image-preview 접미사를
-// Vertex AI 호환 이름으로 제거한다.
-// 예) gemini-3.1-flash-image-preview → gemini-3.1-flash-preview
-//     gemini-2.5-flash-image         → gemini-2.5-flash
 export function resolveModelId(modelId) {
-  if (getApiMode() !== 'vertex') return modelId
-  return modelId.replace(/-image(-preview)?$/, '$1')
+  return modelId
+}
+
+// ─── Vertex AI 리전 로테이션 ──────────────────────────────────────────────────
+const VERTEX_REGIONS = ['us-central1','us-east4','us-west1','us-west4','europe-west1','europe-west4','asia-southeast1']
+const REGION_COOLDOWN_MS = 30000
+let _regionIdx = 0
+const _regionCooldowns = new Map()
+
+function getVertexRegion() {
+  const now = Date.now()
+  for (let i = 0; i < VERTEX_REGIONS.length; i++) {
+    const idx = (_regionIdx + i) % VERTEX_REGIONS.length
+    const r   = VERTEX_REGIONS[idx]
+    if (((_regionCooldowns.get(r) || 0)) <= now) {
+      _regionIdx = (idx + 1) % VERTEX_REGIONS.length
+      return r
+    }
+  }
+  _regionCooldowns.clear()
+  return VERTEX_REGIONS[0]
+}
+
+function markRegionFailed(region) {
+  _regionCooldowns.set(region, Date.now() + REGION_COOLDOWN_MS)
+  console.warn(`[VERTEX REGION] ⚠️ ${region} 실패 → ${REGION_COOLDOWN_MS / 1000}초 쿨다운`)
 }
 
 // ─── Vertex AI JWT / 액세스 토큰 ──────────────────────────────────────────────
@@ -181,28 +201,53 @@ async function getVertexAccessToken(serviceAccount) {
   return _vertexToken
 }
 
-// ─── fetch 인터셉터 (Vertex mode: x-goog-api-key 헤더 제거) ──────────────────
+// ─── fetch 인터셉터 (Vertex mode: x-goog-api-key 제거 + 리전 로테이션) ────────
 let _fetchPatched = false
 function patchFetch() {
   if (_fetchPatched) return
   _fetchPatched = true
   const original = globalThis.fetch
   globalThis.fetch = async (input, init) => {
-    const url = typeof input === 'string' ? input
+    let url = typeof input === 'string' ? input
       : input instanceof URL ? input.toString()
       : input.url
-    if (url.includes('aiplatform.googleapis.com')) {
-      if (init?.headers) {
-        if (init.headers instanceof Headers) init.headers.delete('x-goog-api-key')
-        else if (Array.isArray(init.headers)) {
-          init.headers = init.headers.filter(([k]) => k.toLowerCase() !== 'x-goog-api-key')
-        } else if (typeof init.headers === 'object') {
-          delete init.headers['x-goog-api-key']
-          delete init.headers['X-Goog-Api-Key']
+
+    if (!url.includes('aiplatform.googleapis.com')) return original(input, init)
+
+    // x-goog-api-key 헤더 제거
+    if (init?.headers) {
+      if (init.headers instanceof Headers) init.headers.delete('x-goog-api-key')
+      else if (Array.isArray(init.headers)) {
+        init.headers = init.headers.filter(([k]) => k.toLowerCase() !== 'x-goog-api-key')
+      } else if (typeof init.headers === 'object') {
+        delete init.headers['x-goog-api-key']
+        delete init.headers['X-Goog-Api-Key']
+      }
+    }
+
+    let res = await original(input, init)
+
+    // 404 시 다른 리전으로 자동 재시도
+    if (res.status === 404) {
+      const regionMatch = url.match(/locations\/([^/]+)/)
+      const failedRegion = regionMatch?.[1]
+      if (failedRegion) {
+        markRegionFailed(failedRegion)
+        const nextRegion = getVertexRegion()
+        if (nextRegion !== failedRegion) {
+          const newUrl = url
+            .replace(`locations/${failedRegion}`, `locations/${nextRegion}`)
+            .replace(`${failedRegion}-aiplatform`, `${nextRegion}-aiplatform`)
+          console.log(`[VERTEX REGION] 🔄 ${failedRegion} → ${nextRegion}`)
+          const newInput = typeof input === 'string' ? newUrl
+            : input instanceof URL ? new URL(newUrl)
+            : new Request(newUrl, input)
+          res = await original(newInput, init)
         }
       }
     }
-    return original(input, init)
+
+    return res
   }
 }
 
