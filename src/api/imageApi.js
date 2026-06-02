@@ -1,4 +1,4 @@
-import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken } from './gemini.js'
+import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken, resolveModelId } from './gemini.js'
 
 const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
 const ZIMAGE_API_BASE     = 'https://api.kie.ai/api/v1'
@@ -190,6 +190,7 @@ export async function generateSceneImage(
   fixedCharSampleImage = null,
 ) {
   const isZImage = model === 'z-image-turbo'
+  model = resolveModelId(model)
 
   // ── Z-Image 엔진 분기 ──────────────────────────────────────────────────────
   if (isZImage) {
@@ -405,6 +406,7 @@ export async function generateImage(promptText, stylePreset, model = DEFAULT_IMA
     const prompt = `${stylePreset.prompt}, ${promptText}, full bleed, no borders, single frame`
     return generateZImage(prompt, aspectRatio)
   }
+  model = resolveModelId(model)
 
   const client  = await createClient()
   const textRule = allowText
@@ -437,6 +439,7 @@ export async function generateImage(promptText, stylePreset, model = DEFAULT_IMA
 
 // ─── 썸네일 생성 3종 ──────────────────────────────────────────────────────────
 export async function generateThumbnails(bible, stylePreset, model = DEFAULT_IMAGE_MODEL, aspectRatio = '16:9') {
+  model = resolveModelId(model)
   const client = await createClient()
 
   const castInfo = bible.characters.slice(0, 3).map((c, i) => {

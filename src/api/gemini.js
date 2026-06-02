@@ -117,6 +117,16 @@ export function hasVertexJson() {
   return !!localStorage.getItem(VERTEX_JSON_KEY)
 }
 
+// ─── Vertex AI 모델 ID 변환 ────────────────────────────────────────────────────
+// Gemini Developer API 모델명의 -image / -image-preview 접미사를
+// Vertex AI 호환 이름으로 제거한다.
+// 예) gemini-3.1-flash-image-preview → gemini-3.1-flash-preview
+//     gemini-2.5-flash-image         → gemini-2.5-flash
+export function resolveModelId(modelId) {
+  if (getApiMode() !== 'vertex') return modelId
+  return modelId.replace(/-image(-preview)?$/, '$1')
+}
+
 // ─── Vertex AI JWT / 액세스 토큰 ──────────────────────────────────────────────
 let _vertexToken = null
 let _vertexTokenExpiry = 0
