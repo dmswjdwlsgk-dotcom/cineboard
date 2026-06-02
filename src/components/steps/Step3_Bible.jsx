@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { ChevronRight, ChevronLeft, Users, MapPin, Camera, Plus, Trash2, Upload, Scan, AlertTriangle, Edit3, Check, X, RefreshCw, Image } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Users, MapPin, Camera, Plus, Trash2, Upload, Scan, AlertTriangle, Edit3, Check, X, RefreshCw, Image, Download, ZoomIn } from 'lucide-react'
 import Button from '../ui/Button.jsx'
 import Spinner from '../ui/Spinner.jsx'
 import { useAppStore } from '../../store/useAppStore.js'
@@ -67,6 +67,7 @@ export default function Step3_Bible() {
   const [loading, setLoading] = useState(false)
   const [analyzingImages, setAnalyzingImages] = useState({})
   const [generatingCharImages, setGeneratingCharImages] = useState({})  // {idx: boolean}
+  const [lightbox, setLightbox] = useState(null)  // {url, name}
   const fileInputRefs = useRef({})
   const error = useAppStore(s => s.error)
 
@@ -156,6 +157,13 @@ export default function Step3_Bible() {
     }
   }
 
+  const handleDownloadCharImage = (url, name) => {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${name}.png`
+    a.click()
+  }
+
   const handleNext = () => {
     clearError()
     setStep(4)
@@ -228,29 +236,50 @@ export default function Step3_Bible() {
                   <div className="flex items-start gap-3">
                     {/* 캐릭터 이미지/아바타 영역 */}
                     <div className="flex-shrink-0">
-                      <div
-                        className="w-16 h-16 rounded-xl overflow-hidden bg-gray-700 border border-gray-600 cursor-pointer relative group"
-                        onClick={() => !generatingCharImages[idx] && handleGenerateCharImage(idx, char)}
-                        title={char.charImageUrl ? '클릭하여 재생성' : '클릭하여 이미지 생성'}
-                      >
-                        {(char.charImageUrl || characterImages[char.name]) ? (
-                          <>
-                            <img src={char.charImageUrl || characterImages[char.name]} alt={char.name} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <RefreshCw size={14} className="text-white" />
+                      {(() => {
+                        const imgUrl = char.charImageUrl || characterImages[char.name]
+                        return (
+                          <div className="relative group">
+                            <div
+                              className="w-16 h-16 rounded-xl overflow-hidden bg-gray-700 border border-gray-600 cursor-pointer"
+                              onClick={() => {
+                                if (generatingCharImages[idx]) return
+                                if (imgUrl) setLightbox({ url: imgUrl, name: char.name })
+                                else handleGenerateCharImage(idx, char)
+                              }}
+                              title={imgUrl ? '클릭하여 크게 보기' : '클릭하여 이미지 생성'}
+                            >
+                              {imgUrl ? (
+                                <>
+                                  <img src={imgUrl} alt={char.name} className="w-full h-full object-cover" />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                                    <ZoomIn size={16} className="text-white" />
+                                  </div>
+                                </>
+                              ) : generatingCharImages[idx] ? (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Spinner size="sm" />
+                                </div>
+                              ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-purple-400 transition-colors">
+                                  <Image size={16} />
+                                  <span className="text-xs">생성</span>
+                                </div>
+                              )}
                             </div>
-                          </>
-                        ) : generatingCharImages[idx] ? (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Spinner size="sm" />
+                            {/* 재생성 버튼 (이미지 있을 때만) */}
+                            {imgUrl && !generatingCharImages[idx] && (
+                              <button
+                                onClick={() => handleGenerateCharImage(idx, char)}
+                                title="재생성"
+                                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gray-600 hover:bg-purple-600 border border-gray-500 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+                              >
+                                <RefreshCw size={9} className="text-white" />
+                              </button>
+                            )}
                           </div>
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-purple-400 transition-colors">
-                            <Image size={16} />
-                            <span className="text-xs">생성</span>
-                          </div>
-                        )}
-                      </div>
+                        )
+                      })()}
                     </div>
 
                     {/* Info */}
@@ -309,6 +338,16 @@ export default function Step3_Bible() {
                           {analyzingImages[idx] ? <Spinner size="sm" /> : <Upload size={13} />}
                         </button>
                       </div>
+                      {/* Download */}
+                      {(char.charImageUrl || characterImages[char.name]) && (
+                        <button
+                          onClick={() => handleDownloadCharImage(char.charImageUrl || characterImages[char.name], char.name)}
+                          title="이미지 다운로드"
+                          className="w-8 h-8 rounded-lg bg-gray-700 hover:bg-blue-700 flex items-center justify-center text-gray-400 hover:text-blue-200 transition-colors"
+                        >
+                          <Download size={13} />
+                        </button>
+                      )}
                       {/* Delete */}
                       <button
                         onClick={() => deleteCharacter(idx)}
@@ -395,6 +434,36 @@ export default function Step3_Bible() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+            <img src={lightbox.url} alt={lightbox.name} className="w-full rounded-2xl shadow-2xl" />
+            <div className="absolute top-3 left-3 bg-black/60 text-white text-sm font-semibold px-3 py-1 rounded-full">
+              {lightbox.name}
+            </div>
+            <div className="absolute top-3 right-3 flex gap-2">
+              <button
+                onClick={() => handleDownloadCharImage(lightbox.url, lightbox.name)}
+                className="w-9 h-9 rounded-full bg-black/60 hover:bg-blue-600 flex items-center justify-center text-white transition-colors"
+                title="다운로드"
+              >
+                <Download size={16} />
+              </button>
+              <button
+                onClick={() => setLightbox(null)}
+                className="w-9 h-9 rounded-full bg-black/60 hover:bg-gray-600 flex items-center justify-center text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
