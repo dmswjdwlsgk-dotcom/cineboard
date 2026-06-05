@@ -500,14 +500,14 @@ RESILIENCE: If content is blocked, return a safe/neutral version. NEVER return n
 }
 
 // ─── 씬 생성 공통 프롬프트 빌더 ───────────────────────────────────────────────
-function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate = false, visualMode = 'character', isEditorialMode = false) {
+function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate = false, visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false) {
   const isIllustration = /illustration|artwork|painting|manhwa|webtoon|anime|ghibli|watercolor|ink wash|clay|wool|diorama|fairy|folklore|3d.*anim|pixar/i.test(stylePreset.prompt)
   const directorMode   = isIllustration
     ? '[🎨 MASTER ILLUSTRATOR/WEBTOON DIRECTOR MODE]'
     : '[🎬 MASTER CINEMATOGRAPHER MODE]'
 
   const isInfoviz = visualMode === 'infoviz'
-  const withTextInt = isEditorialMode && (visualMode === 'content' || visualMode === 'infoviz')
+  const withTextInt = isImageTextEnabled && (visualMode === 'content' || visualMode === 'infoviz')
   const visualModeInstruction = getVisualModeInstruction(visualMode, withTextInt)
 
   const characterRoster = isInfoviz
@@ -651,11 +651,11 @@ ${resilienceNote}`
 }
 
 // ─── 씬 1개 생성 ──────────────────────────────────────────────────────────────
-export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, langConfig, currentMode = 'normal', visualMode = 'character', isEditorialMode = false) {
+export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, langConfig, currentMode = 'normal', visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false) {
   const client = await createClient()
   const prompt = currentMode === 'editorial'
     ? buildEditorialScenePrompt(sceneRef, bible, stylePreset, langConfig)
-    : buildScenePrompt(sceneRef, bible, stylePreset, langConfig, false, visualMode, isEditorialMode)
+    : buildScenePrompt(sceneRef, bible, stylePreset, langConfig, false, visualMode, isEditorialMode, isImageTextEnabled)
 
   const res = await withRetry(() =>
     safeGenerate(client, {
@@ -796,7 +796,7 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
 }
 
 // ─── 전체 씬 생성 (어댑티브 동시성) ──────────────────────────────────────────
-export async function generateAllScenes(scriptText, bible, stylePreset, lang, onProgress, maxScenes = 30, currentMode = 'normal', visualMode = 'character', isEditorialMode = false) {
+export async function generateAllScenes(scriptText, bible, stylePreset, lang, onProgress, maxScenes = 30, currentMode = 'normal', visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false) {
   const langConfig   = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
   const bibleCtx     = { ...bible, _fullScript: scriptText }
   const rawScenes    = await splitScriptToScenes(scriptText, maxScenes)
@@ -816,7 +816,7 @@ export async function generateAllScenes(scriptText, bible, stylePreset, lang, on
 
     try {
       const settled = await Promise.allSettled(
-        chunk.map((scene, j) => generateSingleSceneInfo(scene, bibleCtx, stylePreset, langConfig, currentMode, visualMode, isEditorialMode))
+        chunk.map((scene, j) => generateSingleSceneInfo(scene, bibleCtx, stylePreset, langConfig, currentMode, visualMode, isEditorialMode, isImageTextEnabled))
       )
 
       for (let k = 0; k < settled.length; k++) {

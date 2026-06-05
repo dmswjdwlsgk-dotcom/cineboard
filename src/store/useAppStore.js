@@ -27,6 +27,7 @@ const initialState = {
   fixedCharStyleType: 'countryball', // 'countryball'|'stickman'|'mascot'|'chibi'|'custom'
   fixedCharSampleImage: null, // base64 샘플 이미지 (custom/mascot용)
   isEmotionalArcMode: false,  // 감정 아크 모드
+  isImageTextEnabled: false,  // 이미지 내 텍스트 삽입 (뉴스/정보 모드 전용)
 
   // ─── 3단계: 바이블 ────────────────────────────────────────────────────
   continuityBible: null,
@@ -93,6 +94,7 @@ export const useAppStore = create(
       setFixedCharStyleType: (type)      => set({ fixedCharStyleType: type }),
       setFixedCharSampleImage: (img)     => set({ fixedCharSampleImage: img }),
       setEmotionalArcMode:   (flag)      => set({ isEmotionalArcMode: flag }),
+      setImageTextEnabled:   (flag)      => set({ isImageTextEnabled: flag }),
 
       // ── 바이블 ──────────────────────────────────────────────────────
       setBible: (bible) => set({ continuityBible: bible }),
@@ -183,6 +185,7 @@ export const useAppStore = create(
         fixedCharStyleType:     state.fixedCharStyleType,
         isEditorialMode:        state.isEditorialMode,
         isEmotionalArcMode:     state.isEmotionalArcMode,
+        isImageTextEnabled:     state.isImageTextEnabled,
         detectedLanguage:       state.detectedLanguage,
         // continuityBible에서 대용량 charImageUrl 제외하고 저장
         continuityBible: state.continuityBible ? {

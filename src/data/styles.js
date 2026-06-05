@@ -211,6 +211,13 @@ export const STYLES = [
     thumbnail: 'style_thumbs/paint_hist.png',
   },
   {
+    id: 'satire_cartoon',
+    label: '시사 경제 만화 (Satirical Cartoon)',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT a photo. Minimalist 2D vector cartoon illustration, simple satirical editorial cartoon style, clean thick black outlines, bright solid colors, very simple minimalist backgrounds, expressive simplified character features (e.g. big eyes, simple bodies), witty visual metaphors, edge-to-edge full frame, NO complex shading, NO realistic textures.',
+    palette: ['#ffffff', '#ffce00', '#000000'],
+    thumbnail: 'style_thumbs/satire_cartoon.png',
+  },
+  {
     id: 'hist_textbook_illust',
     label: '역사 교과서 일러스트 (History Textbook)',
     prompt: '⚠️STYLE OVERRIDE — Elementary school history textbook illustration style. Clean line art, smooth outlines, consistent line weight. Flat colors with minimal shading and soft shadow accents only. Warm earthy palette, soft muted pastel tones. Cute but historically accurate characters with expressive faces and non-exaggerated proportions. Detailed background with atmospheric depth and gentle perspective. Family-friendly, professional educational illustration quality, high readability, clear composition. Vector illustration appearance. PERIOD AUTO-INFERENCE: always analyze the script to identify the historical era, then apply period-accurate Korean architecture, costumes, lifestyle, props, social hierarchy, and environment — from ancient (삼국시대) through modern history (근현대사 포함). For modern history, reflect era-specific streets, fashion, signage, and daily life of that exact period. Every element — faces, clothing, buildings, objects — must make the depicted era immediately recognizable at a glance. NOT photorealistic, NOT anime, NOT manga, NOT chibi, NOT dramatic lighting, NOT modern cartoon style, NOT exaggerated proportions. 8k, edge-to-edge full frame, NO text, NO borders.',

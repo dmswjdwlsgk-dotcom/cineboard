@@ -37,6 +37,7 @@ export default function Step2_Style() {
     imageEngine, setImageEngine,
     aspectRatio, setAspectRatio,
     visualMode, setVisualMode,
+    isImageTextEnabled, setImageTextEnabled,
     isFixedCharMode, setFixedCharMode,
     fixedCharStyleType, setFixedCharStyleType,
     fixedCharSampleImage, setFixedCharSampleImage,
@@ -108,6 +109,24 @@ export default function Step2_Style() {
           ))}
         </div>
       </div>
+
+      {/* 이미지 텍스트 삽입 (콘텐츠/인포비즈 모드 전용) */}
+      {(visualMode === 'content' || visualMode === 'infoviz') && (
+        <div className="bg-emerald-900/10 border border-emerald-500/20 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-emerald-300">이미지 내 텍스트 삽입</h2>
+              <p className="text-xs text-gray-500 mt-0.5">활성화 시 AI가 핵심 데이터/키워드를 이미지에 직접 삽입합니다</p>
+            </div>
+            <button
+              onClick={() => setImageTextEnabled(!isImageTextEnabled)}
+              className={`relative w-10 h-5 rounded-full transition-colors ${isImageTextEnabled ? 'bg-emerald-600' : 'bg-gray-700'}`}
+            >
+              <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isImageTextEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 캐릭터 고정 모드 */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-3">

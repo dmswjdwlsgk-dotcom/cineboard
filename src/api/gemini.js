@@ -123,7 +123,7 @@ export function resolveModelId(modelId) {
 }
 
 // ─── Vertex AI 리전 로테이션 ──────────────────────────────────────────────────
-const VERTEX_REGIONS = ['us-central1','us-east4','us-west1','us-west4','europe-west1','europe-west4','asia-southeast1']
+const VERTEX_REGIONS = ['us-central1','us-east4','us-west1','us-west4','us-east1','us-east5','europe-west1','europe-west4','europe-west3','europe-west9','europe-west2','asia-southeast1','asia-northeast1','asia-northeast3']
 const REGION_COOLDOWN_MS = 30000
 let _regionIdx = 0
 const _regionCooldowns = new Map()
@@ -256,7 +256,7 @@ export async function listVertexModels() {
   const sa = getVertexJson()
   if (!sa) return
   const token = await getVertexAccessToken(sa)
-  const url = `https://us-central1-aiplatform.googleapis.com/v1beta1/projects/${sa.project_id}/locations/us-central1/publishers/google/models`
+  const url = `https://aiplatform.googleapis.com/v1beta1/projects/${sa.project_id}/locations/global/publishers/google/models`
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   const data = await res.json()
   const imageModels = (data.models || []).filter(m =>
@@ -278,7 +278,7 @@ export async function createClient() {
       apiKey: 'VERTEX_MODE',
       httpOptions: {
         baseUrl:    'https://aiplatform.googleapis.com',
-        apiVersion: `v1beta1/projects/${sa.project_id}/locations/us-central1/publishers/google`,
+        apiVersion: `v1beta1/projects/${sa.project_id}/locations/global/publishers/google`,
         headers:    { Authorization: `Bearer ${token}` },
       },
     })

@@ -184,7 +184,7 @@ export default function Step4_Scenes() {
     scenes, setScenes, updateScene,
     generationProgress, setProgress,
     isGenerating, setGenerating,
-    targetSceneCount, currentMode, visualMode, isEditorialMode,
+    targetSceneCount, currentMode, visualMode, isEditorialMode, isImageTextEnabled,
     isFixedCharMode, fixedCharStyleType, fixedCharSampleImage,
     setStep, setError, clearError,
   } = useAppStore()
@@ -225,7 +225,8 @@ export default function Step4_Scenes() {
         targetSceneCount ?? 30,
         effectiveMode,
         visualMode,
-        isEditorialMode
+        isEditorialMode,
+        isImageTextEnabled
       )
       setScenes(result)
       setProgress(result.length, result.length)
