@@ -359,6 +359,33 @@ export async function exportZip(state) {
     zip.file('script.txt', scriptText)
   }
 
+  // video_prompts.txt
+  const buildVideoPromptBlock = (list, prefix) =>
+    list.map((s, i) => {
+      const num = String(i + 1).padStart(3, '0')
+      return [
+        `--- ${s.id || `${prefix}${num}`} ${s.action || ''} ---`,
+        s.videoPromptKo ? `[KO] ${s.videoPromptKo}` : '',
+        s.videoPromptEn ? `[EN] ${s.videoPromptEn}` : '',
+        s.cameraMovement ? `Camera: ${s.cameraMovement}` : '',
+        s.shotType       ? `Shot: ${s.shotType}` : '',
+      ].filter(Boolean).join('\n')
+    }).join('\n\n')
+
+  const videoPromptSections = []
+  if (scenes.length > 0) {
+    videoPromptSections.push('=== 메인 씬 ===\n' + buildVideoPromptBlock(scenes, 'P'))
+  }
+  if (shortsClips.length > 0) {
+    videoPromptSections.push('=== 쇼츠 ===\n' + buildVideoPromptBlock(shortsClips, 'SH'))
+  }
+  if (introClips.length > 0) {
+    videoPromptSections.push('=== 인트로 ===\n' + buildVideoPromptBlock(introClips, 'IN'))
+  }
+  if (videoPromptSections.length > 0) {
+    metaFolder.file('video_prompts.txt', videoPromptSections.join('\n\n'))
+  }
+
   // report.html
   zip.file('report.html', generateReportHtml(state))
 

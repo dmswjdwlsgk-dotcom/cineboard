@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
-import { ChevronRight, ChevronLeft, Play, RefreshCw, Copy, Check, Image, AlertTriangle, Zap, Edit3, Upload, FileText, Download } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Play, RefreshCw, Copy, Check, Image, AlertTriangle, Zap, Edit3, Upload, FileText, Download, Film } from 'lucide-react'
 import Button from '../ui/Button.jsx'
 import Spinner from '../ui/Spinner.jsx'
 import ProgressBar from '../ui/ProgressBar.jsx'
@@ -419,6 +419,29 @@ export default function Step4_Scenes() {
     }, 500)
   }
 
+  const handleExtractVideoPrompts = () => {
+    if (scenes.length === 0) { alert('다운로드할 비디오 프롬프트가 없습니다.'); return }
+    const content = scenes.map((s, i) => {
+      const num = String(i + 1).padStart(3, '0')
+      return [
+        `--- ${s.id || `P${num}`} ---`,
+        s.videoPromptKo ? `[KO] ${s.videoPromptKo}` : '',
+        s.videoPromptEn ? `[EN] ${s.videoPromptEn}` : '',
+        s.cameraMovement ? `Camera: ${s.cameraMovement}` : '',
+        s.shotType       ? `Shot: ${s.shotType}` : '',
+      ].filter(Boolean).join('\n')
+    }).join('\n\n')
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const a    = document.createElement('a')
+    a.href     = URL.createObjectURL(blob)
+    a.download = `${date}_VIDEO_PROMPTS.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(a.href)
+  }
+
   const handleSaveImage = (idx) => {
     const scene = scenes[idx]
     if (!scene?.imageUrl) return
@@ -525,6 +548,20 @@ export default function Step4_Scenes() {
               </div>
               <span className="text-[9px] text-amber-500/70 font-medium">AutoFlow용 (.txt)</span>
             </button>
+
+            {scenes.some(s => s.videoPromptKo || s.videoPromptEn) && (
+              <button
+                onClick={handleExtractVideoPrompts}
+                disabled={isGenerating || generatingImages}
+                className="flex flex-col items-center gap-0.5 bg-violet-900/20 hover:bg-violet-900/40 text-violet-400 font-bold py-2 px-4 rounded-xl border border-violet-700/30 transition-all disabled:opacity-50 text-xs"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Film size={13} />
+                  <span>비디오 프롬프트</span>
+                </div>
+                <span className="text-[9px] text-violet-400/70 font-medium">Grok/Runway용 (.txt)</span>
+              </button>
+            )}
 
             {scenes.some(s => s.imageUrl) && (
               <button
