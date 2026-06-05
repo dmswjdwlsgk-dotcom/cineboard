@@ -586,7 +586,8 @@ ${isInfoviz || visualMode === 'documix' || visualMode === 'content' ? `━━━
 ${visualModeInstruction}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` : `[ACTOR RULES]:
 ⚠️ NAMED actors listed above are the FOCAL POINT. Their appearance (age/outfit/hair) is ISOLATED — do NOT mix between actors.
-⚠️ IF Historical Drama (사극): dragon robes(용포) = royalty ONLY. IF Modern: NO traditional clothes.
+⚠️ IF Historical Drama (사극): dragon robes(용포) = 왕/세자 ONLY. Political power ≠ royalty — even the most powerful minister (영의정, 영상, 정승, 판서, 권신, 총신) wears 관복/사모관대 with 흉배, NEVER 용포. IF Modern: NO traditional clothes.
+${langConfig.costumeHierarchy || ''}
 ⚠️ CRITICAL APPEARANCE OVERRIDE: YOU MUST COMPLETELY IGNORE the script's clothing descriptions.
 ⚠️ USE ACTOR TAGS: Your \`imagePrompt\` and \`action\` MUST use the EXACT [ACTOR-X] tags to refer to characters instead of their names or pronouns (e.g., "[ACTOR-A] looks at [ACTOR-B]"). DO NOT hallucinate script-based clothing.
 ⚠️ NEVER CREATE CLONES: Use each ACTOR-X tag exactly once for their single physical body.
@@ -644,7 +645,6 @@ GOOD imagePrompt: "EXTREME CLOSE-UP: trembling hands clutching crumpled prescrip
 ⚠️ CRITICAL PRESENCE CHECK: ONLY include characters who are PHYSICALLY PRESENT AND VISIBLE.
 ⚠️ PRESERVE ABSENT NAMES IN TEXT: If a character is absent but mentioned in the script, MUST preserve their true Korean name in the 'action' and 'description'.
 ⚠️ NEVER output twins, clones, or multiple generic figures if only ONE named character is acting.`}
-${langConfig.costumeHierarchy || ''}
 [STYLE]: ${stylePreset.prompt}
 
 ${resilienceNote}`
