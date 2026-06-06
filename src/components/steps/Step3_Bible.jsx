@@ -139,8 +139,9 @@ export default function Step3_Bible() {
       const base64 = dataUrl.split(',')[1]
       const char = continuityBible?.characters?.[idx]
 
-      // 이미지 즉시 표시
+      // 이미지 즉시 표시 + 씬 생성 레퍼런스로 전달 (imageApi는 char.imageUrl 참조)
       updateCharacter(idx, 'charImageUrl', dataUrl)
+      updateCharacter(idx, 'imageUrl', dataUrl)
       if (char?.name) setCharacterImage(char.name, dataUrl)
 
       // AI 분석으로 visualPrompt 업데이트
@@ -165,6 +166,7 @@ export default function Step3_Bible() {
         : `Portrait of a character named ${char.name}, ${char.role}, ${char.gender}, ${char.age}. Character portrait, upper body shot.`
       const url = await generateImage(prompt, style, modelId, '1:1', false)
       updateCharacter(idx, 'charImageUrl', url)
+      updateCharacter(idx, 'imageUrl', url)
       setCharacterImage(char.name, url)
     } catch (err) {
       setError(`캐릭터 이미지 생성 실패: ${err.message}`)
