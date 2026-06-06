@@ -61,13 +61,14 @@ export const LANG_CONFIGS = {
     narratorNames: ['나레이션', '해설', '해설자', '내레이션', 'narrator', 'narration', 'Narrator', 'Narration'],
     ethnicityHint: 'Korean (East Asian). Characters should have Korean appearance, Korean names, and Korean cultural context by default.',
     costumeHierarchy: `⚠️ KOREAN TRADITIONAL COSTUME HIERARCHY (CRITICAL):
-- 왕/임금/세자 ONLY → 용포(dragon robe), 곤룡포, 익선관
-- 왕비/공주 ONLY → 활옷, 원삼, 봉황 문양
-- 양반/선비 → 도포, 심의, 갓(black hat), 유건
-- 관리/대감/정승 → 관복, 사모관대, 흉배
+- 왕/임금/세자 ONLY → 반드시 익선관(翼善冠, black two-winged folded hat) + 곤룡포(red/blue dragon robe). ⚠️ The 익선관 headwear is MANDATORY for kings — NEVER show a king with bare topknot or no headwear.
+- 왕비/공주 ONLY → 활옷, 원삼, 봉황 문양, 적의
+- 양반/선비 → 도포, 심의, 갓(black wide-brimmed hat), 유건
+- 관리/대감/정승 → 관복, 사모관대(black winged official hat), 흉배
 - 서민/상인 → 일반 한복(저고리+바지/치마), 두건
 - 기녀/무녀 → 화려한 한복, 화관, 노리개
-- ⚠️ NEVER assign 용포/dragon robe to non-royal characters`,
+- ⚠️ NEVER assign 용포/dragon robe to non-royal characters
+- ⚠️ Political power ≠ royalty — ministers wear 관복+사모, NEVER 곤룡포`,
     locationExamples: '"숲속", "왕의 서재", "마을 광장", "강변"',
     dialogueRule: 'Dialogue must be under 35 Korean characters.',
   },
