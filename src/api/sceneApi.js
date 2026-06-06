@@ -602,27 +602,20 @@ ${directorMode} — HIGHEST PRIORITY]
 You are not describing a scene. You are DIRECTING a movie or illustration.
 Your imagePrompt must be a DIRECTOR'S SHOT DESCRIPTION that captures the single most emotionally devastating moment.
 
-[STEP 1 — READ THE SCENE]:
-Read the scriptReference. Identify: (A) how many characters are involved, (B) the emotional tone, (C) whether it's a dialogue, confrontation, ceremony, or solo moment.
-
-⚠️ [MULTI-CHARACTER RULE — CRITICAL]:
-If 2 or more characters are involved → you MUST show their spatial relationship.
-NEVER default to a single bust shot when multiple characters are interacting.
-Choose TWO-SHOT, OVER-THE-SHOULDER, GROUP SHOT, or WIDE SHOT instead.
-Ask: "What is the RELATIONSHIP and SPACE between these characters right now?"
+[STEP 1 — FIND THE EMOTIONAL PEAK]:
+Read the scriptReference carefully. Find the ONE MOMENT of maximum emotional intensity.
+Ask yourself: "What is the exact millisecond that would make an audience gasp, weep, or hold their breath?"
 
 [STEP 2 — CHOOSE YOUR FILM TECHNIQUE]:
-• DIALOGUE / NEGOTIATION → TWO-SHOT: both characters visible in frame, tension readable in body language and the gap between them. Or OVER-THE-SHOULDER showing the listener's reaction.
-• COURT / CEREMONY / GROUP → WIDE or GROUP SHOT: full spatial arrangement of all participants in the grand architectural setting. King elevated, ministers arranged around.
-• CONFRONTATION / POWER STRUGGLE → LOW ANGLE TWO-SHOT or OVER-THE-SHOULDER: dominant figure looming over submissive one. Physical size contrast amplifies power dynamic.
-• GRIEF / DESPAIR (solo) → Extreme Close-Up on face or trembling hands. Desaturated blue-grey palette.
-• GRIEF / DESPAIR (witnessed) → TWO-SHOT: one character grieving, another watching with conflicted emotion.
+Consider: does this scene need a FACE (close-up) or a WORLD (wide shot)? Both are equally valid emotional tools.
+• GRIEF / DESPAIR → Extreme Close-Up on face or trembling hands. Desaturated blue-grey palette. Shallow depth of field.
+• RAGE / CONFRONTATION → Over-The-Shoulder shot. High contrast harsh side lighting. Warm amber rage tones.
 • HOPE / REUNION → Wide Shot with characters small against vast beautiful environment. Warm golden backlight.
-• SHOCK / REVELATION → Dutch angle. Harsh flat frontal light. Hyper-sharp focus.
+• SHOCK / REVELATION → Dutch angle (camera tilted 15°). Harsh flat frontal light. Hyper-sharp focus.
 • LONGING / SEPARATION → Medium shot with character isolated on one side of frame. Muted, cold palette. Long negative space.
-• POWER / TRIUMPH → Low angle shot looking up at character. Dramatic rim lighting.
-• FEAR / DREAD → Character seen from behind, facing something threatening. Dark shadows.
-• TENDERNESS / LOVE → Close-Up or TWO-SHOT with soft diffused light. Warm skin tones.
+• POWER / TRIUMPH → Low angle shot looking up at character. Dramatic rim lighting. Saturated bold colors.
+• FEAR / DREAD → Character seen from behind, facing something threatening. Dark shadows. Minimal light.
+• TENDERNESS / LOVE → Close-Up with soft diffused light. Warm skin tones. Rack focus between two faces.
 • ACTION / BATTLE → Wide or Full Shot showing bodies in motion and spatial relationship between combatants.
 
 [STEP 3 — WRITE THE imagePrompt]:
