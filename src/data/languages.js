@@ -61,7 +61,7 @@ export const LANG_CONFIGS = {
     narratorNames: ['나레이션', '해설', '해설자', '내레이션', 'narrator', 'narration', 'Narrator', 'Narration'],
     ethnicityHint: 'Korean (East Asian). Characters should have Korean appearance, Korean names, and Korean cultural context by default.',
     costumeHierarchy: `⚠️ KOREAN TRADITIONAL COSTUME HIERARCHY (CRITICAL):
-- 왕/임금/세자 ONLY → 반드시 익선관(翼善冠, black two-winged folded hat) + 곤룡포(red/blue dragon robe). ⚠️ The 익선관 headwear is MANDATORY for kings — NEVER show a king with bare topknot or no headwear.
+- 왕/임금/세자 ONLY → 반드시 익선관(翼善冠, black two-winged folded hat) + 곤룡포(red dragon robe with gold embroidery). ⚠️ 익선관 is MANDATORY. ⚠️ Inner garment visible at collar MUST be WHITE — NEVER blue, green, or other colors.
 - 왕비/공주 ONLY → 활옷, 원삼, 봉황 문양, 적의
 - 양반/선비 → 도포, 심의, 갓(black wide-brimmed hat), 유건
 - 관리/대감/정승 → 관복, 사모관대(black winged official hat fully covering all hair)+흉배.
