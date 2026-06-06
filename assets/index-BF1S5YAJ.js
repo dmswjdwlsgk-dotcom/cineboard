@@ -856,7 +856,7 @@ ${c.length>0?"⚠️ CRITICAL: The character reference images above show the EXA
 - 왕/임금/세자 ONLY → 반드시 익선관(翼善冠, black two-winged folded hat) + 곤룡포(red/blue dragon robe). ⚠️ The 익선관 headwear is MANDATORY for kings — NEVER show a king with bare topknot or no headwear.
 - 왕비/공주 ONLY → 활옷, 원삼, 봉황 문양, 적의
 - 양반/선비 → 도포, 심의, 갓(black wide-brimmed hat), 유건
-- 관리/대감/정승 → 관복, 사모관대(black winged official hat)+흉배. ⚠️ 사모 MUST completely enclose the topknot — NO hair or topknot visible above the hat rim. The 사모 crown covers all hair.
+- 관리/대감/정승 → 관복, 사모관대(black winged official hat fully covering all hair)+흉배.
 - 서민/상인 → 일반 한복(저고리+바지/치마), 두건
 - 기녀/무녀 → 화려한 한복, 화관, 노리개
 - ⚠️ NEVER assign 용포/dragon robe to non-royal characters
@@ -1267,7 +1267,8 @@ ${f||o==="documix"||o==="content"?`━━━━━━━━━━━━━━━
 ${p}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`:`[ACTOR RULES]:
 ⚠️ NAMED actors listed above are the FOCAL POINT. Their appearance (age/outfit/hair) is ISOLATED — do NOT mix between actors.
-⚠️ IF Historical Drama (사극): dragon robes(용포) = 왕/세자 ONLY. Political power ≠ royalty — even the most powerful minister (영의정, 영상, 정승, 판서, 권신, 총신) wears 관복/사모관대 with 흉배, NEVER 용포. IF Modern: NO traditional clothes.
+⚠️ IF Historical Drama (사극): dragon robes(용포) = 왕/세자 ONLY. Political power ≠ royalty — even the most powerful minister wears 관복/사모관대 with 흉배, NEVER 용포. IF Modern: NO traditional clothes.
+⚠️ HEADWEAR RULE: When a character wears 사모, 갓, 익선관, or any traditional hat — ALL hair is completely hidden inside the hat. NEVER describe or render visible hair protruding above or outside the hat.
 ${r.costumeHierarchy||""}
 ⚠️ CRITICAL APPEARANCE OVERRIDE: YOU MUST COMPLETELY IGNORE the script's clothing descriptions.
 ⚠️ USE ACTOR TAGS: Your \`imagePrompt\` and \`action\` MUST use the EXACT [ACTOR-X] tags to refer to characters instead of their names or pronouns (e.g., "[ACTOR-A] looks at [ACTOR-B]"). DO NOT hallucinate script-based clothing.
