@@ -17,6 +17,11 @@ function EditableField({ value, onChange, multiline = false, className = '' }) {
     setEditing(false)
   }
 
+  const handleCancel = () => {
+    setDraft(value)
+    setEditing(false)
+  }
+
   if (editing) {
     return (
       <div className="flex gap-2 items-start">
@@ -24,6 +29,7 @@ function EditableField({ value, onChange, multiline = false, className = '' }) {
           <textarea
             value={draft}
             onChange={e => setDraft(e.target.value)}
+            onBlur={handleSave}
             className="flex-1 bg-gray-700 border border-purple-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none resize-none min-h-[60px]"
             autoFocus
           />
@@ -31,14 +37,16 @@ function EditableField({ value, onChange, multiline = false, className = '' }) {
           <input
             value={draft}
             onChange={e => setDraft(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') handleCancel() }}
             className={`flex-1 bg-gray-700 border border-purple-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none ${className}`}
             autoFocus
           />
         )}
-        <button onClick={handleSave} className="text-emerald-400 hover:text-emerald-300 flex-shrink-0 mt-1">
+        <button onMouseDown={e => { e.preventDefault(); handleSave() }} className="text-emerald-400 hover:text-emerald-300 flex-shrink-0 mt-1">
           <Check size={14} />
         </button>
-        <button onClick={() => { setDraft(value); setEditing(false) }} className="text-red-400 hover:text-red-300 flex-shrink-0 mt-1">
+        <button onMouseDown={e => { e.preventDefault(); handleCancel() }} className="text-red-400 hover:text-red-300 flex-shrink-0 mt-1">
           <X size={14} />
         </button>
       </div>
@@ -123,11 +131,19 @@ export default function Step3_Bible() {
     setAnalyzingImages(prev => ({ ...prev, [idx]: true }))
     try {
       const reader = new FileReader()
-      const base64 = await new Promise((resolve, reject) => {
-        reader.onload = e => resolve(e.target.result.split(',')[1])
+      const dataUrl = await new Promise((resolve, reject) => {
+        reader.onload = e => resolve(e.target.result)
         reader.onerror = reject
         reader.readAsDataURL(file)
       })
+      const base64 = dataUrl.split(',')[1]
+      const char = continuityBible?.characters?.[idx]
+
+      // 이미지 즉시 표시
+      updateCharacter(idx, 'charImageUrl', dataUrl)
+      if (char?.name) setCharacterImage(char.name, dataUrl)
+
+      // AI 분석으로 visualPrompt 업데이트
       const result = await analyzeCharacterImage(base64)
       updateCharacter(idx, 'imagePromptKo', result.imagePromptKo || '')
       updateCharacter(idx, 'visualPrompt', result.visualPrompt || '')
@@ -154,6 +170,16 @@ export default function Step3_Bible() {
       setError(`캐릭터 이미지 생성 실패: ${err.message}`)
     } finally {
       setGeneratingCharImages(prev => ({ ...prev, [idx]: false }))
+    }
+  }
+
+  const handleGenerateAllCharImages = async () => {
+    if (!isApiReady()) { setError('API 키가 설정되지 않았습니다.'); return }
+    const characters = continuityBible?.characters || []
+    for (let idx = 0; idx < characters.length; idx++) {
+      const char = characters[idx]
+      if (char.charImageUrl || characterImages[char.name]) continue
+      await handleGenerateCharImage(idx, char)
     }
   }
 
@@ -224,10 +250,21 @@ export default function Step3_Bible() {
                 <Users size={15} className="text-purple-400" />
                 등장인물 ({(continuityBible.characters || []).length}명)
               </h2>
-              <Button variant="ghost" size="sm" onClick={addCharacter}>
-                <Plus size={14} />
-                추가
-              </Button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleGenerateAllCharImages}
+                  disabled={Object.values(generatingCharImages).some(Boolean)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-900/30 hover:bg-purple-900/50 border border-purple-700/40 text-purple-300 text-xs font-bold transition-all disabled:opacity-50"
+                  title="이미지 없는 캐릭터 전체 생성"
+                >
+                  <Image size={12} />
+                  전체 이미지 생성
+                </button>
+                <Button variant="ghost" size="sm" onClick={addCharacter}>
+                  <Plus size={14} />
+                  추가
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-3">
