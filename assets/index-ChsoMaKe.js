@@ -856,7 +856,7 @@ ${c.length>0?"⚠️ CRITICAL: The character reference images above show the EXA
 - 왕/임금/세자 ONLY → 반드시 익선관(翼善冠, black two-winged folded hat) + 곤룡포(red/blue dragon robe). ⚠️ The 익선관 headwear is MANDATORY for kings — NEVER show a king with bare topknot or no headwear.
 - 왕비/공주 ONLY → 활옷, 원삼, 봉황 문양, 적의
 - 양반/선비 → 도포, 심의, 갓(black wide-brimmed hat), 유건
-- 관리/대감/정승 → 관복, 사모관대(black winged official hat), 흉배
+- 관리/대감/정승 → 관복, 사모관대(black winged official hat)+흉배. ⚠️ 사모 MUST completely enclose the topknot — NO hair or topknot visible above the hat rim. The 사모 crown covers all hair.
 - 서민/상인 → 일반 한복(저고리+바지/치마), 두건
 - 기녀/무녀 → 화려한 한복, 화관, 노리개
 - ⚠️ NEVER assign 용포/dragon robe to non-royal characters
