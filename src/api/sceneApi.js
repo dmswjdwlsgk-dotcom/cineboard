@@ -463,6 +463,38 @@ Every piece of information must become a VISUAL STORY with:
 [USE INFO-X TAGS]: Your imagePrompt and action MUST use [INFO-X] tags to refer to information elements.
 [MANDATORY]: involvedCharacters MUST list ALL information elements relevant to this scene's script segment.
 `
+    case 'hist_drama': return `
+[🏯 HISTORICAL DRAMA CINEMATOGRAPHY MODE — FULL CINEMATIC GRAMMAR]
+You are a Korean historical drama director. Read the scene content FIRST, then choose the shot.
+
+⚠️ CONTENT TRIGGERS — these override emotional defaults:
+- Script describes a LOCATION / SPACE / EXTERIOR (palace, battlefield, mountain, fortress, sea, procession) → EXTREME WIDE or WIDE establishing shot
+- Script shows a character MOVING / ENTERING / WALKING / RIDING → FULL SHOT showing full body + environment
+- Script has 2+ characters in DIALOGUE / NEGOTIATION / CONFRONTATION → OVER-THE-SHOULDER or TWO-SHOT showing both
+- Script depicts a COURT CEREMONY / MILITARY FORMATION / CROWD → WIDE SHOT or BIRD'S EYE VIEW from above
+- Script shows a KING or AUTHORITY FIGURE making a declaration or being presented → LOW ANGLE looking up
+- Script has a character OBSERVED THROUGH A DOORWAY / LATTICE SCREEN / WINDOW → FRAME-IN-FRAME composition
+- Script depicts a LONE FIGURE against sky, fire, moonlight, or vast space → WIDE SHOT with SILHOUETTE
+- Script is the emotional peak of ONE CHARACTER alone with no environment context → CLOSE-UP or EXTREME CLOSE-UP
+
+CAMERA ANGLES — match to power/mood:
+• HIGH ANGLE (부감): character appears small, powerless, or being surveyed
+• LOW ANGLE (앙각): king/powerful figure — dominance, authority, weight
+• EYE LEVEL: neutral interaction, dialogue
+• BIRD'S EYE VIEW: military formations, palace courtyard layout, crowd density
+• OVER-THE-SHOULDER: confrontation and dialogue tension between two characters
+• DUTCH ANGLE: shock, betrayal, unstable political moment
+
+COMPOSITIONS — use deliberately:
+• SYMMETRICAL: palace throne room, formal court, two forces facing each other
+• FRAME-IN-FRAME: character visible through doorway, pillar arch, lattice screen
+• SILHOUETTE + BACKLIGHT: lone figure at dawn, fire, torchlight, sunset
+• RULE OF THIRDS: character off-center, negative space showing isolation
+
+VARIETY PRINCIPLE: spatial content comes first, emotion second.
+A grief scene in a vast empty palace = WIDE SHOT of lone small figure — NOT a close-up.
+A tense dialogue = TWO-SHOT — NOT a single bust shot of one character.
+`
     default: return '' // 'character' → 기본 cinematographer 모드 지침으로 처리
   }
 }

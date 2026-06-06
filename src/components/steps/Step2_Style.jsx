@@ -20,6 +20,7 @@ const VISUAL_MODES = [
   { id: 'webtoon',    label: '🎨 웹툰',          desc: '웹툰/만화 스타일' },
   { id: 'mv',         label: '🎵 뮤직비디오',    desc: 'MV/감성 영상 스타일' },
   { id: 'documix',    label: '📰 다큐믹스',       desc: '실사 다큐 + 정보 그래픽 혼합' },
+  { id: 'hist_drama', label: '🏯 사극',            desc: '역사 드라마 전용 다양한 앵글' },
 ]
 
 const FIXED_CHAR_STYLES = [

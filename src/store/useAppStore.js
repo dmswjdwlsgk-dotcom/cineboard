@@ -85,7 +85,7 @@ export const useAppStore = create(
       setCurrentMode:        (mode)      => set({ currentMode: mode }),
       setVisualMode: (mode) => {
         // auto/immersive는 isEditorialMode 변경 안 함 (원본 동일)
-        const editorialMap = { content: true, infoviz: true, docu: true, character: false, webtoon: false, mv: false }
+        const editorialMap = { content: true, infoviz: true, docu: true, character: false, webtoon: false, mv: false, hist_drama: false }
         const update = { visualMode: mode }
         if (editorialMap[mode] !== undefined) update.isEditorialMode = editorialMap[mode]
         set(update)
