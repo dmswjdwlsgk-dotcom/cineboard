@@ -606,15 +606,22 @@ Your imagePrompt must be a DIRECTOR'S SHOT DESCRIPTION that captures the single 
 Read the scriptReference carefully. Find the ONE MOMENT of maximum emotional intensity.
 Ask yourself: "What is the exact millisecond that would make an audience gasp, weep, or hold their breath?"
 
+⚠️ [SHOT VARIETY MANDATE — CRITICAL]:
+Do NOT always default to Close-Up or Medium Shot for emotional scenes. A story told entirely in close-ups feels claustrophobic.
+For every 3 tight shots (close-up/medium), you MUST choose at least 1 wide or environmental shot.
+WIDE/ESTABLISHING shots are EQUALLY VALID for emotional storytelling — a lone figure in a vast palace courtyard conveys grief MORE powerfully than a 10th consecutive close-up.
+Ask yourself: "Does this scene benefit from showing the WORLD the character inhabits, not just their face?"
+
 [STEP 2 — CHOOSE YOUR FILM TECHNIQUE]:
-• GRIEF / DESPAIR → Extreme Close-Up on face or trembling hands. Desaturated blue-grey palette. Shallow depth of field.
-• RAGE / CONFRONTATION → Over-The-Shoulder shot. High contrast harsh side lighting. Warm amber rage tones.
+• GRIEF / DESPAIR → ALTERNATE between: (A) Extreme Close-Up on face — OR — (B) Wide Shot of lone figure small in vast cold environment. Choose (B) every 2nd grief scene.
+• RAGE / CONFRONTATION → Over-The-Shoulder shot or Low-angle medium shot. High contrast harsh side lighting.
 • HOPE / REUNION → Wide Shot with characters small against vast beautiful environment. Warm golden backlight.
 • SHOCK / REVELATION → Dutch angle (camera tilted 15°). Harsh flat frontal light. Hyper-sharp focus.
-• LONGING / SEPARATION → Medium shot with character isolated on one side of frame. Muted, cold palette. Long negative space.
+• LONGING / SEPARATION → Wide Shot: character alone on one side of a vast space — palace gate, hilltop, river bank. Muted cold palette.
 • POWER / TRIUMPH → Low angle shot looking up at character. Dramatic rim lighting. Saturated bold colors.
-• FEAR / DREAD → Character seen from behind, facing something threatening. Dark shadows. Minimal light.
-• TENDERNESS / LOVE → Close-Up with soft diffused light. Warm skin tones. Rack focus between two faces.
+• FEAR / DREAD → Wide Shot: character small, facing something vast and threatening. Dark shadows closing in.
+• TENDERNESS / LOVE → Close-Up with soft diffused light. Warm skin tones.
+• ACTION / BATTLE → Wide or Full Shot showing bodies in motion, spatial relationship between combatants.
 
 [STEP 3 — WRITE THE imagePrompt]:
 Format: "[SHOT TYPE]: [what characters are doing at peak moment, specific physical actions using [ACTOR-X] tags]. [LIGHTING description]. [COLOR PALETTE / MOOD]. [KEY ENVIRONMENTAL DETAIL that amplifies emotion]."
