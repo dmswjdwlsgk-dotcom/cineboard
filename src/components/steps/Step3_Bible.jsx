@@ -178,10 +178,22 @@ export default function Step3_Bible() {
   const handleGenerateAllCharImages = async () => {
     if (!isApiReady()) { setError('API 키가 설정되지 않았습니다.'); return }
     const characters = continuityBible?.characters || []
-    for (let idx = 0; idx < characters.length; idx++) {
-      const char = characters[idx]
-      if (char.charImageUrl || characterImages[char.name]) continue
-      await handleGenerateCharImage(idx, char)
+    const modelId = MODELS[useAppStore.getState().selectedModel]?.id || MODELS[0].id
+    const isFlash = modelId.includes('flash') && !modelId.includes('pro')
+    const isPro   = modelId.includes('pro')
+    const batchSize  = isFlash ? 5 : isPro ? 1 : 3
+    const batchDelay = isFlash ? 500 : isPro ? 10000 : 1500
+
+    const toGenerate = characters
+      .map((char, idx) => ({ char, idx }))
+      .filter(({ char }) => !char.charImageUrl && !characterImages[char.name])
+
+    for (let i = 0; i < toGenerate.length; i += batchSize) {
+      const batch = toGenerate.slice(i, i + batchSize)
+      await Promise.allSettled(batch.map(({ char, idx }) => handleGenerateCharImage(idx, char)))
+      if (i + batchSize < toGenerate.length) {
+        await new Promise(r => setTimeout(r, batchDelay))
+      }
     }
   }
 

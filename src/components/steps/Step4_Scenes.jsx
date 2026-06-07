@@ -245,34 +245,50 @@ export default function Step4_Scenes() {
     const sceneList = [...scenes]
     let completed = 0
 
-    for (let idx = 0; idx < sceneList.length; idx++) {
-      const scene = sceneList[idx]
-      if (!scene?.imagePrompt && !scene?.imagePromptKo && !scene?.action) {
-        completed++
-        setProgress(completed, sceneList.length)
-        continue
-      }
-      updateScene(idx, { generating: true, imageError: null })
-      try {
-        const url = await generateSceneImage(
-          scene,
-          continuityBible || { characters: [] },
-          style,
-          modelId,
-          aspectRatio,
-          false,
-          currentMode,
-          ...fixedCharArgs
-        )
-        updateScene(idx, { imageUrl: url, generating: false, imageError: null })
-      } catch (err) {
-        updateScene(idx, { imageError: err.message, generating: false })
-      }
-      completed++
-      setProgress(completed, sceneList.length)
-      if (idx < sceneList.length - 1) {
-        const isZImage = modelId === 'z-image-turbo'
-        await new Promise(r => setTimeout(r, isZImage ? 500 : 1000))
+    const isFlash = modelId.includes('flash') && !modelId.includes('pro')
+    const isPro   = modelId.includes('pro')
+    const batchSize  = isFlash ? 5 : isPro ? 1 : 3
+    const batchDelay = isFlash ? 500 : isPro ? 10000 : 1500
+
+    for (let i = 0; i < sceneList.length; i += batchSize) {
+      const batch = sceneList.slice(i, i + batchSize)
+
+      batch.forEach((scene, j) => {
+        if (scene?.imagePrompt || scene?.imagePromptKo || scene?.action) {
+          updateScene(i + j, { generating: true, imageError: null })
+        }
+      })
+
+      await Promise.allSettled(
+        batch.map(async (scene, j) => {
+          const idx = i + j
+          if (!scene?.imagePrompt && !scene?.imagePromptKo && !scene?.action) {
+            completed++
+            setProgress(completed, sceneList.length)
+            return
+          }
+          try {
+            const url = await generateSceneImage(
+              scene,
+              continuityBible || { characters: [] },
+              style,
+              modelId,
+              aspectRatio,
+              false,
+              currentMode,
+              ...fixedCharArgs
+            )
+            updateScene(idx, { imageUrl: url, generating: false, imageError: null })
+          } catch (err) {
+            updateScene(idx, { imageError: err.message, generating: false })
+          }
+          completed++
+          setProgress(completed, sceneList.length)
+        })
+      )
+
+      if (i + batchSize < sceneList.length) {
+        await new Promise(r => setTimeout(r, batchDelay))
       }
     }
 
