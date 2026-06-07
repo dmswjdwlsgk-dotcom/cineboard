@@ -234,7 +234,7 @@ export const STYLES = [
   {
     id: 'korean_hist_illust',
     label: '한국 역사 교육 일러스트 (History Illust)',
-    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS ILLUSTRATION ARTWORK. Korean historical drama aesthetic (조선시대 사극), semi-realistic digital painting with smooth painterly brushwork, soft volumetric shading, high quality material detail — silk fabric sheen, metallic surfaces, ornate embroidery rendered with precision. Rich warm color palette, soft natural lighting, period-accurate Korean setting. Single view, edge-to-edge full frame, NO text, NO borders.',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS ILLUSTRATION ARTWORK. Korean historical drama aesthetic (조선시대 사극), masterpiece digital painting illustration with smooth painterly brushwork, soft volumetric shading, high quality material detail — silk fabric sheen, metallic surfaces, ornate embroidery rendered with precision. Rich warm color palette, soft natural lighting, period-accurate Korean setting. Single view, edge-to-edge full frame, NO text, NO borders.',
     palette: ['#2c4a6b', '#8b1a1a', '#c8a050'],
     thumbnail: 'style_thumbs/korean_hist_illust.png',
   },
