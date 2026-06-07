@@ -619,15 +619,17 @@ ${visualModeInstruction}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` : `[ACTOR RULES]:
 ⚠️ NAMED actors listed above are the FOCAL POINT. Their appearance (age/outfit/hair) is ISOLATED — do NOT mix between actors.
 ⚠️ IF Historical Drama (사극): dragon robes(용포) = 왕/세자 ONLY. Political power ≠ royalty — even the most powerful minister wears 관복/사모관대 with 흉배, NEVER 용포. IF Modern: NO traditional clothes.
+⚠️ ROYAL HEADWEAR (사극 CRITICAL): 왕·세자 MUST wear 익선관(翼善冠, ikseongwan) — tall smooth rounded black cap sitting low on brow, two small rear-folding flaps at the upper back of the crown, NO wide lateral wings. Officials/ministers wear 사모(紗帽, samo) — shorter black hat with two wide flat wings extending horizontally to the SIDES. CRITICAL: wide horizontal side wings = 사모 = officials ONLY, NEVER on a king. A king wearing 사모 is a FATAL ERROR.
 ⚠️ HEADWEAR RULE: When a character wears 사모, 갓, 익선관, or any traditional hat — ALL hair is completely hidden inside the hat. NEVER describe or render visible hair protruding above or outside the hat.
 ${langConfig.costumeHierarchy || ''}
+⚠️ RANK-AT-TIME-OF-SCENE (사극 CRITICAL): If a character's description contains a STATUS TRANSITION note (e.g., 수양대군→세조), dress them according to their rank AT THE MOMENT of THIS script segment — NOT their final rank. If the segment is set BEFORE coronation/ascension, they wear pre-royal costume (도포, 왕자복, 갑옷 etc.), NOT 용포/익선관. Only dress them as king AFTER the coronation moment in the script.
 ⚠️ CRITICAL APPEARANCE OVERRIDE: YOU MUST COMPLETELY IGNORE the script's clothing descriptions.
 ⚠️ USE ACTOR TAGS: Your \`imagePrompt\` and \`action\` MUST use the EXACT [ACTOR-X] tags to refer to characters instead of their names or pronouns (e.g., "[ACTOR-A] looks at [ACTOR-B]"). DO NOT hallucinate script-based clothing.
 ⚠️ NEVER CREATE CLONES: Use each ACTOR-X tag exactly once for their single physical body.
 ⚠️ ANTI-CLONE PROTOCOL (CRITICAL!):
    - If you add background figures (staff, passersby), you MUST explicitly describe them as "faceless, distant, generic silhouettes".
    - NEVER describe a background character doing the exact same action or wearing the same clothes as the [ACTOR].
-
+${visualModeInstruction ? `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${visualModeInstruction}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${directorMode} — HIGHEST PRIORITY]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -677,7 +679,7 @@ GOOD imagePrompt: "EXTREME CLOSE-UP: trembling hands clutching crumpled prescrip
 
 [MANDATORY CHARACTER RULE]:
 ⚠️ For the "involvedCharacters" array, you MUST use the exact ORIGINAL KOREAN NAMES (e.g., "민기", "지은"), NOT the "ACTOR-X" labels. Return an empty array [] if no humans are in the scene.
-⚠️ CRITICAL PRESENCE CHECK: ONLY include characters who are PHYSICALLY PRESENT AND VISIBLE.
+⚠️ CRITICAL PRESENCE CHECK: ONLY include characters who are PHYSICALLY PRESENT AND VISIBLE in THIS EXACT script segment. If the segment describes a battle, landscape, crowd event, or a scene where named characters are NOT actively present — set involvedCharacters to [] and render period-appropriate anonymous figures (soldiers, officials, commoners) instead. Do NOT force a named character into every scene.
 ⚠️ PRESERVE ABSENT NAMES IN TEXT: If a character is absent but mentioned in the script, MUST preserve their true Korean name in the 'action' and 'description'.
 ⚠️ NEVER output twins, clones, or multiple generic figures if only ONE named character is acting.`}
 [STYLE]: ${stylePreset.prompt}

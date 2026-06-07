@@ -44,6 +44,7 @@ The visual style is applied SEPARATELY by the system. If you include style keywo
 Extract ONLY the SINGLE most iconic core identity of each character. DO NOT split a single character into multiple variations or life stages.
 - Even if a character ages, changes clothes, masks their identity, or wears a disguise, you MUST extract them AS A SINGLE UNIQUE CHARACTER representing their true, fundamental identity.
 - There should be STRICTLY ONE entry per individual person in the script.
+- STATUS TRANSITION EXCEPTION: If a character undergoes a FUNDAMENTAL RANK CHANGE during the script (e.g., prince/duke → king, general → ruler), add a "STATUS TRANSITION: [pre-rank] → [post-rank] (e.g., 수양대군(왕자/대군) → 세조(왕))" note at the START of their description field. Their visualPrompt should reflect their MOST FREQUENTLY APPEARING rank in the script.
 ${conf.costumeHierarchy}
 
 [LOCATION EXTRACTION - MANDATORY]:
