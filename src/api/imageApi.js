@@ -244,15 +244,12 @@ export async function generateSceneImage(
 
   // 캐릭터 외형 정보
   const sceneChars = resolveSceneCharacters(scene, bible)
-  const ROYAL_KEYWORDS = /왕(?!자녀|실)|세자|왕비|중전|대왕|황제|황후|임금|전하|주상|대비|상왕|\bking\b|\bqueen\b|crown prince/i
   const castInfo   = sceneChars.length > 0
     ? sceneChars.map((c, i) => {
         const idx = bible.characters.findIndex(b => b.name === c.name)
         const tag = `ACTOR-${String.fromCharCode(65 + (idx !== -1 ? idx : i))}`
         const protagonist = c.isProtagonist ? ' [★PROTAGONIST]' : ''
-        const isRoyal = ROYAL_KEYWORDS.test(c.description || '') || ROYAL_KEYWORDS.test(c.name || '')
-        const royalTag = isRoyal ? ' [👑ROYALTY: MUST wear 익선관(翼善冠) — tall black cap, small rear flaps. NEVER 사모]' : ''
-        return `[${tag}]${protagonist}${royalTag} AGE: ${c.age}${c.gender ? `, GENDER: ${c.gender}` : ''}. APPEARANCE: ${c.visualPrompt}`
+        return `[${tag}]${protagonist} AGE: ${c.age}${c.gender ? `, GENDER: ${c.gender}` : ''}. APPEARANCE: ${c.visualPrompt}`
       }).join('\n')
     : '(no specific characters - focus on environment and atmosphere)'
 
@@ -319,7 +316,6 @@ ${scene.setting ? `[LOCATION]: ${scene.setting}` : ''}
 
 ${sceneChars.length > 0 ? `[CAST]\n${castInfo}` : '[NO HUMAN FIGURES - Environment shot]'}
 ${consistencyNote}
-⚠️ ROYAL HEADWEAR (ABSOLUTE — NO EXCEPTIONS): Korean king(왕)·crown prince(세자) MUST wear 익선관(翼善冠, ikseongwan) — tall smooth rounded black cap sitting low on brow, two small rear-folding flaps at upper-back of crown, NO wide side wings. Officials/ministers ONLY wear 사모(紗帽, samo) — wide flat horizontal wings extending to the sides. Drawing 사모 (wide side-winged hat) on a king is a FATAL ERROR. Check the character's role before drawing any headwear.
 [CRITICAL GROUNDING]: ALL characters MUST be physically grounded in the 3D space of the CURRENT LOCATION.
 
 [SHOT PARAMETERS] ${imagePromptText}
