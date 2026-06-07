@@ -244,12 +244,15 @@ export async function generateSceneImage(
 
   // 캐릭터 외형 정보
   const sceneChars = resolveSceneCharacters(scene, bible)
+  const ROYAL_KEYWORDS = /왕(?!자녀|실)|세자|왕비|중전|대왕|황제|황후|임금|전하|주상|대비|상왕|\bking\b|\bqueen\b|crown prince/i
   const castInfo   = sceneChars.length > 0
     ? sceneChars.map((c, i) => {
         const idx = bible.characters.findIndex(b => b.name === c.name)
         const tag = `ACTOR-${String.fromCharCode(65 + (idx !== -1 ? idx : i))}`
         const protagonist = c.isProtagonist ? ' [★PROTAGONIST]' : ''
-        return `[${tag}]${protagonist} AGE: ${c.age}${c.gender ? `, GENDER: ${c.gender}` : ''}. APPEARANCE: ${c.visualPrompt}`
+        const isRoyal = ROYAL_KEYWORDS.test(c.description || '') || ROYAL_KEYWORDS.test(c.name || '')
+        const royalTag = isRoyal ? ' [👑ROYALTY: MUST wear 익선관(翼善冠) — tall black cap, small rear flaps. NEVER 사모]' : ''
+        return `[${tag}]${protagonist}${royalTag} AGE: ${c.age}${c.gender ? `, GENDER: ${c.gender}` : ''}. APPEARANCE: ${c.visualPrompt}`
       }).join('\n')
     : '(no specific characters - focus on environment and atmosphere)'
 
