@@ -191,7 +191,7 @@ export const useAppStore = create(
         continuityBible: state.continuityBible ? {
           ...state.continuityBible,
           characters: (state.continuityBible.characters || []).map(c => {
-            const { charImageUrl, ...rest } = c || {}
+            const { charImageUrl, imageUrl, ...rest } = c || {}
             return rest
           }),
         } : null,
