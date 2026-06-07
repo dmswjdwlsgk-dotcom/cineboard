@@ -842,8 +842,7 @@ export async function generateAllScenes(scriptText, bible, stylePreset, lang, on
 
   onProgress(0, total)
 
-  let concurrency  = 1
-  let stableCount  = 0
+  let concurrency  = 5
   let failCount429 = 0
   let i = 0
 
@@ -853,7 +852,10 @@ export async function generateAllScenes(scriptText, bible, stylePreset, lang, on
 
     try {
       const settled = await Promise.allSettled(
-        chunk.map((scene, j) => generateSingleSceneInfo(scene, bibleCtx, stylePreset, langConfig, currentMode, visualMode, isEditorialMode, isImageTextEnabled))
+        chunk.map((scene, j) =>
+          new Promise(r => setTimeout(r, j * 300))
+            .then(() => generateSingleSceneInfo(scene, bibleCtx, stylePreset, langConfig, currentMode, visualMode, isEditorialMode, isImageTextEnabled))
+        )
       )
 
       for (let k = 0; k < settled.length; k++) {
@@ -867,21 +869,12 @@ export async function generateAllScenes(scriptText, bible, stylePreset, lang, on
         }
       }
 
-      const step = chunk.length  // 실제 처리한 씬 수 (concurrency 변경 전 저장)
-      stableCount++
-      if (stableCount >= 3 && concurrency < 3) {
-        concurrency++
-        stableCount = 0
-        console.log(`[ADAPTIVE] 동시성 증가 → ${concurrency}`)
-      }
       failCount429 = 0
-
       onProgress(indices[indices.length - 1] + 1, total)
-      i += step  // 증가 전 실제 처리된 씬 수로 전진
-      if (i < total) await new Promise(r => setTimeout(r, 1500))
+      i += chunk.length
+      if (i < total) await new Promise(r => setTimeout(r, 500))
 
     } catch (err) {
-      stableCount = 0
       const msg   = err.message || ''
       const is429 = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')
       const is503 = msg.includes('503') || msg.includes('overloaded') || msg.includes('UNAVAILABLE')
