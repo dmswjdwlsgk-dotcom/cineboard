@@ -315,6 +315,34 @@ export default function ApiKeyModal({ isOpen, onClose }) {
           </div>
         </div>
       )}
+
+      {/* 스토리지 초기화 */}
+      <div className="mt-6 pt-5 border-t border-gray-800">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-gray-400">저장 공간 초기화</p>
+            <p className="text-xs text-gray-600 mt-0.5">오류 발생 시 앱 데이터를 초기화합니다 (API 키 제외)</p>
+          </div>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => {
+              if (confirm('앱 데이터를 초기화하시겠습니까? (API 키는 유지됩니다)')) {
+                const geminiKey = localStorage.getItem('cineboard_user_gemini_api_key')
+                const vertexJson = localStorage.getItem('cineboard_vertex_json')
+                const zToken = localStorage.getItem('cineboard_z_image_token')
+                localStorage.removeItem('cineboard-storage')
+                if (geminiKey) localStorage.setItem('cineboard_user_gemini_api_key', geminiKey)
+                if (vertexJson) localStorage.setItem('cineboard_vertex_json', vertexJson)
+                if (zToken) localStorage.setItem('cineboard_z_image_token', zToken)
+                location.reload()
+              }
+            }}
+          >
+            초기화
+          </Button>
+        </div>
+      </div>
     </Modal>
   )
 }
