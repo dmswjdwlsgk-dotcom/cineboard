@@ -633,24 +633,14 @@ ${visualModeInstruction ? `\n━━━━━━━━━━━━━━━━━
 ${directorMode} — HIGHEST PRIORITY]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 You are not describing a scene. You are DIRECTING a movie or illustration.
-A great director varies shots — close-ups, wide shots, group shots, establishing shots. NOT every scene is a bust shot of one character.
+Your imagePrompt must be a DIRECTOR'S SHOT DESCRIPTION that captures the single most emotionally devastating moment.
 
-[STEP 0 — CLASSIFY SCENE TYPE FIRST — MANDATORY]:
-Read the script segment. Determine which type this is BEFORE choosing a shot:
-① LOCATION / EXTERIOR / LANDSCAPE (palace exterior, mountains, river, road, forest, architecture) → WIDE or EXTREME WIDE establishing shot. The SPACE is the subject. Characters are tiny silhouettes or absent entirely. Set involvedCharacters = [].
-② GROUP EVENT / CEREMONY / COURT / BATTLE / CROWD / PROCESSION → WIDE or MEDIUM-WIDE. Multiple figures visible. Add period-appropriate anonymous background figures (soldiers, officials, servants). Set involvedCharacters = all visible named characters.
-③ TWO+ CHARACTERS IN DIALOGUE / CONFRONTATION / NEGOTIATION → TWO-SHOT or OVER-THE-SHOULDER framing both characters together. involvedCharacters = both/all participants.
-④ SINGLE CHARACTER EMOTIONAL MOMENT (alone, internal, solitary) → Proceed to Step 1 emotion hunt.
-
-[STEP 1 — FIND THE EMOTIONAL PEAK (only for type ④)]:
-Find the ONE MOMENT of maximum emotional intensity.
+[STEP 1 — FIND THE EMOTIONAL PEAK]:
+Read the scriptReference carefully. Find the ONE MOMENT of maximum emotional intensity.
 Ask yourself: "What is the exact millisecond that would make an audience gasp, weep, or hold their breath?"
 
 [STEP 2 — CHOOSE YOUR FILM TECHNIQUE]:
-Consider: does this scene need a FACE, a WORLD, or a GROUP?
-• LOCATION / SPACE → Extreme Wide or Wide. No named characters needed. Architecture/landscape/nature fills frame.
-• GROUP EVENT / CROWD → Wide or Medium-Wide. Crowd of anonymous period-appropriate figures. Named characters among them.
-• TWO-CHARACTER SCENE → Two-Shot or Over-the-Shoulder. Both faces/bodies in same frame.
+Consider: does this scene need a FACE (close-up) or a WORLD (wide shot)? Both are equally valid emotional tools.
 • GRIEF / DESPAIR → Extreme Close-Up on face or trembling hands. Desaturated blue-grey palette. Shallow depth of field.
 • RAGE / CONFRONTATION → Over-The-Shoulder shot. High contrast harsh side lighting. Warm amber rage tones.
 • HOPE / REUNION → Wide Shot with characters small against vast beautiful environment. Warm golden backlight.
