@@ -293,6 +293,14 @@ export async function generateSceneImage(
     return ''
   })()
 
+  // wide/group 샷일 때 배경 인물 유도
+  const backgroundExtrasNote = (() => {
+    const st = ((scene.shotType || '') + ' ' + imagePromptText).toLowerCase()
+    const isWide = /wide|full shot|establishing|bird|two.?shot|group|ceremony|court|crowd|battle|procession/.test(st)
+    if (!isWide) return ''
+    return '[BACKGROUND ATMOSPHERE — MANDATORY FOR WIDE SHOTS]: Populate the space with period-appropriate anonymous background figures (guards, officials, servants, soldiers, courtiers, civilians — matching the era and setting). These figures should be faceless/generic extras that create depth and a lived-in world. Do NOT leave the background empty.'
+  })()
+
   // 에디토리얼 모드
   if (currentMode === 'editorial') {
     const editorialPrompt = `[STYLE] ${stylePreset.prompt}
@@ -341,7 +349,7 @@ ${scene.setting ? `[LOCATION]: ${scene.setting}` : ''}
 ${sceneChars.length > 0 ? `[CAST]\n${castInfo}` : '[NO HUMAN FIGURES - Environment shot]'}
 ${consistencyNote}
 [CRITICAL GROUNDING]: ALL characters MUST be physically grounded in the 3D space of the CURRENT LOCATION.
-
+${backgroundExtrasNote ? `\n${backgroundExtrasNote}\n` : ''}
 [SHOT PARAMETERS] ${imagePromptText}
 
 [ACTION] ${actionText}
