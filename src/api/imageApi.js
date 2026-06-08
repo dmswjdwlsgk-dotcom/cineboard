@@ -269,34 +269,36 @@ export async function generateSceneImage(
   const imagePromptText = scene.imagePrompt || scene.imagePromptKo || ''
   const actionText      = scene.action || ''
 
-  // 샷 타입 → 강제 프레이밍 규칙
+  // 샷 타입 → 강제 프레이밍 규칙 (scene.shotType만 사용 — imagePromptText 오염 방지)
   const shotFramingRule = (() => {
-    const st = ((scene.shotType || '') + ' ' + imagePromptText).toLowerCase()
-    if (/extreme.?wide|establishing shot/.test(st))
+    const st = (scene.shotType || '').toLowerCase()
+    if (/extreme.?wide|establishing/.test(st))
       return '⚠️ MANDATORY FRAMING — EXTREME WIDE SHOT: Characters are TINY (under 15% of frame height). Landscape/architecture fills 85%+ of frame. Do NOT crop or zoom in on faces.'
-    if (/\bwide shot\b|\bwide\b/.test(st))
+    if (/wide/.test(st))
       return '⚠️ MANDATORY FRAMING — WIDE SHOT: Full bodies visible head-to-toe. Environment fills at least 50% of frame. Characters are NOT dominant — they exist within the space.'
-    if (/\bfull shot\b/.test(st))
+    if (/full shot/.test(st))
       return '⚠️ MANDATORY FRAMING — FULL SHOT: Entire body from top of head to feet visible with clear space above and below. Do NOT crop at waist or chest.'
-    if (/medium.?wide|medium wide/.test(st))
+    if (/medium.?wide/.test(st))
       return '⚠️ MANDATORY FRAMING — MEDIUM-WIDE SHOT: Characters visible from knees up. Substantial environment visible on all sides.'
-    if (/\bover.?the.?shoulder\b|\bots\b/.test(st))
+    if (/over.?the.?shoulder|ots/.test(st))
       return '⚠️ MANDATORY FRAMING — OVER-THE-SHOULDER: One character\'s shoulder/back occupies foreground. The other character faces camera. BOTH characters visible in same frame.'
-    if (/\btwo.?shot\b|\b2.?shot\b/.test(st))
+    if (/two.?shot|2.?shot/.test(st))
       return '⚠️ MANDATORY FRAMING — TWO-SHOT: BOTH characters visible together in the same frame, side by side or facing each other. Do NOT isolate one character.'
-    if (/\bbird.?s.?eye\b|\bbirdseye\b|\btop.?down\b/.test(st))
+    if (/bird.?s.?eye|top.?down/.test(st))
       return '⚠️ MANDATORY FRAMING — BIRD\'S EYE VIEW: Camera looks straight down from above. Figures appear flat against ground.'
-    if (/extreme.?close|extreme close/.test(st))
-      return '⚠️ MANDATORY FRAMING — EXTREME CLOSE-UP: A single facial feature or detail fills the entire frame. Nothing else visible.'
-    if (/\bclose.?up\b|\bclose up\b/.test(st))
-      return '⚠️ MANDATORY FRAMING — CLOSE-UP: Face and upper chest ONLY. Framed tightly from chin to top of head. NOT waist-up.'
+    if (/extreme.?close/.test(st))
+      return '⚠️ MANDATORY FRAMING — EXTREME CLOSE-UP: Face fills the entire frame. NOTHING ELSE — no room, no other characters, no wide environment visible.'
+    if (/close.?up|closeup/.test(st))
+      return '⚠️ MANDATORY FRAMING — CLOSE-UP: Face and upper chest ONLY. Framed tightly. NOT waist-up. NOT full body.'
+    if (/medium/.test(st))
+      return '⚠️ MANDATORY FRAMING — MEDIUM SHOT: Waist-up framing. NOT full body, NOT close-up face.'
     return ''
   })()
 
-  // wide/group 샷일 때 배경 인물 유도
+  // wide/group 샷일 때만 배경 인물 유도 (scene.shotType만 사용)
   const backgroundExtrasNote = (() => {
-    const st = ((scene.shotType || '') + ' ' + imagePromptText).toLowerCase()
-    const isWide = /wide|full shot|establishing|bird|two.?shot|group|ceremony|court|crowd|battle|procession/.test(st)
+    const st = (scene.shotType || '').toLowerCase()
+    const isWide = /wide|full shot|establishing|bird|two.?shot/.test(st)
     if (!isWide) return ''
     return '[BACKGROUND ATMOSPHERE — MANDATORY FOR WIDE SHOTS]: Populate the space with period-appropriate anonymous background figures (guards, officials, servants, soldiers, courtiers, civilians — matching the era and setting). These figures should be faceless/generic extras that create depth and a lived-in world. Do NOT leave the background empty.'
   })()
