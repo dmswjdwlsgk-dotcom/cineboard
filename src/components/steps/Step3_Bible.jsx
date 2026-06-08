@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react'
-import { ChevronRight, ChevronLeft, Users, MapPin, Camera, Plus, Trash2, Upload, Scan, AlertTriangle, Edit3, Check, X, RefreshCw, Image, Download, ZoomIn } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Users, MapPin, Camera, Plus, Trash2, Upload, AlertTriangle, Edit3, Check, X, RefreshCw, Image, Download, ZoomIn, Copy, Languages } from 'lucide-react'
 import Button from '../ui/Button.jsx'
 import Spinner from '../ui/Spinner.jsx'
 import { useAppStore } from '../../store/useAppStore.js'
 import { STYLES, MODELS } from '../../data/styles.js'
 import { generateContinuityBible, analyzeCharacterImage } from '../../api/bibleApi.js'
 import { generateImage } from '../../api/imageApi.js'
-import { isApiReady } from '../../api/gemini.js'
+import { isApiReady, createClient, safeGenerate } from '../../api/gemini.js'
 
 function EditableField({ value, onChange, multiline = false, className = '' }) {
   const [editing, setEditing] = useState(false)
@@ -74,8 +74,10 @@ export default function Step3_Bible() {
 
   const [loading, setLoading] = useState(false)
   const [analyzingImages, setAnalyzingImages] = useState({})
-  const [generatingCharImages, setGeneratingCharImages] = useState({})  // {idx: boolean}
-  const [lightbox, setLightbox] = useState(null)  // {url, name}
+  const [generatingCharImages, setGeneratingCharImages] = useState({})
+  const [convertingCharPrompts, setConvertingCharPrompts] = useState({})
+  const [copiedIdx, setCopiedIdx] = useState(null)
+  const [lightbox, setLightbox] = useState(null)
   const fileInputRefs = useRef({})
   const error = useAppStore(s => s.error)
 
@@ -197,6 +199,31 @@ export default function Step3_Bible() {
     }
   }
 
+  const handleConvertToEnglish = async (idx, char) => {
+    if (!char.imagePromptKo) return
+    setConvertingCharPrompts(prev => ({ ...prev, [idx]: true }))
+    try {
+      const client = await createClient()
+      const result = await safeGenerate(client, {
+        model: 'gemini-2.5-flash',
+        contents: [{ parts: [{ text: `Translate this Korean character appearance description into English for AI image generation. Output ONLY the translated description, no preamble.\n\nKorean: "${char.imagePromptKo}"` }] }],
+      }, 'ConvertPrompt')
+      const text = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || ''
+      if (text) updateCharacter(idx, 'visualPrompt', text)
+    } catch (err) {
+      setError(`영문 변환 실패: ${err.message}`)
+    } finally {
+      setConvertingCharPrompts(prev => ({ ...prev, [idx]: false }))
+    }
+  }
+
+  const handleCopyPrompt = (idx, text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedIdx(idx)
+      setTimeout(() => setCopiedIdx(null), 1500)
+    })
+  }
+
   const handleDownloadCharImage = (url, name) => {
     const a = document.createElement('a')
     a.href = url
@@ -281,135 +308,178 @@ export default function Step3_Bible() {
               </div>
             </div>
 
-            <div className="space-y-3">
-              {(continuityBible.characters || []).map((char, idx) => (
-                <div key={char.id || idx} className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4">
-                  <div className="flex items-start gap-3">
-                    {/* 캐릭터 이미지/아바타 영역 */}
-                    <div className="flex-shrink-0">
-                      {(() => {
-                        const imgUrl = char.charImageUrl || characterImages[char.name]
-                        return (
-                          <div className="relative group">
-                            <div
-                              className="w-16 h-16 rounded-xl overflow-hidden bg-gray-700 border border-gray-600 cursor-pointer"
-                              onClick={() => {
-                                if (generatingCharImages[idx]) return
-                                if (imgUrl) setLightbox({ url: imgUrl, name: char.name })
-                                else handleGenerateCharImage(idx, char)
-                              }}
-                              title={imgUrl ? '클릭하여 크게 보기' : '클릭하여 이미지 생성'}
-                            >
-                              {imgUrl ? (
-                                <>
-                                  <img src={imgUrl} alt={char.name} className="w-full h-full object-cover" />
-                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
-                                    <ZoomIn size={16} className="text-white" />
-                                  </div>
-                                </>
-                              ) : generatingCharImages[idx] ? (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Spinner size="sm" />
+            <div className="space-y-4">
+              {(continuityBible.characters || []).map((char, idx) => {
+                const imgUrl = char.charImageUrl || characterImages[char.name]
+                return (
+                  <div key={char.id || idx} className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-4 space-y-3">
+                    {/* Top row: image + header info */}
+                    <div className="flex gap-4">
+                      {/* Portrait image */}
+                      <div className="flex-shrink-0 flex flex-col gap-1.5">
+                        <div className="relative group">
+                          <div
+                            className="w-24 h-28 rounded-xl overflow-hidden bg-gray-700 border border-gray-600 cursor-pointer"
+                            onClick={() => {
+                              if (generatingCharImages[idx]) return
+                              if (imgUrl) setLightbox({ url: imgUrl, name: char.name })
+                              else handleGenerateCharImage(idx, char)
+                            }}
+                            title={imgUrl ? '클릭하여 크게 보기' : '클릭하여 이미지 생성'}
+                          >
+                            {imgUrl ? (
+                              <>
+                                <img src={imgUrl} alt={char.name} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                                  <ZoomIn size={18} className="text-white" />
                                 </div>
-                              ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-purple-400 transition-colors">
-                                  <Image size={16} />
-                                  <span className="text-xs">생성</span>
-                                </div>
-                              )}
-                            </div>
-                            {/* 재생성 버튼 (이미지 있을 때만) */}
+                              </>
+                            ) : generatingCharImages[idx] ? (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Spinner size="sm" />
+                              </div>
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-purple-400 transition-colors">
+                                <Image size={20} />
+                                <span className="text-xs">생성</span>
+                              </div>
+                            )}
                             {imgUrl && !generatingCharImages[idx] && (
                               <button
-                                onClick={() => handleGenerateCharImage(idx, char)}
+                                onClick={e => { e.stopPropagation(); handleGenerateCharImage(idx, char) }}
                                 title="재생성"
-                                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gray-600 hover:bg-purple-600 border border-gray-500 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+                                className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-black/60 hover:bg-purple-600 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
                               >
-                                <RefreshCw size={9} className="text-white" />
+                                <RefreshCw size={10} className="text-white" />
                               </button>
                             )}
                           </div>
-                        )
-                      })()}
+                        </div>
+                        {/* Buttons below image */}
+                        <div className="flex gap-1 justify-center">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            ref={el => fileInputRefs.current[idx] = el}
+                            onChange={e => handleImageUpload(idx, e.target.files?.[0])}
+                          />
+                          <button
+                            onClick={() => fileInputRefs.current[idx]?.click()}
+                            title="참조 이미지 업로드"
+                            className="w-7 h-7 rounded-lg bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-gray-400 hover:text-gray-200 transition-colors"
+                          >
+                            {analyzingImages[idx] ? <Spinner size="sm" /> : <Upload size={12} />}
+                          </button>
+                          {imgUrl && (
+                            <button
+                              onClick={() => handleDownloadCharImage(imgUrl, char.name)}
+                              title="이미지 다운로드"
+                              className="w-7 h-7 rounded-lg bg-gray-700 hover:bg-blue-700 flex items-center justify-center text-gray-400 hover:text-blue-200 transition-colors"
+                            >
+                              <Download size={12} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right: name / role / age / gender */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-wrap flex-1">
+                            <EditableField
+                              value={char.name}
+                              onChange={v => updateCharacter(idx, 'name', v)}
+                              className="font-semibold text-gray-200 text-base"
+                            />
+                            <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                              char.role === '주인공' ? 'bg-purple-900/60 text-purple-300' :
+                              char.role === '조연' ? 'bg-blue-900/60 text-blue-300' :
+                              'bg-gray-700/60 text-gray-400'
+                            }`}>
+                              {char.role}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => deleteCharacter(idx)}
+                            className="w-7 h-7 rounded-lg bg-gray-700 hover:bg-red-800 flex items-center justify-center text-gray-500 hover:text-red-300 transition-colors flex-shrink-0"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                        <div className="flex gap-5 mt-2.5">
+                          <div>
+                            <label className="text-xs text-gray-600 block mb-0.5">나이</label>
+                            <EditableField
+                              value={char.age}
+                              onChange={v => updateCharacter(idx, 'age', v)}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-600 block mb-0.5">성별</label>
+                            <EditableField
+                              value={char.gender}
+                              onChange={v => updateCharacter(idx, 'gender', v)}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <EditableField
-                          value={char.name}
-                          onChange={v => updateCharacter(idx, 'name', v)}
-                          className="font-semibold text-gray-200"
-                        />
-                        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                          char.role === '주인공' ? 'bg-purple-900/60 text-purple-300' :
-                          char.role === '조연' ? 'bg-blue-900/60 text-blue-300' :
-                          'bg-gray-700/60 text-gray-400'
-                        }`}>
-                          {char.role}
-                        </span>
-                        <span className="text-xs text-gray-600">{char.age} · {char.gender}</span>
-                      </div>
-
-                      <div className="text-xs text-gray-400 leading-relaxed">
-                        <label className="text-gray-600 block mb-0.5">캐릭터 설명</label>
-                        <EditableField
-                          value={char.description}
-                          onChange={v => updateCharacter(idx, 'description', v)}
-                          multiline
-                        />
-                      </div>
-
-                      <div className="text-xs">
-                        <label className="text-gray-600 block mb-0.5">이미지 프롬프트 (한국어)</label>
-                        <EditableField
-                          value={char.imagePromptKo}
-                          onChange={v => updateCharacter(idx, 'imagePromptKo', v)}
-                          multiline
-                        />
-                      </div>
+                    {/* Description */}
+                    <div>
+                      <label className="text-xs text-gray-600 block mb-0.5">인물 기본 설명</label>
+                      <EditableField
+                        value={char.description}
+                        onChange={v => updateCharacter(idx, 'description', v)}
+                        multiline
+                      />
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex flex-col gap-2 flex-shrink-0">
-                      {/* Image upload */}
-                      <div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          ref={el => fileInputRefs.current[idx] = el}
-                          onChange={e => handleImageUpload(idx, e.target.files?.[0])}
-                        />
-                        <button
-                          onClick={() => fileInputRefs.current[idx]?.click()}
-                          title="참조 이미지 업로드"
-                          className="w-8 h-8 rounded-lg bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-gray-400 hover:text-gray-200 transition-colors"
-                        >
-                          {analyzingImages[idx] ? <Spinner size="sm" /> : <Upload size={13} />}
-                        </button>
-                      </div>
-                      {/* Download */}
-                      {(char.charImageUrl || characterImages[char.name]) && (
-                        <button
-                          onClick={() => handleDownloadCharImage(char.charImageUrl || characterImages[char.name], char.name)}
-                          title="이미지 다운로드"
-                          className="w-8 h-8 rounded-lg bg-gray-700 hover:bg-blue-700 flex items-center justify-center text-gray-400 hover:text-blue-200 transition-colors"
-                        >
-                          <Download size={13} />
-                        </button>
-                      )}
-                      {/* Delete */}
+                    {/* Korean prompt */}
+                    <div>
+                      <label className="text-xs text-gray-600 block mb-0.5">[한글] 이미지 생성 상세 지시</label>
+                      <EditableField
+                        value={char.imagePromptKo}
+                        onChange={v => updateCharacter(idx, 'imagePromptKo', v)}
+                        multiline
+                      />
+                    </div>
+
+                    {/* Convert to English button */}
+                    <div className="flex justify-end">
                       <button
-                        onClick={() => deleteCharacter(idx)}
-                        className="w-8 h-8 rounded-lg bg-gray-700 hover:bg-red-800 flex items-center justify-center text-gray-500 hover:text-red-300 transition-colors"
+                        onClick={() => handleConvertToEnglish(idx, char)}
+                        disabled={convertingCharPrompts[idx] || !char.imagePromptKo}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-900/30 hover:bg-blue-900/50 border border-blue-700/40 text-blue-300 text-xs font-medium transition-all disabled:opacity-50"
                       >
-                        <Trash2 size={13} />
+                        {convertingCharPrompts[idx] ? <Spinner size="sm" /> : <Languages size={12} />}
+                        영문 변환
                       </button>
                     </div>
+
+                    {/* English prompt */}
+                    {char.visualPrompt && (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs text-gray-600">[영문] 생성용 최종 프롬프트</label>
+                          <button
+                            onClick={() => handleCopyPrompt(idx, char.visualPrompt)}
+                            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                            title="복사"
+                          >
+                            <Copy size={11} />
+                            {copiedIdx === idx ? '복사됨!' : '복사'}
+                          </button>
+                        </div>
+                        <div className="text-xs text-gray-400 bg-gray-900/60 rounded-lg p-2.5 leading-relaxed border border-gray-700/30 whitespace-pre-wrap">
+                          {char.visualPrompt}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 
