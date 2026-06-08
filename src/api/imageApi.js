@@ -269,6 +269,30 @@ export async function generateSceneImage(
   const imagePromptText = scene.imagePrompt || scene.imagePromptKo || ''
   const actionText      = scene.action || ''
 
+  // 샷 타입 → 강제 프레이밍 규칙
+  const shotFramingRule = (() => {
+    const st = ((scene.shotType || '') + ' ' + imagePromptText).toLowerCase()
+    if (/extreme.?wide|establishing shot/.test(st))
+      return '⚠️ MANDATORY FRAMING — EXTREME WIDE SHOT: Characters are TINY (under 15% of frame height). Landscape/architecture fills 85%+ of frame. Do NOT crop or zoom in on faces.'
+    if (/\bwide shot\b|\bwide\b/.test(st))
+      return '⚠️ MANDATORY FRAMING — WIDE SHOT: Full bodies visible head-to-toe. Environment fills at least 50% of frame. Characters are NOT dominant — they exist within the space.'
+    if (/\bfull shot\b/.test(st))
+      return '⚠️ MANDATORY FRAMING — FULL SHOT: Entire body from top of head to feet visible with clear space above and below. Do NOT crop at waist or chest.'
+    if (/medium.?wide|medium wide/.test(st))
+      return '⚠️ MANDATORY FRAMING — MEDIUM-WIDE SHOT: Characters visible from knees up. Substantial environment visible on all sides.'
+    if (/\bover.?the.?shoulder\b|\bots\b/.test(st))
+      return '⚠️ MANDATORY FRAMING — OVER-THE-SHOULDER: One character\'s shoulder/back occupies foreground. The other character faces camera. BOTH characters visible in same frame.'
+    if (/\btwo.?shot\b|\b2.?shot\b/.test(st))
+      return '⚠️ MANDATORY FRAMING — TWO-SHOT: BOTH characters visible together in the same frame, side by side or facing each other. Do NOT isolate one character.'
+    if (/\bbird.?s.?eye\b|\bbirdseye\b|\btop.?down\b/.test(st))
+      return '⚠️ MANDATORY FRAMING — BIRD\'S EYE VIEW: Camera looks straight down from above. Figures appear flat against ground.'
+    if (/extreme.?close|extreme close/.test(st))
+      return '⚠️ MANDATORY FRAMING — EXTREME CLOSE-UP: A single facial feature or detail fills the entire frame. Nothing else visible.'
+    if (/\bclose.?up\b|\bclose up\b/.test(st))
+      return '⚠️ MANDATORY FRAMING — CLOSE-UP: Face and upper chest ONLY. Framed tightly from chin to top of head. NOT waist-up.'
+    return ''
+  })()
+
   // 에디토리얼 모드
   if (currentMode === 'editorial') {
     const editorialPrompt = `[STYLE] ${stylePreset.prompt}
@@ -310,7 +334,7 @@ ${imagePromptText || actionText}
 
   const compositePrompt = `[STYLE] ${stylePreset.prompt} (NON-NEGOTIABLE)
 ${fixedCharPrompt ? `\n${fixedCharPrompt}\n` : ''}
-[CONTEXT] "${(scene.dialogue || scene.scriptReference || '').slice(0, 150).replace(/"/g, "'")}"
+${shotFramingRule ? `${shotFramingRule}\n` : ''}[CONTEXT] "${(scene.dialogue || scene.scriptReference || '').slice(0, 150).replace(/"/g, "'")}"
 [WORLD] ${bible.environment?.visualPrompt || ''}
 ${scene.setting ? `[LOCATION]: ${scene.setting}` : ''}
 
