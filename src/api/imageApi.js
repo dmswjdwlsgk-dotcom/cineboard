@@ -251,7 +251,7 @@ export async function generateSceneImage(
         const tag = `ACTOR-${String.fromCharCode(65 + (idx !== -1 ? idx : i))}`
         const protagonist = c.isProtagonist ? ' [★PROTAGONIST]' : ''
         const isRoyal = ROYAL_KEYWORDS.test(c.description || '') || ROYAL_KEYWORDS.test(c.name || '')
-        const royalTag = isRoyal ? ' [👑ROYALTY: MUST wear 익선관(翼善冠) — tall black dome cap, two small rear flaps. NEVER 사모]' : ''
+        const royalTag = isRoyal ? ' [👑ROYALTY — CONTEXT-DEPENDENT ATTIRE: In formal/official scenes (throne room, court, ceremonies) → 익선관(翼善冠, tall black dome cap, two small rear flaps) + 곤룡포(vermillion red dragon robe). In private/informal/pre-coronation scenes → appropriate 평상복 or 도포. Use scene context to decide. When wearing royal headwear, it MUST be 익선관, NEVER 사모.]' : ''
         return `[${tag}]${protagonist}${royalTag} AGE: ${c.age}${c.gender ? `, GENDER: ${c.gender}` : ''}. APPEARANCE: ${c.visualPrompt}`
       }).join('\n')
     : '(no specific characters - focus on environment and atmosphere)'
@@ -353,7 +353,7 @@ ${scene.setting ? `[LOCATION]: ${scene.setting}` : ''}
 
 ${sceneChars.length > 0 ? `[CAST]\n${castInfo}` : '[NO HUMAN FIGURES - Environment shot]'}
 ${consistencyNote}
-⚠️ ROYAL HEADWEAR (ABSOLUTE — NO EXCEPTIONS): Korean king(왕)·crown prince(세자) MUST wear 익선관(翼善冠) — tall smooth rounded black dome cap, two small rear-folding flaps, NO wide side wings. Officials/ministers ONLY wear 사모(紗帽) — wide flat horizontal wings on both sides. Drawing 사모 on a king is a FATAL ERROR.
+⚠️ KOREAN ROYAL ATTIRE — READ SCENE CONTEXT: If the scene is formal/official (throne room, court, royal ceremony, public setting) → king wears 익선관(翼善冠, tall black dome cap, two small rear flaps, NO wide side wings) + 곤룡포(full vermillion red robe). If the scene is private, informal, or pre-coronation → king may wear 평상복, 도포, or other period-appropriate casual attire. Officials/ministers always wear 사모(紗帽, wide flat horizontal side wings) + 관복, NEVER 익선관.
 [CRITICAL GROUNDING]: ALL characters MUST be physically grounded in the 3D space of the CURRENT LOCATION.
 ${backgroundExtrasNote ? `\n${backgroundExtrasNote}\n` : ''}
 [SHOT PARAMETERS] ${imagePromptText}
