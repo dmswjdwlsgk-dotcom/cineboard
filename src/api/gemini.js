@@ -227,6 +227,23 @@ function patchFetch() {
 
     let res = await original(input, init)
 
+    // 401 (토큰 만료) 시 토큰 갱신 후 재시도
+    if (res.status === 401) {
+      console.warn('[VERTEX AUTH] 토큰 만료 감지 — 재발급 후 재시도')
+      _vertexToken = null
+      _vertexTokenExpiry = 0
+      const sa = getVertexJson()
+      if (sa) {
+        try {
+          const newToken = await getVertexAccessToken(sa)
+          const newInit = { ...init, headers: { ...(init?.headers || {}), Authorization: `Bearer ${newToken}` } }
+          res = await original(input, newInit)
+        } catch (e) {
+          console.error('[VERTEX AUTH] 토큰 재발급 실패:', e)
+        }
+      }
+    }
+
     // 404 시 다른 리전으로 자동 재시도
     if (res.status === 404) {
       const regionMatch = url.match(/locations\/([^/]+)/)
@@ -341,7 +358,8 @@ export async function withRetry(fn, maxRetries = 3, label = 'API') {
       const msg    = err.message || ''
       const status = err.status || err.httpStatusCode || 0
 
-      if (msg.includes('API 키') || msg.includes('PERMISSION_DENIED') || msg.includes('UNAUTHENTICATED')) throw err
+      const isTokenExpired = msg.includes('ACCESS_TOKEN_EXPIRED')
+      if (!isTokenExpired && (msg.includes('API 키') || msg.includes('PERMISSION_DENIED') || msg.includes('UNAUTHENTICATED'))) throw err
 
       const is429 = status === 429 || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')
       const isTokenLimit = is429 && (msg.includes('token') || msg.includes('Token') || msg.includes('input_token') || msg.includes('output_token'))
