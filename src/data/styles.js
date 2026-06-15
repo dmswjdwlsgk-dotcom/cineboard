@@ -252,6 +252,55 @@ export const STYLES = [
     palette: ['#2d3a4a', '#c8773a', '#4a7a8a'],
     thumbnail: 'style_thumbs/flat_editorial.png',
   },
+  {
+    id: 'ink_wash',
+    label: '동양 수묵화 (Oriental Ink Wash)',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS INK PAINTING ARTWORK. Oriental ink wash painting masterpiece, sumi-e style, expressive brushstrokes with rich ink gradients, traditional East Asian landscape painting aesthetic (수묵화), void space (여백의 미) used deliberately, misty atmospheric depth, monochromatic ink tones with subtle earthy accents, Hanji paper texture, flowing brushwork capturing essence over detail, single view, edge-to-edge full frame, NO text, NO borders.',
+    palette: ['#1c1917', '#57534e', '#d6d3d1'],
+    thumbnail: 'style_thumbs/ink_wash.png',
+  },
+  {
+    id: 'wuxia_comic',
+    label: '무협 만화 (Wuxia Comic)',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS COMIC ILLUSTRATION ARTWORK. Korean/Chinese wuxia martial arts comic style, dynamic action composition, bold ink splash and brushstroke effects, flowing robes and hair captured mid-motion, dramatic speed lines, sharp detailed linework, ink splatter accents, mountain and nature scenery backdrop, high contrast shadows, single cinematic panel, edge-to-edge full frame, NO text, NO speech bubbles, NO borders.',
+    palette: ['#1a0a00', '#8b1a1a', '#d4c5b0'],
+    thumbnail: 'style_thumbs/wuxia_comic.png',
+  },
+  {
+    id: 'instatoon',
+    label: '4컷 인스타툰 (Instatoon)',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS CUTE CARTOON ILLUSTRATION ARTWORK. Korean instatoon webtoon style, single expressive scene, simple rounded clean lines, cute SD chibi-proportioned characters, warm pastel color palette, relatable daily-life vibe, cheerful and soft mood, minimal background with simple props, digital coloring with flat cel shading, single panel composition, edge-to-edge full frame, NO text, NO speech bubbles, NO borders.',
+    palette: ['#fff0f5', '#ffb6c1', '#fbbf24'],
+    thumbnail: 'style_thumbs/instatoon.png',
+  },
+  {
+    id: 'retro_korean_toon',
+    label: '고전 명랑 만화 (Classic Korean Toon)',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS RETRO CARTOON ILLUSTRATION ARTWORK. Classic Korean retro cartoon style (둘리/검정고무신 aesthetic), thick bold simple black outlines, flat rough coloring with limited palette, slightly imperfect hand-drawn feel, chunky exaggerated character proportions, warm nostalgic tone, simple background scenery, single panel composition, edge-to-edge full frame, NO text, NO speech bubbles, NO borders.',
+    palette: ['#fef9c3', '#4a7a3a', '#e74c3c'],
+    thumbnail: 'style_thumbs/retro_korean_toon.png',
+  },
+  {
+    id: 'paper_art',
+    label: '페이퍼 아트 (Paper Art)',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS PAPER CRAFT ILLUSTRATION ARTWORK. Paper cut art diorama style, multiple layered paper sheets creating depth, soft drop shadows between layers, fairytale storybook atmosphere, handcraft aesthetic, pastel and warm tones, tactile paper texture visible, dimensional shadow box effect, single composed scene, edge-to-edge full frame, NO text, NO borders.',
+    palette: ['#fef3c7', '#fb923c', '#a3e635'],
+    thumbnail: 'style_thumbs/paper_art.png',
+  },
+  {
+    id: 'joseon_painting',
+    label: '19세기 조선 반사실적 페인팅 (Joseon Semi-Realistic)',
+    prompt: '⚠️STYLE OVERRIDE — NOT photorealistic, NOT photo, THIS IS SEMI-REALISTIC DIGITAL PAINTING ARTWORK. Visible layered painterly brushstrokes with textured Korean Hanji paper effect, illustrative concept art quality, cinematic soft poetic lighting, misty contemplative atmosphere, muted charcoal-grey and earthy tones, dignified historical mood, 19th-century Joseon Dynasty Korea setting exclusively, only Korean people in traditional Joseon-era clothing (hanbok 한복, official robes 관복, gat hats 갓), traditional Korean architectural elements (wooden pillars 기둥, lattice windows 창호문, tiled roofs 기와지붕, folding screens 병풍, stone walls 돌담, paper lanterns 등불), atmospheric depth through color and light, historical accuracy in costumes and props, single view, NO SPLIT SCREEN, edge-to-edge full frame, NO text, NO borders. ⚠️CHARACTER MANDATE: The central figure of every scene is Jeong Yak-yong (정약용, 丁若鏞, 1762–1836) — Joseon Dynasty scholar, philosopher, and statesman. He appears as a middle-aged to elderly Korean man with a lean weathered face, wearing muted grey or earth-toned Joseon scholar\'s hanbok (도포 or 두루마기) and a traditional gat hat. His bearing is dignified and contemplative. Even when the scene depicts a landscape or environment, render him as the observing figure present in the frame. Do NOT substitute or replace him with any other character unless a second named character is explicitly required by the scene.',
+    palette: ['#5A6B7D', '#8B7D6B', '#A8B5B2'],
+    thumbnail: 'style_thumbs/joseon_painting.png',
+  },
+  {
+    id: 'joseon_drama',
+    label: '사극/시대극 (Joseon Historical Drama)',
+    prompt: 'Korean historical drama style, photorealistic single cinematic shot, period-accurate Hanbok and armor details, palace interior or nature background (궁궐/자연), heavy and classic atmosphere, warm candlelight or natural golden-hour lighting, rich deep color palette, 8k resolution, masterpiece quality, single view, NO SPLIT SCREEN, edge-to-edge full frame, NO borders.',
+    palette: ['#3b1f0a', '#8b5e3c', '#c8a050'],
+    thumbnail: 'style_thumbs/joseon_drama.png',
+  },
 ]
 
 export const MODELS = [
