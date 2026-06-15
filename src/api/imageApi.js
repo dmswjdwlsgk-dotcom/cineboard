@@ -251,7 +251,7 @@ export async function generateSceneImage(
         const tag = `ACTOR-${String.fromCharCode(65 + (idx !== -1 ? idx : i))}`
         const protagonist = c.isProtagonist ? ' [★PROTAGONIST]' : ''
         const isRoyal = ROYAL_KEYWORDS.test(c.description || '') || ROYAL_KEYWORDS.test(c.name || '')
-        const royalTag = isRoyal ? ' [👑ROYALTY — CONTEXT-DEPENDENT ATTIRE: In formal/official scenes (throne room, court, ceremonies) → 익선관(翼善冠, tall black dome cap, two small rear flaps) + 곤룡포(vermillion red dragon robe). In private/informal/pre-coronation scenes → appropriate 평상복 or 도포. Use scene context to decide. When wearing royal headwear, it MUST be 익선관, NEVER 사모.]' : ''
+        const royalTag = isRoyal ? ' [👑ROYALTY — CONTEXT-DEPENDENT ATTIRE: In formal/official scenes (throne room, court, ceremonies) → 익선관(翼善冠, tall black dome cap, two small rear flaps) + 곤룡포(ENTIRELY VERMILLION RED dragon robe — ⚠️ ZERO blue fabric anywhere: NO blue inner sleeves, NO blue undershirt, NO blue visible at wrists or neckline — white inner collar ONLY). In private/informal/pre-coronation scenes → appropriate 평상복 or 도포. Use scene context to decide. When wearing royal headwear, it MUST be 익선관, NEVER 사모.]' : ''
         return `[${tag}]${protagonist}${royalTag} AGE: ${c.age}${c.gender ? `, GENDER: ${c.gender}` : ''}. APPEARANCE: ${c.visualPrompt}`
       }).join('\n')
     : '(no specific characters - focus on environment and atmosphere)'
@@ -353,7 +353,7 @@ ${scene.setting ? `[LOCATION]: ${scene.setting}` : ''}
 
 ${sceneChars.length > 0 ? `[CAST]\n${castInfo}` : '[NO HUMAN FIGURES - Environment shot]'}
 ${consistencyNote}
-⚠️ KOREAN ROYAL ATTIRE — READ SCENE CONTEXT: If the scene is formal/official (throne room, court, royal ceremony, public setting) → king wears 익선관(翼善冠, tall black dome cap, two small rear flaps, NO wide side wings) + 곤룡포(full vermillion red robe). If the scene is private, informal, or pre-coronation → king may wear 평상복, 도포, or other period-appropriate casual attire. Officials/ministers always wear 사모(紗帽, wide flat horizontal side wings) + 관복, NEVER 익선관.
+⚠️ KOREAN ROYAL ATTIRE — READ SCENE CONTEXT: If the scene is formal/official (throne room, court, royal ceremony, public setting) → king wears 익선관(翼善冠, tall black dome cap, two small rear flaps, NO wide side wings) + 곤룡포(ENTIRELY VERMILLION RED robe — ⚠️ ABSOLUTE RULE: NO blue fabric anywhere on the garment. NO blue inner sleeves. NO blue undershirt showing at wrists or collar. The ONLY non-red color allowed is the white inner collar and gold dragon embroidery). If the scene is private, informal, or pre-coronation → king may wear 평상복, 도포, or other period-appropriate casual attire. Officials/ministers always wear 사모(紗帽, wide flat horizontal side wings) + 관복, NEVER 익선관.
 [CRITICAL GROUNDING]: ALL characters MUST be physically grounded in the 3D space of the CURRENT LOCATION.
 ${backgroundExtrasNote ? `\n${backgroundExtrasNote}\n` : ''}
 [SHOT PARAMETERS] ${imagePromptText}
