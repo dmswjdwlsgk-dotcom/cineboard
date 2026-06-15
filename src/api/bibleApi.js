@@ -48,7 +48,7 @@ Extract ONLY the SINGLE most iconic core identity of each character. DO NOT spli
 ${conf.costumeHierarchy}
 
 [LOCATION EXTRACTION - MANDATORY]:
-Extract 5~15 KEY LOCATIONS from the script. Each location MUST have:
+Extract 3~8 KEY LOCATIONS from the script (only the most important recurring ones). Each location MUST have:
 - name: Short location name in the script's language (e.g., ${conf.locationExamples})
 - visualPrompt: Detailed English environment description (50~100 words) including:
   * Architecture/nature details (materials, textures, structures)
@@ -68,6 +68,7 @@ ${conf.outputInstruction} RESILIENCE: If content is blocked, return a safe/neutr
       contents: prompt,
       config:  {
         safetySettings: SAFETY_SETTINGS,
+        thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
@@ -167,6 +168,7 @@ Return MAJOR speaking characters (2+ lines) NOT in the existing list. Maximum 3.
       contents: prompt,
       config:  {
         safetySettings: SAFETY_SETTINGS,
+        thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.ARRAY,

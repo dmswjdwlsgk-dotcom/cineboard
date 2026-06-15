@@ -201,7 +201,7 @@ ${JSON.stringify(scenes.map(s => ({ id: s.id, text: s.fullScriptSegment.slice(0,
       client.models.generateContent({
         model:   TEXT_MODEL,
         contents: prompt,
-        config:  { safetySettings: SAFETY_SETTINGS, responseMimeType: 'application/json', maxOutputTokens: 4096 },
+        config:  { safetySettings: SAFETY_SETTINGS, thinkingConfig: { thinkingBudget: 0 }, responseMimeType: 'application/json', maxOutputTokens: 4096 },
       })
     , 2, '씬 배경 보강')
     const text     = res?.candidates?.[0]?.content?.parts?.[0]?.text || ''
@@ -729,6 +729,7 @@ export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, lang
       contents: prompt,
       config:  {
         safetySettings: SAFETY_SETTINGS,
+        thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
@@ -799,6 +800,7 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
       contents: prompt,
       config:  {
         safetySettings: SAFETY_SETTINGS,
+        thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
