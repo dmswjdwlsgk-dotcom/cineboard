@@ -1212,33 +1212,48 @@ Every piece of information must become a VISUAL STORY with:
 [🏯 HISTORICAL DRAMA CINEMATOGRAPHY MODE — FULL CINEMATIC GRAMMAR]
 You are a Korean historical drama director. Read the scene content FIRST, then choose the shot.
 
-⚠️ CONTENT TRIGGERS — these override emotional defaults:
-- Script describes a LOCATION / SPACE / EXTERIOR (palace, battlefield, mountain, fortress, sea, procession) → EXTREME WIDE or WIDE establishing shot
-- Script shows a character MOVING / ENTERING / WALKING / RIDING → FULL SHOT showing full body + environment
-- Script has 2+ characters in DIALOGUE / NEGOTIATION / CONFRONTATION → OVER-THE-SHOULDER or TWO-SHOT showing both
-- Script depicts a COURT CEREMONY / MILITARY FORMATION / CROWD → WIDE SHOT or BIRD'S EYE VIEW from above
-- Script shows a KING or AUTHORITY FIGURE making a declaration or being presented → LOW ANGLE looking up
-- Script has a character OBSERVED THROUGH A DOORWAY / LATTICE SCREEN / WINDOW → FRAME-IN-FRAME composition
-- Script depicts a LONE FIGURE against sky, fire, moonlight, or vast space → WIDE SHOT with SILHOUETTE
-- Script is the emotional peak of ONE CHARACTER alone with no environment context → CLOSE-UP or EXTREME CLOSE-UP
+⚠️ ANTI-REPETITION MANDATE — HIGHEST PRIORITY:
+"Medium Shot" is BANNED as a default. It may only be used when a character is SPEAKING DIALOGUE in an interior setting with NO spatial or emotional alternative. If you are tempted to write "Medium Shot" without a clear reason — choose something else.
+SHOT TYPE DISTRIBUTION TARGET across all scenes:
+  • Extreme Wide / Wide Shot → 25% of scenes (establishing, spatial scale, processions)
+  • Full Shot → 20% (full body + environment, movement, entering/exiting)
+  • Over-the-Shoulder / Two-Shot → 20% (confrontation, dialogue tension)
+  • Close-Up / Extreme Close-Up → 20% (emotion peaks, hands, eyes, objects)
+  • Medium Shot → 10% (only for isolated dialogue moments)
+  • Bird's Eye / Low Angle / Dutch Angle / Frame-in-Frame → 5% each
+TREAT EACH SCENE AS PART OF A 30-SCENE FILM. Consciously vary from the most commonly used shots.
+
+⚠️ CONTENT TRIGGERS — MANDATORY (these override everything including defaults):
+- LOCATION / EXTERIOR / SPACE described → EXTREME WIDE or WIDE (no exceptions)
+- Character MOVING / ENTERING / WALKING / RIDING → FULL SHOT (full body visible)
+- 2+ characters in DIALOGUE / NEGOTIATION / CONFRONTATION → OVER-THE-SHOULDER or TWO-SHOT
+- COURT CEREMONY / MILITARY FORMATION / CROWD → WIDE or BIRD'S EYE VIEW
+- KING / AUTHORITY FIGURE declaring or being presented → LOW ANGLE looking up
+- Character OBSERVED through DOORWAY / LATTICE SCREEN / WINDOW → FRAME-IN-FRAME
+- LONE FIGURE against sky / fire / moonlight / vast landscape → WIDE SILHOUETTE
+- Single character at EMOTIONAL PEAK with no spatial context → CLOSE-UP or EXTREME CLOSE-UP
+- OBJECT or DETAIL carries the meaning (sword, letter, seal, hands trembling) → EXTREME CLOSE-UP on object
 
 CAMERA ANGLES — match to power/mood:
-• HIGH ANGLE (부감): character appears small, powerless, or being surveyed
-• LOW ANGLE (앙각): king/powerful figure — dominance, authority, weight
-• EYE LEVEL: neutral interaction, dialogue
-• BIRD'S EYE VIEW: military formations, palace courtyard layout, crowd density
-• OVER-THE-SHOULDER: confrontation and dialogue tension between two characters
-• DUTCH ANGLE: shock, betrayal, unstable political moment
+• HIGH ANGLE (부감): powerless, being watched, overwhelmed
+• LOW ANGLE (앙각): dominance, authority, threat — use for kings, generals, villains
+• EYE LEVEL: neutral observation, dialogue
+• BIRD'S EYE VIEW: military formations, courtyard scale, crowd density, geography
+• OVER-THE-SHOULDER: confrontation and tension between two characters
+• DUTCH ANGLE (기울기): shock, betrayal, psychological instability
 
 COMPOSITIONS — use deliberately:
-• SYMMETRICAL: palace throne room, formal court, two forces facing each other
-• FRAME-IN-FRAME: character visible through doorway, pillar arch, lattice screen
-• SILHOUETTE + BACKLIGHT: lone figure at dawn, fire, torchlight, sunset
-• RULE OF THIRDS: character off-center, negative space showing isolation
+• SYMMETRICAL: throne room, formal court, two armies facing each other
+• FRAME-IN-FRAME: figure through doorway, pillar arch, lattice screen, window
+• SILHOUETTE + BACKLIGHT: lone figure at dawn, fire, torchlight, sunset, moonrise
+• RULE OF THIRDS: subject off-center, negative space showing isolation or longing
+• FOREGROUND ELEMENT: blurred branch / candle / fabric in foreground adds depth
 
-VARIETY PRINCIPLE: spatial content comes first, emotion second.
-A grief scene in a vast empty palace = WIDE SHOT of lone small figure — NOT a close-up.
-A tense dialogue = TWO-SHOT — NOT a single bust shot of one character.
+⚠️ VARIETY ENFORCEMENT — FINAL CHECK before writing imagePrompt:
+Ask yourself: "Is this shot type the MOST INTERESTING choice for this specific moment, or just the safest?" If it is just safe — change it.
+A grief scene in a vast palace = WIDE SHOT of tiny lone figure, NOT medium shot.
+A tense dialogue = OVER-THE-SHOULDER, NOT two people standing side by side in medium shot.
+A king issuing an order = LOW ANGLE looking up, NOT eye-level medium shot.
 `;default:return""}}function lA(e,t,n,r){const i=(t.characters||[]).map((o,s)=>`- [${`KEY-${String.fromCharCode(65+s)}`}: ${o.name}] — ${o.role||"해설자"}`).join(`
 `);return`[📊 EDITORIAL / INFOGRAPHIC SCENE GENERATION]
 이 씬은 인포그래픽·시사·경제 콘텐츠용입니다. 드라마 연출이 아닌 정보 전달 중심으로 작성하세요.
@@ -1285,6 +1300,10 @@ ${e.fullScriptSegment||e.scriptReference}
 
 [SEARCH ANCHOR (30-char display only — do NOT use for content generation)]:
 ${(e.scriptReference||"").slice(0,60)}
+
+[SCENE POSITION & SHOT VARIETY HINT]:
+Scene ID: ${e.id}
+${(()=>{const N=parseInt((e.id||"0").replace(/\D/g,""),10)||0,_=["Preferred shot for this position: EXTREME WIDE or WIDE — establish the world.","Preferred shot for this position: FULL SHOT — show character in full environment.","Preferred shot for this position: OVER-THE-SHOULDER or TWO-SHOT — tension/dialogue.","Preferred shot for this position: CLOSE-UP or EXTREME CLOSE-UP — emotion or detail.","Preferred shot for this position: BIRD'S EYE or LOW ANGLE — power/scale shift.","Preferred shot for this position: FRAME-IN-FRAME or SILHOUETTE — visual poetry."];return _[N%_.length]+" Override this hint ONLY if the content triggers above demand a different shot."})()}
 
 [SCENE OUTLINE]: ${JSON.stringify(e)}`}
 
