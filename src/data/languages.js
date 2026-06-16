@@ -61,7 +61,7 @@ export const LANG_CONFIGS = {
     narratorNames: ['나레이션', '해설', '해설자', '내레이션', 'narrator', 'narration', 'Narrator', 'Narration'],
     ethnicityHint: 'Korean (East Asian). Characters should have Korean appearance, Korean names, and Korean cultural context by default.',
     costumeHierarchy: `⚠️ KOREAN COSTUME HIERARCHY (period drama only):
-- 왕/임금/세자 → 익선관(tall black dome cap, two small rear flaps) + 곤룡포(ENTIRELY VERMILLION RED dragon robe, NO blue fabric, white collar only, gold embroidery)
+- 왕/임금/세자 → 익선관(tall black dome cap, two small rear flaps) + 곤룡포(ENTIRELY VERMILLION RED dragon robe, NO blue fabric, white collar only, gold embroidery). Hair completely hidden inside 익선관 — NO flowing hair visible outside the cap.
 - 왕비/공주 → 활옷, 원삼, 봉황 문양
 - 양반/선비 → 도포, 갓(black wide-brimmed hat)
 - 관리/대감/정승 → 관복 + 사모(black hat with wide flat horizontal side wings) + 흉배. NEVER 익선관.

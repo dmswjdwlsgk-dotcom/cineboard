@@ -251,7 +251,7 @@ export async function generateSceneImage(
         const tag = `ACTOR-${String.fromCharCode(65 + (idx !== -1 ? idx : i))}`
         const protagonist = c.isProtagonist ? ' [★PROTAGONIST]' : ''
         const isRoyal = ROYAL_KEYWORDS.test(c.description || '') || ROYAL_KEYWORDS.test(c.name || '')
-        const royalTag = isRoyal ? ' [👑ROYALTY — CONTEXT-DEPENDENT ATTIRE: In formal/official scenes (throne room, court, ceremonies) → 익선관(翼善冠, tall black dome cap, two small rear flaps) + 곤룡포(ENTIRELY VERMILLION RED dragon robe — ⚠️ ZERO blue fabric anywhere: NO blue inner sleeves, NO blue undershirt, NO blue visible at wrists or neckline — white inner collar ONLY). In private/informal/pre-coronation scenes → appropriate 평상복 or 도포. Use scene context to decide. When wearing royal headwear, it MUST be 익선관, NEVER 사모.]' : ''
+        const royalTag = isRoyal ? ' [👑ROYALTY — CONTEXT-DEPENDENT ATTIRE: In formal/official scenes (throne room, court, ceremonies) → 익선관(翼善冠, tall black dome cap, two small rear flaps) + 곤룡포(ENTIRELY VERMILLION RED dragon robe — ⚠️ ZERO blue fabric anywhere: NO blue inner sleeves, NO blue undershirt, NO blue visible at wrists or neckline — white inner collar ONLY). ⚠️ HAIR: ALL hair is completely hidden inside the 익선관 — NO hair visible hanging down outside the cap, NO flowing hair on sides or back. In private/informal/pre-coronation scenes → appropriate 평상복 or 도포. Use scene context to decide. When wearing royal headwear, it MUST be 익선관, NEVER 사모.]' : ''
         return `[${tag}]${protagonist}${royalTag} AGE: ${c.age}${c.gender ? `, GENDER: ${c.gender}` : ''}. APPEARANCE: ${c.visualPrompt}`
       }).join('\n')
     : '(no specific characters - focus on environment and atmosphere)'
@@ -406,7 +406,7 @@ async function generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, 
     ? sceneChars.map(c => {
         const isRoyal = ROYAL_KEYWORDS.test(c.description || '') || ROYAL_KEYWORDS.test(c.name || '')
         let vp = (c.visualPrompt || '').replace(/\b(blue|azure|indigo|cobalt|청색|파란|파랑)\b/gi, 'vermillion red')
-        const costumeTag = isRoyal ? ', ENTIRELY VERMILLION RED 곤룡포 robe — NO blue fabric anywhere' : ''
+        const costumeTag = isRoyal ? ', ENTIRELY VERMILLION RED 곤룡포 robe — NO blue fabric anywhere, ALL hair hidden inside 익선관 — NO flowing hair visible' : ''
         return `${c.name}: ${vp}${costumeTag}`
       }).join(', ')
     : ''
