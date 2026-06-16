@@ -28,12 +28,12 @@ ${conf.ethnicityHint}
 [CHARACTER VISUAL PROMPT REQUIREMENTS - MANDATORY]:
 ⚠️ NON-HUMAN EXCEPTION (CRITICAL): If the character is an animal, object, or abstract concept, DO NOT force human features on them. Describe their NATURAL physical form. NEVER give them human hair, human clothes, a human face, or human limbs unless explicitly stated they are anthropomorphized.
 
-For HUMAN characters, you MUST describe ALL of the following in rich detail (English):
-1. HAIR: exact hairstyle, hair color, hair length, hair accessories
-2. OUTFIT: exact clothing with colors, materials, patterns appropriate to the cultural context
-${faceRule}
-4. ACCESSORIES: headwear, jewelry, weapons, props the character typically carries
-5. BODY: height (tall/average/short), build (slim/sturdy/broad)
+For HUMAN characters, describe the following in English:
+1. FACE: ${faceRule.replace(/^\d+\. FACE: /, '')}
+2. BODY: height (tall/average/short), build (slim/sturdy/broad)
+3. HAIR COLOR & NATURAL TEXTURE only (e.g. "black straight hair", "grey wavy hair") — do NOT describe hairstyle, length, or how hair is worn
+4. SIGNATURE ACCESSORY or PROP if unique to this character (e.g. a scar, a distinctive item they always carry)
+⚠️ DO NOT describe costume, outfit, clothing, headwear, or hairstyle in visualPrompt — costume is applied separately at image generation time.
 
 ⚠️ [STYLE CONTAMINATION PROHIBITION - CRITICAL]:
 The "imagePromptKo" and "visualPrompt" fields MUST contain ONLY the character's PHYSICAL APPEARANCE description (hair, face, outfit, body, accessories).
