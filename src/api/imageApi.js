@@ -401,14 +401,24 @@ ${textRule}`.trim()
 // ─── Z-Image 씬 이미지 생성 ───────────────────────────────────────────────────
 async function generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType, fixedCharSampleImage) {
   const sceneChars = resolveSceneCharacters(scene, bible)
-  const castInfo   = sceneChars.length > 0
-    ? sceneChars.map(c => `${c.name}: ${c.visualPrompt}`).join(', ')
+
+  const castInfo = sceneChars.length > 0
+    ? sceneChars.map(c => {
+        const isRoyal = ROYAL_KEYWORDS.test(c.description || '') || ROYAL_KEYWORDS.test(c.name || '')
+        let vp = (c.visualPrompt || '').replace(/\b(blue|azure|indigo|cobalt|청색|파란|파랑)\b/gi, 'vermillion red')
+        const costumeTag = isRoyal ? ', ENTIRELY VERMILLION RED 곤룡포 robe — NO blue fabric anywhere' : ''
+        return `${c.name}: ${vp}${costumeTag}`
+      }).join(', ')
     : ''
 
   const fixedCharPrompt = fixedCharStyleType ? getFixedCharPrompt(fixedCharStyleType, fixedCharSampleImage) : ''
 
-  const imagePromptText = scene.imagePrompt || scene.imagePromptKo || ''
-  const actionText      = scene.action || ''
+  // imagePrompt에서도 곤룡포 관련 blue 제거
+  let imagePromptText = scene.imagePrompt || scene.imagePromptKo || ''
+  if (ROYAL_KEYWORDS.test(castInfo)) {
+    imagePromptText = imagePromptText.replace(/\b(blue|azure|cobalt)\b(?=.*(?:sleeve|robe|inner|cuff|collar|fabric))/gi, 'vermillion red')
+  }
+  const actionText = scene.action || ''
 
   let prompt = ''
   if (currentMode === 'editorial') {
