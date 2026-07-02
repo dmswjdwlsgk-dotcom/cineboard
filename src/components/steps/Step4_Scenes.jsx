@@ -186,8 +186,12 @@ export default function Step4_Scenes() {
     isGenerating, setGenerating,
     targetSceneCount, currentMode, visualMode, isEditorialMode, isImageTextEnabled,
     isFixedCharMode, fixedCharStyleType, fixedCharSampleImage,
+    generationVersion,
     setStep, setError, clearError,
   } = useAppStore()
+
+  const genVersionRef = useRef(generationVersion)
+  useEffect(() => { genVersionRef.current = generationVersion }, [generationVersion])
 
   const [copiedIdx, setCopiedIdx]           = useState(null)
   const [generatingImages, setGeneratingImages] = useState(false)
@@ -215,25 +219,27 @@ export default function Step4_Scenes() {
     clearError()
     setGenerating(true)
     setProgress(0, 0)
+    const myVersion = genVersionRef.current
     try {
       const result = await generateAllScenes(
         scriptText,
         continuityBible || { characters: [], environment: {}, locations: [], camera: {} },
         style,
         detectedLanguage,
-        (current, total) => setProgress(current, total),
+        (current, total) => { if (genVersionRef.current === myVersion) setProgress(current, total) },
         targetSceneCount ?? 30,
         effectiveMode,
         visualMode,
         isEditorialMode,
         isImageTextEnabled
       )
+      if (genVersionRef.current !== myVersion) return
       setScenes(result)
       setProgress(result.length, result.length)
     } catch (err) {
-      setError('씬 생성 실패: ' + err.message)
+      if (genVersionRef.current === myVersion) setError('씬 생성 실패: ' + err.message)
     } finally {
-      setGenerating(false)
+      if (genVersionRef.current === myVersion) setGenerating(false)
     }
   }
 
@@ -244,6 +250,7 @@ export default function Step4_Scenes() {
 
     const sceneList = [...scenes]
     let completed = 0
+    const myVersion = genVersionRef.current
 
     const isFlash = modelId.includes('flash') && !modelId.includes('pro')
     const isPro   = modelId.includes('pro')
@@ -251,6 +258,8 @@ export default function Step4_Scenes() {
     const batchDelay = isFlash ? 500 : isPro ? 10000 : 1500
 
     for (let i = 0; i < sceneList.length; i += batchSize) {
+      if (genVersionRef.current !== myVersion) { setGeneratingImages(false); return }
+
       const batch = sceneList.slice(i, i + batchSize)
 
       batch.forEach((scene, j) => {
@@ -264,7 +273,7 @@ export default function Step4_Scenes() {
           const idx = i + j
           if (!scene?.imagePrompt && !scene?.imagePromptKo && !scene?.action) {
             completed++
-            setProgress(completed, sceneList.length)
+            if (genVersionRef.current === myVersion) setProgress(completed, sceneList.length)
             return
           }
           try {
@@ -278,12 +287,12 @@ export default function Step4_Scenes() {
               currentMode,
               ...fixedCharArgs
             )
-            updateScene(idx, { imageUrl: url, generating: false, imageError: null })
+            if (genVersionRef.current === myVersion) updateScene(idx, { imageUrl: url, generating: false, imageError: null })
           } catch (err) {
-            updateScene(idx, { imageError: err.message, generating: false })
+            if (genVersionRef.current === myVersion) updateScene(idx, { imageError: err.message, generating: false })
           }
           completed++
-          setProgress(completed, sceneList.length)
+          if (genVersionRef.current === myVersion) setProgress(completed, sceneList.length)
         })
       )
 
@@ -292,8 +301,10 @@ export default function Step4_Scenes() {
       }
     }
 
-    setGeneratingImages(false)
-    setProgress(sceneList.length, sceneList.length)
+    if (genVersionRef.current === myVersion) {
+      setGeneratingImages(false)
+      setProgress(sceneList.length, sceneList.length)
+    }
   }
 
   const handleRegenerateImage = async (idx) => {

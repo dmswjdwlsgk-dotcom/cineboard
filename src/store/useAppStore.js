@@ -56,6 +56,7 @@ const initialState = {
   isGenerating: false,
   generationStatus: {},       // { [sectionKey]: 'idle' | 'loading' | 'done' | 'error' }
   error: null,
+  generationVersion: 0,       // 새 프로젝트 시 증가 → 진행 중인 생성 루프 취소 신호
 }
 
 export const useAppStore = create(
@@ -160,7 +161,7 @@ export const useAppStore = create(
       clearError: ()      => set({ error: null }),
 
       // ── 전체 초기화 ──────────────────────────────────────────────────
-      resetAll: () => set(initialState),
+      resetAll: () => set({ ...initialState, generationVersion: get().generationVersion + 1 }),
     }),
     {
       name: 'cineboard-storage',
