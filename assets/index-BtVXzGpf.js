@@ -1207,6 +1207,16 @@ Every piece of information must become a VISUAL STORY with:
 [🏯 HISTORICAL DRAMA CINEMATOGRAPHY MODE — FULL CINEMATIC GRAMMAR]
 You are a Korean historical drama director. Read the scene content FIRST, then choose the shot.
 
+⚠️ DOCUMENTARY NARRATION OVERRIDE — READ FIRST:
+This script may be written as a DOCUMENTARY VOICEOVER (narrator speaking to audience: '여러분', '저는', '보겠습니다', '~하겠습니다', '~이었습니다').
+- The narrator's voice is INVISIBLE — they are NEVER a character in the frame.
+- NEVER render a modern lecturer, presenter, or narrator talking to camera. ZERO modern humans.
+- Instead, ALWAYS visualize the HISTORICAL EVENT, SCENE, or OBJECT being DESCRIBED in the narration.
+- Think of narration as a window into history — show what's THROUGH the window, not who's standing at it.
+- "밥그릇이 600그램이었다" → Joseon commoner eating from a large bowl at a wooden table
+- "이순신이 보고를 올렸다" → Admiral at a war camp candlelit tent writing or issuing orders
+- "기근으로 마을이 고요해졌다" → wide shot of a desolate Joseon village in winter, no animals, no smoke
+
 ⚠️ ANTI-REPETITION MANDATE — HIGHEST PRIORITY:
 "Medium Shot" is BANNED as a default. It may only be used when a character is SPEAKING DIALOGUE in an interior setting with NO spatial or emotional alternative. If you are tempted to write "Medium Shot" without a clear reason — choose something else.
 SHOT TYPE DISTRIBUTION TARGET across all scenes:
