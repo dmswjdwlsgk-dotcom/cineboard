@@ -187,9 +187,18 @@ function makeScenes(chunks) {
 }
 
 // AI로 각 세그먼트의 setting(배경) 보강
-async function enrichSceneSettings(scenes, client) {
+async function enrichSceneSettings(scenes, client, visualMode = '') {
+  const isHistDrama = visualMode === 'hist_drama'
+  const modeHint = isHistDrama
+    ? `⚠️ 이 콘텐츠는 역사 다큐멘터리 나레이션입니다. 나레이션 화자("여러분", "저는", "보겠습니다" 등)의 위치가 아닌,
+나레이션이 묘사하는 역사적 장소/시대로 배경을 추론하라.
+절대로 "현대 강의실", "스튜디오", "방송국" 등 현대 공간을 setting으로 쓰지 말 것.
+예: "밥그릇" 관련 → "조선 시대 민가 부엌", "이순신" 관련 → "임진왜란 조선 수군 진영", "기근" 관련 → "조선 후기 농촌 마을"`
+    : ''
+
   const prompt = `다음 씬 목록의 각 씬에 대해 "setting"(장소와 시간대, 한국어)을 채워 반환하라.
 씬 내용을 읽고 배경을 추론하라. 알 수 없으면 "미상"으로 쓸 것.
+${modeHint}
 
 씬 목록 (JSON):
 ${JSON.stringify(scenes.map(s => ({ id: s.id, text: s.fullScriptSegment.slice(0, 120) })))}
@@ -213,12 +222,12 @@ ${JSON.stringify(scenes.map(s => ({ id: s.id, text: s.fullScriptSegment.slice(0,
   }
 }
 
-export async function splitScriptToScenes(scriptText, maxScenes = 30) {
+export async function splitScriptToScenes(scriptText, maxScenes = 30, visualMode = '') {
   const client = await createClient()
   // 프로그래밍 방식으로 정확히 maxScenes개 분할 (AI 무시 버그 방지)
   const scenes  = programmaticSplit(scriptText, maxScenes)
   // 배경 정보만 AI로 보강
-  return enrichSceneSettings(scenes, client)
+  return enrichSceneSettings(scenes, client, visualMode)
 }
 
 // ─── 비주얼 모드 지침 생성 (원본 Cr 함수 이식) ────────────────────────────────
@@ -877,7 +886,7 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
 export async function generateAllScenes(scriptText, bible, stylePreset, lang, onProgress, maxScenes = 30, currentMode = 'normal', visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false) {
   const langConfig   = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
   const bibleCtx     = { ...bible, _fullScript: scriptText }
-  const rawScenes    = await splitScriptToScenes(scriptText, maxScenes)
+  const rawScenes    = await splitScriptToScenes(scriptText, maxScenes, visualMode)
   const total        = rawScenes.length
   const results      = new Array(total).fill(null)
 
