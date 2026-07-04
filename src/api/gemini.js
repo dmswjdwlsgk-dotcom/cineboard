@@ -264,26 +264,6 @@ function patchFetch() {
       }
     }
 
-    // 429 시 다른 리전으로 즉시 전환 (나노바나나 2 라이트 전용 테스트)
-    if (res.status === 429 && url.includes('gemini-3.1-flash-lite-image')) {
-      const regionMatch = url.match(/locations\/([^/]+)/)
-      const failedRegion = regionMatch?.[1]
-      if (failedRegion) {
-        markRegionFailed(failedRegion)
-        const nextRegion = getVertexRegion()
-        if (nextRegion !== failedRegion) {
-          const newUrl = url
-            .replace(`locations/${failedRegion}`, `locations/${nextRegion}`)
-            .replace(`${failedRegion}-aiplatform`, `${nextRegion}-aiplatform`)
-          console.log(`[VERTEX REGION] 🔄 429 회피 ${failedRegion} → ${nextRegion} (라이트 전용)`)
-          const newInput = typeof input === 'string' ? newUrl
-            : input instanceof URL ? new URL(newUrl)
-            : new Request(newUrl, input)
-          res = await original(newInput, init)
-        }
-      }
-    }
-
     return res
   }
 }
