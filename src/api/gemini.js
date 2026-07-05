@@ -346,8 +346,28 @@ export async function safeGenerate(client, params, label) {
   return null
 }
 
+// ─── 나노바나나 2 라이트 전용 동시성 세마포어 (개별 재생성 버튼도 여기로 통과) ──
+const LITE_IMAGE_MODEL = 'gemini-3.1-flash-lite-image'
+let _liteActive = 0
+
+async function acquireLiteSlot(label) {
+  let waited = false
+  while (_liteActive >= 1) {
+    if (!waited) { console.warn(`[LITE SLOT] ⏳ ${label} — 다른 라이트 요청 처리 중, 대기`); waited = true }
+    await new Promise(r => setTimeout(r, 300))
+  }
+  _liteActive++
+}
+
+function releaseLiteSlot() {
+  _liteActive = Math.max(0, _liteActive - 1)
+}
+
 // ─── 재시도 래퍼 (원본 Le 함수 이식) ─────────────────────────────────────────
-export async function withRetry(fn, maxRetries = 3, label = 'API') {
+export async function withRetry(fn, maxRetries = 3, label = 'API', model = null) {
+  const isLiteImage = model === LITE_IMAGE_MODEL
+  if (isLiteImage) await acquireLiteSlot(label)
+  try {
   let lastErr
   let retries = maxRetries
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -394,6 +414,9 @@ export async function withRetry(fn, maxRetries = 3, label = 'API') {
     }
   }
   throw lastErr
+  } finally {
+    if (isLiteImage) releaseLiteSlot()
+  }
 }
 
 // ─── 타임아웃 래퍼 ────────────────────────────────────────────────────────────

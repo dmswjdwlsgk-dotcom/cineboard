@@ -342,7 +342,7 @@ ${imagePromptText || actionText}
       const imgPart = res.candidates[0]?.content?.parts?.find(p => p.inlineData && !p.thought)
       if (!imgPart) throw new Error(`이미지 생성 실패 (Scene ${scene.id}): 안전 필터에 의해 차단되었거나 응답이 비어있습니다.`)
       return `data:image/png;base64,${imgPart.inlineData.data}`
-    }, 5, `generateSceneImage[editorial](${scene.id})`)
+    }, 5, `generateSceneImage[editorial](${scene.id})`, model)
   }
 
   const compositePrompt = `[STYLE] ${stylePreset.prompt} (NON-NEGOTIABLE)
@@ -395,7 +395,7 @@ ${textRule}`.trim()
     const imgPart = res.candidates[0]?.content?.parts?.find(p => p.inlineData && !p.thought)
     if (!imgPart) throw new Error(`이미지 생성 실패 (Scene ${scene.id}): 안전 필터에 의해 차단되었거나 응답이 비어있습니다.`)
     return `data:image/png;base64,${imgPart.inlineData.data}`
-  }, 5, `generateSceneImage(${scene.id})`)
+  }, 5, `generateSceneImage(${scene.id})`, model)
 }
 
 // ─── Z-Image 씬 이미지 생성 ───────────────────────────────────────────────────
@@ -482,7 +482,7 @@ export async function generateImage(promptText, stylePreset, model = DEFAULT_IMA
     const imgPart = res.candidates[0]?.content?.parts?.find(p => p.inlineData && !p.thought)
     if (!imgPart) return ''
     return `data:image/png;base64,${imgPart.inlineData.data}`
-  }, 3, 'generateImage')
+  }, 3, 'generateImage', model)
 }
 
 // ─── 썸네일 생성 3종 ──────────────────────────────────────────────────────────
@@ -572,7 +572,7 @@ ${refImages.length > 0 ? '⚠️ CRITICAL: The character reference images above 
         const imgPart = res.candidates[0].content.parts.find(p => p.inlineData && !p.thought)
         if (!imgPart) throw new Error(`썸네일 생성 실패: ${thumb.label}`)
         return `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`
-      }, 3, `generateThumbnail(${thumb.label})`)
+      }, 3, `generateThumbnail(${thumb.label})`, model)
 
       results.push({ label: thumb.label, imageUrl, error: null })
     } catch (e) {
