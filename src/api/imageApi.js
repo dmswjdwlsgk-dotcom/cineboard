@@ -1,6 +1,7 @@
 import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken, resolveModelId } from './gemini.js'
 
 const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
+const SMART_BACKOFF_MODELS = ['gemini-3.1-flash-lite-image'] // 나노바나나 2 라이트 — 신규 재시도 로직 시범 적용
 const ZIMAGE_API_BASE     = 'https://api.kie.ai/api/v1'
 const ZIMAGE_UPLOAD_URL   = 'https://kieai.redpandaai.co/api/file-stream-upload'
 const ZIMAGE_MAX_PROMPT   = 800
@@ -342,7 +343,7 @@ ${imagePromptText || actionText}
       const imgPart = res.candidates[0]?.content?.parts?.find(p => p.inlineData && !p.thought)
       if (!imgPart) throw new Error(`이미지 생성 실패 (Scene ${scene.id}): 안전 필터에 의해 차단되었거나 응답이 비어있습니다.`)
       return `data:image/png;base64,${imgPart.inlineData.data}`
-    }, 5, `generateSceneImage[editorial](${scene.id})`, model)
+    }, 5, `generateSceneImage[editorial](${scene.id})`, { model, smartBackoff: SMART_BACKOFF_MODELS.includes(model) })
   }
 
   const compositePrompt = `[STYLE] ${stylePreset.prompt} (NON-NEGOTIABLE)
@@ -395,7 +396,7 @@ ${textRule}`.trim()
     const imgPart = res.candidates[0]?.content?.parts?.find(p => p.inlineData && !p.thought)
     if (!imgPart) throw new Error(`이미지 생성 실패 (Scene ${scene.id}): 안전 필터에 의해 차단되었거나 응답이 비어있습니다.`)
     return `data:image/png;base64,${imgPart.inlineData.data}`
-  }, 5, `generateSceneImage(${scene.id})`, model)
+  }, 5, `generateSceneImage(${scene.id})`, { model, smartBackoff: SMART_BACKOFF_MODELS.includes(model) })
 }
 
 // ─── Z-Image 씬 이미지 생성 ───────────────────────────────────────────────────
@@ -482,7 +483,7 @@ export async function generateImage(promptText, stylePreset, model = DEFAULT_IMA
     const imgPart = res.candidates[0]?.content?.parts?.find(p => p.inlineData && !p.thought)
     if (!imgPart) return ''
     return `data:image/png;base64,${imgPart.inlineData.data}`
-  }, 3, 'generateImage', model)
+  }, 3, 'generateImage', { model, smartBackoff: SMART_BACKOFF_MODELS.includes(model) })
 }
 
 // ─── 썸네일 생성 3종 ──────────────────────────────────────────────────────────
@@ -572,7 +573,7 @@ ${refImages.length > 0 ? '⚠️ CRITICAL: The character reference images above 
         const imgPart = res.candidates[0].content.parts.find(p => p.inlineData && !p.thought)
         if (!imgPart) throw new Error(`썸네일 생성 실패: ${thumb.label}`)
         return `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`
-      }, 3, `generateThumbnail(${thumb.label})`, model)
+      }, 3, `generateThumbnail(${thumb.label})`, { model, smartBackoff: SMART_BACKOFF_MODELS.includes(model) })
 
       results.push({ label: thumb.label, imageUrl, error: null })
     } catch (e) {

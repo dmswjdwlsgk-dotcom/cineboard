@@ -363,8 +363,30 @@ function releaseLiteSlot() {
   _liteActive = Math.max(0, _liteActive - 1)
 }
 
+// ─── 서버 지정 재시도 대기시간 파싱 (google.rpc.RetryInfo) ────────────────────
+function parseRetryDelayMs(err) {
+  try {
+    const body    = JSON.parse(err.message)
+    const details = body?.error?.details || []
+    const info    = details.find(d => (d['@type'] || '').includes('RetryInfo'))
+    const sec     = info?.retryDelay ? parseFloat(info.retryDelay.replace('s', '')) : NaN
+    return Number.isFinite(sec) ? Math.ceil(sec * 1000) : null
+  } catch {
+    return null
+  }
+}
+
+// ─── 지수 백오프 + 지터 ───────────────────────────────────────────────────────
+function backoffWithJitter(attempt, base, max) {
+  const exp    = Math.min(base * Math.pow(2, attempt - 1), max)
+  const jitter = exp * (0.7 + Math.random() * 0.6) // ±30%
+  return Math.round(jitter)
+}
+
 // ─── 재시도 래퍼 (원본 Le 함수 이식) ─────────────────────────────────────────
-export async function withRetry(fn, maxRetries = 3, label = 'API', model = null) {
+// model: 나노바나나 2 라이트일 경우 동시 요청을 1개로 제한
+// smartBackoff: true면 서버 retryDelay 우선 사용 + 지수백오프/지터 (모델별 점진 적용 중)
+export async function withRetry(fn, maxRetries = 3, label = 'API', { model = null, smartBackoff = false } = {}) {
   const isLiteImage = model === LITE_IMAGE_MODEL
   if (isLiteImage) await acquireLiteSlot(label)
   try {
@@ -401,12 +423,15 @@ export async function withRetry(fn, maxRetries = 3, label = 'API', model = null)
       if (attempt >= retries) { console.error(`[RETRY FAILED] ${label} after ${retries} attempts`); throw err }
 
       if (isRateLimit) {
-        const wait = attempt * 30000
-        console.warn(`[RATE LIMIT] ${label} — ${wait / 1000}초 대기 (${attempt}/${retries})`)
+        const wait = smartBackoff
+          ? (parseRetryDelayMs(err) || backoffWithJitter(attempt, 2000, 45000))
+          : attempt * 30000
+        console.warn(`[RATE LIMIT] ${label} — ${(wait / 1000).toFixed(1)}초 대기 (${attempt}/${retries})`)
         await new Promise(r => setTimeout(r, wait))
       } else if (is503) {
-        console.warn(`[SERVER OVERLOAD] ${label} — 10초 대기 (${attempt}/${retries})`)
-        await new Promise(r => setTimeout(r, 10000))
+        const wait = smartBackoff ? backoffWithJitter(attempt, 5000, 20000) : 10000
+        console.warn(`[SERVER OVERLOAD] ${label} — ${(wait / 1000).toFixed(1)}초 대기 (${attempt}/${retries})`)
+        await new Promise(r => setTimeout(r, wait))
       } else {
         const wait = Math.pow(2, attempt - 1) * 1000
         await new Promise(r => setTimeout(r, wait))
