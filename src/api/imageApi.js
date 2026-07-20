@@ -1,6 +1,23 @@
 import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, withTimeout, getZImageToken, resolveModelId } from './gemini.js'
+import { detectLanguage } from '../data/languages.js'
 
 const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
+
+// ─── {{TEXT_LANG}} 플레이스홀더 치환 (텍스트가 그림 소재인 스타일 전용) ───────
+// 대본 원문 언어를 감지해 스타일 프롬프트 속 이미지 내 텍스트 언어를 맞춘다.
+// 해당 플레이스홀더가 없는 스타일(대부분)은 영향받지 않는다.
+const TEXT_LANG_NAMES = {
+  ko: '한국어(Korean)', en: '영어(English)', ja: '일본어(Japanese)', zh: '중국어(Chinese)',
+  th: '태국어(Thai)', hi: '힌디어(Hindi)', ar: '아랍어(Arabic)', vi: '베트남어(Vietnamese)',
+  es: '스페인어(Spanish)', pt: '포르투갈어(Portuguese)',
+}
+
+function resolveTextLangPlaceholder(stylePrompt, scriptSample) {
+  if (!stylePrompt.includes('{{TEXT_LANG}}')) return stylePrompt
+  const lang = detectLanguage(scriptSample || '')
+  const langName = TEXT_LANG_NAMES[lang] || TEXT_LANG_NAMES.ko
+  return stylePrompt.replaceAll('{{TEXT_LANG}}', langName)
+}
 const SMART_BACKOFF_MODELS = ['gemini-3.1-flash-lite-image'] // 나노바나나 2 라이트 — 신규 재시도 로직 시범 적용
 const ZIMAGE_API_BASE     = 'https://api.kie.ai/api/v1'
 const ZIMAGE_UPLOAD_URL   = 'https://kieai.redpandaai.co/api/file-stream-upload'
@@ -201,6 +218,12 @@ export async function generateSceneImage(
   // ── Gemini 엔진 ────────────────────────────────────────────────────────────
   const client = await createClient()
 
+  // {{TEXT_LANG}} 플레이스홀더가 있는 스타일만 대본 원문 언어로 치환 (그 외 스타일은 무영향)
+  const resolvedStylePrompt = resolveTextLangPlaceholder(
+    stylePreset.prompt,
+    scene.scriptReference || scene.dialogue || scene.setting || ''
+  )
+
   // 고정 캐릭터 모드
   const fixedCharPrompt = fixedCharStyleType ? getFixedCharPrompt(fixedCharStyleType, fixedCharSampleImage) : null
 
@@ -309,7 +332,7 @@ export async function generateSceneImage(
 
   // 에디토리얼 모드
   if (currentMode === 'editorial') {
-    const editorialPrompt = `[STYLE] ${stylePreset.prompt}
+    const editorialPrompt = `[STYLE] ${resolvedStylePrompt}
 
 [EDITORIAL / INFOGRAPHIC IMAGE]
 ${imagePromptText || actionText}
@@ -346,7 +369,7 @@ ${imagePromptText || actionText}
     }, 5, `generateSceneImage[editorial](${scene.id})`, { model, smartBackoff: SMART_BACKOFF_MODELS.includes(model) })
   }
 
-  const compositePrompt = `[STYLE] ${stylePreset.prompt} (NON-NEGOTIABLE)
+  const compositePrompt = `[STYLE] ${resolvedStylePrompt} (NON-NEGOTIABLE)
 ${fixedCharPrompt ? `\n${fixedCharPrompt}\n` : ''}
 ${shotFramingRule ? `${shotFramingRule}\n` : ''}[CONTEXT] "${(scene.dialogue || scene.scriptReference || '').slice(0, 150).replace(/"/g, "'")}"
 [WORLD] ${bible.environment?.visualPrompt || ''}
@@ -401,6 +424,10 @@ ${textRule}`.trim()
 
 // ─── Z-Image 씬 이미지 생성 ───────────────────────────────────────────────────
 async function generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, currentMode, fixedCharStyleType, fixedCharSampleImage) {
+  const resolvedStylePrompt = resolveTextLangPlaceholder(
+    stylePreset.prompt,
+    scene.scriptReference || scene.dialogue || scene.setting || ''
+  )
   const sceneChars = resolveSceneCharacters(scene, bible)
 
   const castInfo = sceneChars.length > 0
@@ -423,10 +450,10 @@ async function generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, 
 
   let prompt = ''
   if (currentMode === 'editorial') {
-    prompt = `${stylePreset.prompt}, ${imagePromptText || actionText}, professional infographic layout, Korean text labels allowed, full bleed, no borders`
+    prompt = `${resolvedStylePrompt}, ${imagePromptText || actionText}, professional infographic layout, Korean text labels allowed, full bleed, no borders`
   } else {
     prompt = [
-      stylePreset.prompt,
+      resolvedStylePrompt,
       fixedCharPrompt,
       castInfo ? `Characters: ${castInfo}` : '',
       scene.setting ? `Location: ${scene.setting}` : '',
@@ -451,8 +478,9 @@ async function generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, 
 
 // ─── 단순 이미지 생성 ─────────────────────────────────────────────────────────
 export async function generateImage(promptText, stylePreset, model = DEFAULT_IMAGE_MODEL, aspectRatio = '16:9', allowText = false) {
+  const resolvedStylePrompt = resolveTextLangPlaceholder(stylePreset.prompt, promptText)
   if (model === 'z-image-turbo') {
-    const prompt = `${stylePreset.prompt}, ${promptText}, full bleed, no borders, single frame`
+    const prompt = `${resolvedStylePrompt}, ${promptText}, full bleed, no borders, single frame`
     return generateZImage(prompt, aspectRatio)
   }
   model = resolveModelId(model)
@@ -461,7 +489,7 @@ export async function generateImage(promptText, stylePreset, model = DEFAULT_IMA
   const textRule = allowText
     ? 'Clean infographic text MAY be included if relevant to the content. NO random watermarks or signatures.'
     : 'The image MUST NOT contain ANY text, typography, letters, watermarks, or signatures. PURE VISUALS ONLY.'
-  const fullPrompt = `${stylePreset.prompt}, ${promptText}, CRITICAL FRAME MANDATE: 100% FULL BLEED canvas. ABSOLUTELY NO LETTERBOXING, NO BLACK BARS, and NO WHITE BORDERS. Do NOT simulate a cinematic crop by drawing bars. ${textRule} ONE UNIFIED SINGLE FRAME ONLY. NO split screen.`
+  const fullPrompt = `${resolvedStylePrompt}, ${promptText}, CRITICAL FRAME MANDATE: 100% FULL BLEED canvas. ABSOLUTELY NO LETTERBOXING, NO BLACK BARS, and NO WHITE BORDERS. Do NOT simulate a cinematic crop by drawing bars. ${textRule} ONE UNIFIED SINGLE FRAME ONLY. NO split screen.`
 
   return withRetry(async () => {
     const timeoutMs = getTimeout(model)
@@ -490,6 +518,10 @@ export async function generateImage(promptText, stylePreset, model = DEFAULT_IMA
 export async function generateThumbnails(bible, stylePreset, model = DEFAULT_IMAGE_MODEL, aspectRatio = '16:9') {
   model = resolveModelId(model)
   const client = await createClient()
+  const resolvedStylePrompt = resolveTextLangPlaceholder(
+    stylePreset.prompt,
+    bible.characters.map(c => c.name).join(' ')
+  )
 
   const castInfo = bible.characters.slice(0, 3).map((c, i) => {
     const tag = `ACTOR-${String.fromCharCode(65 + i)}`
@@ -531,7 +563,7 @@ export async function generateThumbnails(bible, stylePreset, model = DEFAULT_IMA
 
   for (const thumb of thumbTypes) {
     try {
-      const thumbPrompt = `${stylePreset.prompt}
+      const thumbPrompt = `${resolvedStylePrompt}
 
 [YOUTUBE THUMBNAIL — ${thumb.label}]
 ${thumb.prompt}
