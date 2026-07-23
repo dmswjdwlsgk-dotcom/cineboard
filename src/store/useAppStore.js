@@ -165,6 +165,18 @@ export const useAppStore = create(
     }),
     {
       name: 'cineboard-storage',
+      version: 1,
+      migrate: (persistedState, version) => {
+        const state = { ...persistedState }
+        const RETIRED_MODEL_IDS = {
+          'gemini-3.1-flash-image-preview': 'gemini-3.1-flash-image',
+          'gemini-3-pro-image-preview':     'gemini-3-pro-image',
+        }
+        if (state.imageEngine in RETIRED_MODEL_IDS) {
+          state.imageEngine = RETIRED_MODEL_IDS[state.imageEngine]
+        }
+        return state
+      },
       partialize: (state) => ({
         // 대용량 이미지 데이터 제외하고 저장
         currentStep:         state.currentStep,

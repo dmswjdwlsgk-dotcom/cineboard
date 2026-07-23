@@ -28,8 +28,8 @@ const _uploadCache = new Map()
 
 // ─── 모델별 이미지 설정 ───────────────────────────────────────────────────────
 function getImageConfig(model, aspectRatio) {
-  const isPro    = model === 'gemini-3-pro-image-preview'
-  const isFlash2 = model === 'gemini-3.1-flash-image-preview'
+  const isPro    = model === 'gemini-3-pro-image'
+  const isFlash2 = model === 'gemini-3.1-flash-image'
   return {
     aspectRatio,
     numberOfImages: 1,
@@ -39,11 +39,11 @@ function getImageConfig(model, aspectRatio) {
 }
 
 function getThinkingConfig(model) {
-  return model === 'gemini-3-pro-image-preview' ? { thinkingConfig: { thinkingBudget: 1024 } } : {}
+  return model === 'gemini-3-pro-image' ? { thinkingConfig: { thinkingBudget: 1024 } } : {}
 }
 
 function getTimeout(model) {
-  return model === 'gemini-3-pro-image-preview' ? 120000 : 60000
+  return model === 'gemini-3-pro-image' ? 120000 : 60000
 }
 
 // ─── 고정 캐릭터 스타일 프롬프트 ─────────────────────────────────────────────

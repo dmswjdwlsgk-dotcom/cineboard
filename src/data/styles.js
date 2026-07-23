@@ -375,7 +375,7 @@ export const MODELS = [
     icon: 'zap',
   },
   {
-    id: 'gemini-3.1-flash-image-preview',
+    id: 'gemini-3.1-flash-image',
     label: '나노바나나 2 (1K)',
     description: '프로급 지능 + 속도 최적화',
     icon: 'zap',
@@ -387,7 +387,7 @@ export const MODELS = [
     icon: 'zap',
   },
   {
-    id: 'gemini-3-pro-image-preview',
+    id: 'gemini-3-pro-image',
     label: '나노바나나 프로 (2K)',
     description: '최고 품질, 비용 고가',
     icon: 'star',
