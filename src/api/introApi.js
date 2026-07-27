@@ -2,7 +2,7 @@ import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, parseJson } fro
 import { Type } from '@google/genai'
 import { LANG_CONFIGS } from '../data/languages.js'
 
-const TEXT_MODEL = 'gemini-2.5-flash'
+const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
 // ─── 인트로 시퀀스 확장 (원본 vn 함수 이식) ──────────────────────────────────
 export async function generateIntroExpansion(scene, bible, stylePreset, lang = 'ko', clipCount = 4, batchIndex = 1) {
@@ -193,5 +193,5 @@ ${langConfig.outputInstruction}
       clipScript:       clip.clipScript    || '',
       hookType:         clip.hookType      || '',
     }))
-  }, 3, `generateIntroExpansion(${scene.id})`)
+  }, 3, `generateIntroExpansion(${scene.id})`, { model: TEXT_MODEL, smartBackoff: true })
 }

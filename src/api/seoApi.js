@@ -2,7 +2,7 @@ import { createClient, SAFETY_SETTINGS, withRetry, parseJson } from './gemini.js
 import { Type } from '@google/genai'
 import { cleanScript } from '../data/languages.js'
 
-const TEXT_MODEL = 'gemini-2.5-flash'
+const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
 // ─── YouTube SEO 메타데이터 생성 (원본 yn 함수 이식) ─────────────────────────
 export async function generateYoutubeMetadata(scriptText, bible) {
@@ -66,5 +66,5 @@ You are a top Korean YouTube SEO specialist. Generate metadata that MAXIMIZES cl
     })
     const text = res?.candidates?.[0]?.content?.parts?.[0]?.text || ''
     return parseJson(text, 'YoutubeMetadata', { titles: [], description: '', hashtags: [], thumbnailTexts: [] })
-  }, 3, 'generateYoutubeMetadata')
+  }, 3, 'generateYoutubeMetadata', { model: TEXT_MODEL, smartBackoff: true })
 }

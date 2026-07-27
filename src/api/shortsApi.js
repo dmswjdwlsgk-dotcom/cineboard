@@ -2,7 +2,7 @@ import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, parseJson } fro
 import { Type } from '@google/genai'
 import { LANG_CONFIGS, cleanScript } from '../data/languages.js'
 
-const TEXT_MODEL = 'gemini-2.5-flash'
+const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
 // ─── 쇼츠 변환 (원본 vn 함수 기반) ─────────────────────────────────────────
 // 각 씬을 9:16 쇼츠용 클립 시퀀스로 변환
@@ -191,5 +191,5 @@ ${langConfig.outputInstruction}`
       hookType:         clip.hookType      || '',
       aspectRatio:      '9:16',
     }))
-  }, 3, `generateShorts(${scene.id})`)
+  }, 3, `generateShorts(${scene.id})`, { model: TEXT_MODEL, smartBackoff: true })
 }

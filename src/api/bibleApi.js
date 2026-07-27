@@ -2,7 +2,7 @@ import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, parseJson } fro
 import { Type } from '@google/genai'
 import { LANG_CONFIGS, detectLanguage, cleanScript } from '../data/languages.js'
 
-const TEXT_MODEL = 'gemini-2.5-flash'
+const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
 // ─── 연속성 바이블 생성 (원본 hn 함수 이식) ──────────────────────────────────
 export async function generateContinuityBible(scriptText, stylePreset) {
@@ -135,7 +135,7 @@ ${conf.outputInstruction} RESILIENCE: If content is blocked, return a safe/neutr
     if (!Array.isArray(bible.locations)) bible.locations = []
 
     return bible
-  }, 3, 'generateContinuityBible')
+  }, 3, 'generateContinuityBible', { model: TEXT_MODEL, smartBackoff: true })
 }
 
 // ─── 누락 캐릭터 감사 (원본 Nn 함수 이식) ────────────────────────────────────
@@ -191,7 +191,7 @@ Return MAJOR speaking characters (2+ lines) NOT in the existing list. Maximum 3.
     return Array.isArray(result)
       ? result.filter(c => !conf.narratorNames.some(n => (c.name || '').trim().toLowerCase() === n.toLowerCase()))
       : []
-  }, 3, 'verifyMissingCharacters')
+  }, 3, 'verifyMissingCharacters', { model: TEXT_MODEL, smartBackoff: true })
 }
 
 // ─── 캐릭터 이미지 분석 (원본 bn 함수 이식) ──────────────────────────────────
@@ -227,5 +227,5 @@ export async function analyzeCharacterImage(imageBase64) {
     })
     const text = res?.candidates?.[0]?.content?.parts?.[0]?.text || ''
     return parseJson(text, 'analyzeCharacterImage', {})
-  }, 3, 'analyzeCharacterImage')
+  }, 3, 'analyzeCharacterImage', { model: TEXT_MODEL, smartBackoff: true })
 }

@@ -2,7 +2,7 @@ import { createClient, SAFETY_SETTINGS, withRetry, parseJson } from './gemini.js
 import { Type } from '@google/genai'
 import { LANG_CONFIGS, cleanScript } from '../data/languages.js'
 
-const TEXT_MODEL = 'gemini-2.5-flash'
+const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
 // ─── 글로벌 BGM 생성 (원본 fn 함수 이식) ─────────────────────────────────────
 export async function generateGlobalBGM(scriptText, bible, lang = 'ko') {
@@ -71,7 +71,7 @@ You are a film composer analyzing this script to create the perfect background m
     }))
     const text = res?.candidates?.[0]?.content?.parts?.[0]?.text || ''
     return parseJson(text, 'GlobalBGM', {})
-  }, 3, 'generateGlobalBGM')
+  }, 3, 'generateGlobalBGM', { model: TEXT_MODEL, smartBackoff: true })
 }
 
 // ─── 멀티트랙 BGM 큐시트 (원본 wn 함수 이식) ─────────────────────────────────
@@ -161,5 +161,5 @@ ${langConfig.outputInstruction}`
     })
     const text = res?.candidates?.[0]?.content?.parts?.[0]?.text || ''
     return parseJson(text, 'MultiTrackBGM', [])
-  }, 3, 'generateMultiTrackBGM')
+  }, 3, 'generateMultiTrackBGM', { model: TEXT_MODEL, smartBackoff: true })
 }

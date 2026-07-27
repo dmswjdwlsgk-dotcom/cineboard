@@ -1,6 +1,6 @@
 import { createClient, SAFETY_SETTINGS, withRetry, parseJson } from './gemini.js'
 
-const TEXT_MODEL = 'gemini-2.5-flash'
+const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
 async function callJson(prompt, label = 'API') {
   const client = await createClient()
@@ -10,7 +10,7 @@ async function callJson(prompt, label = 'API') {
       contents: prompt,
       config:  { safetySettings: SAFETY_SETTINGS, responseMimeType: 'application/json', maxOutputTokens: 8192 },
     })
-  , 3, label)
+  , 3, label, { model: TEXT_MODEL, smartBackoff: true })
   const text = response?.candidates?.[0]?.content?.parts?.[0]?.text || response?.text || ''
   return parseJson(text, label, [])
 }
@@ -41,7 +41,7 @@ export async function suggestTopics(genreType, genreLabel, customLabel) {
         contents: prompt,
         config:  { safetySettings: SAFETY_SETTINGS, responseMimeType: 'application/json', maxOutputTokens: 4096 },
       })
-    , 3, '소재 추천')
+    , 3, '소재 추천', { model: TEXT_MODEL, smartBackoff: true })
     const text = (res?.candidates?.[0]?.content?.parts?.[0]?.text || '[]')
       .replace(/```json\s*/g, '').replace(/```/g, '').trim()
     return JSON.parse(text)
@@ -95,7 +95,7 @@ export async function generateSynopsis(genreType, genreLabel, topic, spices = []
         contents: prompt,
         config:  { safetySettings: SAFETY_SETTINGS, responseMimeType: 'application/json', maxOutputTokens: 8192 },
       })
-    , 3, '시놉시스 생성')
+    , 3, '시놉시스 생성', { model: TEXT_MODEL, smartBackoff: true })
     const text = (res?.candidates?.[0]?.content?.parts?.[0]?.text || '[]')
       .replace(/```json\s*/g, '').replace(/```/g, '').trim()
     return JSON.parse(text)
@@ -117,7 +117,7 @@ export async function generateFullScript(prompt, targetChars = 8000) {
         contents: prompt,
         config:  { safetySettings: SAFETY_SETTINGS, maxOutputTokens: 16384 },
       })
-    , 3, 'generateFullScript')
+    , 3, 'generateFullScript', { model: TEXT_MODEL, smartBackoff: true })
     return res?.candidates?.[0]?.content?.parts?.[0]?.text || res?.text || ''
   }
 
@@ -149,7 +149,7 @@ ${isLast ? '- 이것이 마지막 파트입니다. 자연스러운 결말로 마
         contents: partPrompt,
         config:  { safetySettings: SAFETY_SETTINGS, maxOutputTokens: 16384 },
       })
-    , 3, `generateFullScript(part ${i + 1}/${parts})`)
+    , 3, `generateFullScript(part ${i + 1}/${parts})`, { model: TEXT_MODEL, smartBackoff: true })
 
     accumulated += (i > 0 ? '\n\n' : '') + (res?.candidates?.[0]?.content?.parts?.[0]?.text || res?.text || '')
   }
@@ -190,7 +190,7 @@ ${scriptText.slice(0, 15000)}
         contents: prompt,
         config:  { safetySettings: SAFETY_SETTINGS, responseMimeType: 'application/json', maxOutputTokens: 8192 },
       })
-    , 3, 'factCheckScript')
+    , 3, 'factCheckScript', { model: TEXT_MODEL, smartBackoff: true })
     const text = (res?.candidates?.[0]?.content?.parts?.[0]?.text || '[]')
       .replace(/```json\s*/g, '').replace(/```/g, '').trim()
     return JSON.parse(text)
@@ -231,7 +231,7 @@ ${fixList}
       contents: prompt,
       config:  { safetySettings: SAFETY_SETTINGS, maxOutputTokens: 16384 },
     })
-  , 3, 'fixFactCheckScript')
+  , 3, 'fixFactCheckScript', { model: TEXT_MODEL, smartBackoff: true })
 
   return res?.candidates?.[0]?.content?.parts?.[0]?.text || scriptText
 }

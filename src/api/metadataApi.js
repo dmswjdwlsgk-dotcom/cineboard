@@ -1,7 +1,7 @@
 import { createClient } from './gemini.js'
 import { withRetry } from './retry.js'
 
-const TEXT_MODEL = 'gemini-2.5-flash'
+const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
 async function callJson(prompt, label = 'API') {
   const client = createClient()
