@@ -2,7 +2,7 @@ import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, parseJson } fro
 import { Type } from '@google/genai'
 import { LANG_CONFIGS, detectLanguage, cleanScript } from '../data/languages.js'
 
-const TEXT_MODEL = 'gemini-2.5-flash'
+const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
 // ─── 한국어 로마자 변환 ────────────────────────────────────────────────────────
 const CH  = ['g','kk','n','d','tt','r','m','b','pp','s','ss','','j','jj','ch','k','t','p','h']
@@ -212,7 +212,7 @@ ${JSON.stringify(scenes.map(s => ({ id: s.id, text: s.fullScriptSegment.slice(0,
         contents: prompt,
         config:  { safetySettings: SAFETY_SETTINGS, thinkingConfig: { thinkingBudget: 0 }, responseMimeType: 'application/json', maxOutputTokens: 4096 },
       })
-    , 2, '씬 배경 보강')
+    , 2, '씬 배경 보강', { model: TEXT_MODEL, smartBackoff: true })
     const text     = res?.candidates?.[0]?.content?.parts?.[0]?.text || ''
     const settings = parseJson(text, '씬 배경 보강', [])
     const map      = Object.fromEntries(settings.map(s => [s.id, s.setting]))
@@ -770,7 +770,7 @@ export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, lang
         },
       },
     }, `씬 생성(${sceneRef.id})`)
-  , 3, `씬 생성(${sceneRef.id})`)
+  , 3, `씬 생성(${sceneRef.id})`, { model: TEXT_MODEL, smartBackoff: true })
 
   const text = res?.candidates?.[0]?.content?.parts?.[0]?.text || ''
   const raw  = parseJson(text, `씬(${sceneRef.id})`, {})
@@ -841,7 +841,7 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
         },
       },
     }, `씬 재생성(${sceneRef.id})`)
-  , 3, `씬 재생성(${sceneRef.id})`)
+  , 3, `씬 재생성(${sceneRef.id})`, { model: TEXT_MODEL, smartBackoff: true })
 
   const text = res?.candidates?.[0]?.content?.parts?.[0]?.text || ''
   const raw  = parseJson(text, `씬재생성(${sceneRef.id})`, {})
