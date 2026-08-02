@@ -93,17 +93,37 @@ function programmaticSplit(scriptText, n) {
   const cleaned = cleanScript(scriptText).replace(/\s{2,}/g, ' ').trim()
   if (!cleaned || n <= 0) return []
 
-  // ── 헬퍼: 유닛 배열을 n개 청크로 그루핑 ───────────────────────────────────
+  // ── 헬퍼: 유닛 배열을 n개 청크로 그루핑 (글자 수 기준 균형 배분) ───────────
+  // 유닛 "개수"만 균등 배분하면 짧은 문장이 몰린 청크와 긴 문장이 몰린 청크의
+  // 실제 분량이 크게 벌어질 수 있어, 누적 글자 수가 평균에 가까워지도록 배분한다.
   const groupIntoN = (units, count, sep = ' ') => {
-    const chunks = []
-    const base   = Math.floor(units.length / count)
-    let rem      = units.length % count
-    let cursor   = 0
-    for (let i = 0; i < count; i++) {
-      const size = base + (rem-- > 0 ? 1 : 0)
-      chunks.push(units.slice(cursor, cursor + size).join(sep).trim())
-      cursor += size
+    if (units.length <= count) {
+      const chunks = []
+      const base   = Math.floor(units.length / count)
+      let rem      = units.length % count
+      let cursor   = 0
+      for (let i = 0; i < count; i++) {
+        const size = base + (rem-- > 0 ? 1 : 0)
+        chunks.push(units.slice(cursor, cursor + size).join(sep).trim())
+        cursor += size
+      }
+      return chunks.filter(Boolean)
     }
+    const totalLen  = units.reduce((sum, u) => sum + u.length, 0)
+    const targetLen = totalLen / count
+    const chunks    = []
+    let cursor      = 0
+    for (let i = 0; i < count - 1; i++) {
+      const maxEnd = units.length - (count - 1 - i) // 남은 청크마다 최소 1개 유닛 보장
+      let acc = 0, j = cursor
+      while (j < maxEnd && (j === cursor || acc < targetLen)) {
+        acc += units[j].length
+        j++
+      }
+      chunks.push(units.slice(cursor, j).join(sep).trim())
+      cursor = j
+    }
+    chunks.push(units.slice(cursor).join(sep).trim())
     return chunks.filter(Boolean)
   }
 

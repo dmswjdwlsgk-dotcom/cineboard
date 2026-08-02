@@ -33,6 +33,7 @@ export function cleanScript(scriptText) {
   return scriptText.split('\n').map(line => {
     let l = line.trim()
     l = l.replace(/^\[.*?\]:\s*/, '')
+    l = l.replace(/^\d{1,3}[.)]\s*/, '') // 문단 앞 "1." "2)" 같은 번호 매기기 제거 (내용은 유지)
     return l
   }).filter(line => {
     const l = line.trim()
