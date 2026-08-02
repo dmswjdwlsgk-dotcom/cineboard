@@ -109,17 +109,23 @@ function programmaticSplit(scriptText, n) {
       }
       return chunks.filter(Boolean)
     }
-    const totalLen  = units.reduce((sum, u) => sum + u.length, 0)
+    // 절대 누적 글자 수 기준으로 경계를 잡는다 — 청크마다 목표량을 "새로" 채우면
+    // 오차가 다음 청크로 누적되어 마지막 청크가 과도하게 크거나 작아질 수 있다.
+    const lens      = units.map(u => u.length)
+    const totalLen  = lens.reduce((sum, l) => sum + l, 0)
+    const prefix    = []
+    let running     = 0
+    for (const l of lens) { running += l; prefix.push(running) }
     const targetLen = totalLen / count
     const chunks    = []
     let cursor      = 0
-    for (let i = 0; i < count - 1; i++) {
-      const maxEnd = units.length - (count - 1 - i) // 남은 청크마다 최소 1개 유닛 보장
-      let acc = 0, j = cursor
-      while (j < maxEnd && (j === cursor || acc < targetLen)) {
-        acc += units[j].length
-        j++
-      }
+    for (let i = 1; i < count; i++) {
+      const targetCum = i * targetLen
+      const minJ = cursor + 1
+      const maxJ = units.length - (count - i) // 남은 청크마다 최소 1개 유닛 보장
+      let j = minJ
+      while (j < maxJ && prefix[j - 1] < targetCum) j++
+      j = Math.min(j, maxJ)
       chunks.push(units.slice(cursor, j).join(sep).trim())
       cursor = j
     }
