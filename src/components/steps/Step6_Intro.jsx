@@ -65,7 +65,7 @@ export default function Step6_Intro() {
       c.id === clip.id ? { ...c, imageError: null } : c
     ))
     try {
-      const url = await generateSceneImage(clip, continuityBible, style, modelId, aspectRatio, false)
+      const url = await generateSceneImage(clip, continuityBible, style, modelId, aspectRatio, true)
       // getState()로 최신 상태 읽어서 stale 클로저 방지
       setIntroClips(useAppStore.getState().introClips.map(c =>
         c.id === clip.id ? { ...c, imageUrl: url, imageError: null } : c

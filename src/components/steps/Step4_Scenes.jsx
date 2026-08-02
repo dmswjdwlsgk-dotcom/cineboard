@@ -284,7 +284,7 @@ export default function Step4_Scenes() {
               style,
               modelId,
               aspectRatio,
-              false,
+              true,
               currentMode,
               ...fixedCharArgs
             )
@@ -320,7 +320,7 @@ export default function Step4_Scenes() {
         style,
         modelId,
         aspectRatio,
-        false,
+        true,
         currentMode,
         ...fixedCharArgs
       )

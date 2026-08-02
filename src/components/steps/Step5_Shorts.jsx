@@ -65,7 +65,7 @@ export default function Step5_Shorts() {
     if (!isApiReady()) { setError('API 키를 먼저 설정하세요.'); return }
     setLoadingImageId(clip.id)
     try {
-      const url = await generateSceneImage(clip, continuityBible, style, modelId, '9:16', false)
+      const url = await generateSceneImage(clip, continuityBible, style, modelId, '9:16', true)
       setShortsClips(shortsClips.map(c => c.id === clip.id ? { ...c, imageUrl: url } : c))
     } catch (e) {
       setError(`이미지 생성 실패: ${e.message}`)

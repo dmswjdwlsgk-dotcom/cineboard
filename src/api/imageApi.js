@@ -3,6 +3,10 @@ import { detectLanguage } from '../data/languages.js'
 
 const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
 
+// 정보 상자/말풍선/그래프 라벨처럼 이미지 안 텍스트가 스타일 핵심인 스타일들 —
+// 기본 "텍스트 절대 금지" 규칙에서 제외한다.
+const TEXT_ALLOWED_STYLE_IDS = new Set(['issue_youtube', 'bright_info'])
+
 // ─── {{TEXT_LANG}} 플레이스홀더 치환 (텍스트가 그림 소재인 스타일 전용) ───────
 // 대본 원문 언어를 감지해 스타일 프롬프트 속 이미지 내 텍스트 언어를 맞춘다.
 // 해당 플레이스홀더가 없는 스타일(대부분)은 영향받지 않는다.
@@ -288,7 +292,11 @@ export async function generateSceneImage(
   const charCountStr = charCount > 0 ? String(charCount) : ''
   const noExtraMode  = scene.excludeExtras ? `[ISOLATION MODE - STRICT]: THE USER HAS DISABLED EXTRAS. ABSOLUTELY NO BACKGROUND CHARACTERS. YOU MUST RENDER EXACTLY ${charCountStr} PERSON/PEOPLE.` : ''
 
-  const textRule = `⚠️ [imagePrompt ABSOLUTE PROHIBITION — NO EXCEPTIONS]:
+  const textRule = TEXT_ALLOWED_STYLE_IDS.has(stylePreset.id)
+    ? `⚠️ [ON-IMAGE TEXT — ALLOWED FOR THIS STYLE]:
+- This style's info boxes, speech bubbles, graph labels, and keyword callouts described in the imagePrompt SHOULD be rendered as clean, legible in-image typography.
+- Do NOT render random unrelated text, watermarks, or signatures — ONLY the specific text elements described in the imagePrompt.`
+    : `⚠️ [imagePrompt ABSOLUTE PROHIBITION — NO EXCEPTIONS]:
 - NO visible text, letters, words, signs, signage, banners, posters, newspapers, books with visible text, chalkboards, whiteboards, or any surface displaying readable characters.
 - NO subtitles, captions, title cards, watermarks in the scene description.
 - The scene must be PURELY VISUAL — zero textual elements in the rendered frame.`

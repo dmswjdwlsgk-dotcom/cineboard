@@ -2,7 +2,7 @@ import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, parseJson } fro
 import { Type } from '@google/genai'
 import { LANG_CONFIGS, detectLanguage, cleanScript } from '../data/languages.js'
 
-const TEXT_MODEL = 'gemini-3.1-flash-lite'
+const TEXT_MODEL = 'gemini-3.5-flash-lite'
 
 // ─── 한국어 로마자 변환 ────────────────────────────────────────────────────────
 const CH  = ['g','kk','n','d','tt','r','m','b','pp','s','ss','','j','jj','ch','k','t','p','h']
@@ -123,6 +123,12 @@ function programmaticSplit(scriptText, n) {
       for (let j = hi; j >= lo; j--) {
         if (/[.!?。！？]$/.test(words[j - 1])) { breakAt = j; break }
       }
+      // 없으면 한국어 문장 종결어미 경계 (마침표 없는 낭독체 대본 대응)
+      if (breakAt === idealEnd) {
+        for (let j = hi; j >= lo; j--) {
+          if (/(습니다|습니까|ㅂ니다|ㅂ니까|았습니다|었습니다|했습니다|입니다|아요|어요|여요|예요|이에요|았다|었다|했다|한다|된다|간다|온다|네요|군요|거든요|잖아요|니다|까요|은가요|나요)$/.test(words[j - 1])) { breakAt = j; break }
+        }
+      }
       // 없으면 쉼표/절 경계
       if (breakAt === idealEnd) {
         for (let j = hi; j >= lo; j--) {
@@ -210,7 +216,7 @@ ${JSON.stringify(scenes.map(s => ({ id: s.id, text: s.fullScriptSegment.slice(0,
       client.models.generateContent({
         model:   TEXT_MODEL,
         contents: prompt,
-        config:  { safetySettings: SAFETY_SETTINGS, thinkingConfig: { thinkingBudget: 0 }, responseMimeType: 'application/json', maxOutputTokens: 4096 },
+        config:  { safetySettings: SAFETY_SETTINGS, thinkingConfig: { thinkingBudget: 0 }, responseMimeType: 'application/json', maxOutputTokens: 16384 },
       })
     , 2, '씬 배경 보강', { model: TEXT_MODEL, smartBackoff: true })
     const text     = res?.candidates?.[0]?.content?.parts?.[0]?.text || ''
@@ -565,8 +571,77 @@ ${langConfig.outputInstruction}
 RESILIENCE: If content is blocked, return a safe/neutral version. NEVER return null or empty strings.`
 }
 
+// ─── 스타일 전용 디렉터 로직 (열정피디 AI 씬 생성기에서 이식) ─────────────────
+// 이 스타일들은 일반 드라마 시네마토그래피가 아니라, 자체 "연출 모드 판별" 로직을
+// 메인 지침으로 써야 함 — 기본 캐릭터 모드 지침과 섞이면 로직이 힘을 못 씀.
+const DEDICATED_STYLE_DIRECTORS = {
+  issue_youtube: `[📰 HIGH-END DOCUMENTARY & INFOGRAPHIC DIRECTOR MODE — PRIMARY DIRECTIVE, REPLACES GENERIC CINEMATOGRAPHY]
+당신은 '지식한입', '슈카월드' 스타일의 하이엔드 다큐멘터리 자료 화면 및 인포그래픽 디렉터입니다. 대본 내용을 가장 효과적으로 전달할 [최적의 비주얼 포맷] 하나를 선택해 고퀄리티 imagePrompt를 작성합니다. 단순 텍스트 나열이 아니라 시각적 연출(Visual Storytelling)이 핵심입니다.
+
+[🎥 7가지 연출 모드 중 하나를 선택하여 적용]
+★★★ 핵심 원칙: 대본의 주어(Subject)가 무엇인지 먼저 파악하십시오. 사람이 주어가 아니라 사물/기술/장소/현상이 주어이면 반드시 사물/배경 중심 모드(모드 3, 6, 7)를 우선 선택하십시오.
+★중요: 모드 2(인물)와 모드 4(증거)는 만능이 아닙니다. 사물/공간/배경이 핵심이면 다른 모드를 우선 선택하십시오.
+
+[우선순위 1그룹 — 핵심 주체 판별]
+1. 수치/통계/등락이 핵심 → 모드 1 (3D 그래프)
+2. 특정 인물의 발언/리액션이 핵심 → 모드 2 (인물+말풍선)
+3. 단일 제품/사물/기술/음식/자원의 디테일 묘사 → 모드 6 (사물 클로즈업)
+
+[우선순위 2그룹 — 스케일/공간/논리]
+4. 거대한 산업 현장/전쟁/국가 단위 스케일 → 모드 3 (3D 공간 꼴라주)
+5. 특정 장소/환경/자연현상/도시 풍경/공간 분위기 → 모드 7 (시네마틱 배경/공간)
+6. 순서/흐름/대결/인과관계 → 모드 5 (순서도/VS)
+
+[우선순위 3그룹 — 근거 제시]
+7. 위 1~6에 해당 안 되고 구체적 증거/기록/역사를 테이블 위에 펼쳐 분석 → 모드 4 (테이블탑 브리핑)
+
+모드 1 [데이터 시각화]: 3D 입체 그래프(막대/원형/꺾은선)가 화면 중앙에 떠 있는 연출. 그래프 주제와 관련된 흐릿한 실사 배경. 상승(빨강)/하락(파랑) 3D 화살표. 텍스트는 하단에 배치하지 않는다.
+모드 2 [인물 인용]: 고화질 인물 사진을 좌/우 배치(클로즈업/미디엄/풀샷). 인물 옆에 깔끔한 흰색/반투명 말풍선에 핵심 대사/키워드 배치. 발언 내용에 맞는 표정. 사물이 메인이면 사물과 함께 연출.
+모드 3 [장소 및 사물 꼴라주]: 압도적 스케일(거대한 금괴 더미, 태양광 패널, 항공모함 등)을 광각으로 웅장하게. 화면 중앙에 핵심 사물을 고해상도 배치하고 주변에 관련 요소 꼴라주. 짙은 네이비/딥레드 정보 상자 + 지시선(Line indicator). 강조 단어는 색/크기 차별화. 텍스트는 하단에 배치하지 않는다.
+모드 4 [증거 및 기록]: 흰색 구겨진 종이 질감 배경. 사진 인화물/실물 오브제/문서 도표 중 상황에 맞는 유형 선택, 자연스러운 소프트 섀도우로 사실감. 정보 상자에 2~3줄 요약 문장, 네이비/딥레드 컬러+헤더바, 지시선, 핵심 키워드는 노랑 강조 또는 빨간 밑줄. 텍스트는 하단에 배치하지 않는다.
+모드 5 [논리적 구조화]: Type A 순서도 — 3D 실제 자료 사진들을 입체 화살표/파이프라인으로 연결. Type B 대결구도(VS) — 좌우 분할 또는 중앙 대치로 두 대상 대비. 정보 상자로 해설. 텍스트는 하단에 배치하지 않는다.
+모드 6 [사물/제품 클로즈업]: 핵심 사물을 화면 60~80% 차지하도록 극단적으로 크게(매크로/클로즈업) 배치. 8K급 재질/디테일. 부드럽게 흐린 배경 또는 그라데이션 스튜디오 배경. 제품 촬영 조명(림 라이트, 소프트박스, 하이라이트). 인물 없이 사물 자체가 주인공. 정보 상자 1개로 핵심 수치/특징 간결히 표기. 텍스트는 하단에 배치하지 않는다.
+모드 7 [시네마틱 배경/공간 연출]: 공간의 스케일과 깊이감을 극대화하는 와이드 앵글. 골든아워/네온/안개 속 가로등 등 분위기 조명. 건축양식/간판/차량/식물/날씨/연기 등 환경 디테일 풍부하게. 인물이 필요하면 실루엣/뒷모습으로 극히 작게 — 공간이 주인공. 드론뷰/로우앵글/원포인트 투시 등 인상적인 카메라 앵글. 정보 상자에 장소명/상황 설명. 텍스트는 하단에 배치하지 않는다.
+
+[공통 비주얼 가이드]
+- TV 뉴스 자막바(Ticker), 방송국 로고, 프레임 절대 금지 — 유튜브 썸네일/다큐멘터리 인서트 컷처럼 세련되게.
+- 색감: 신뢰감 있는 네이비/블랙/다크그레이 베이스 + 골드/레드/블루 포인트 컬러.
+- 이미지 내 텍스트에 괄호와 다른 언어 병기 금지 — 대본 언어로만 표기.
+- imagePrompt(영어)에 위에서 고른 모드의 텍스트 요소(정보 상자, 말풍선, 그래프 라벨 등)를 구체적으로 영어로 묘사하십시오 — 이 스타일은 이미지 안에 텍스트가 있는 것이 정상입니다.
+
+[임무]
+★ 사물/기술/제품이 핵심 주체면 모드 6, 장소/환경/분위기가 핵심이면 모드 7을 적극 활용하십시오. 인물이 언급되지 않는 대본에서 억지로 인물을 등장시키지 마십시오.
+필수 키워드 포함: "High-end documentary footage, Photorealistic 8k, No News Interface, 3D Infographic, Clean composite, Cinematic lighting"`,
+
+  bright_info: `[🎨 VISUAL COMMUNICATION EXPERT / EDUCATIONAL ILLUSTRATOR MODE — PRIMARY DIRECTIVE, REPLACES GENERIC CINEMATOGRAPHY]
+당신은 복잡한 상황을 아주 쉽고 직관적인 그림으로 표현하는 비주얼 커뮤니케이션 전문가이자 교육용 일러스트레이터입니다.
+
+[필수 연출 지침]
+1. 조명: 몰입감 있는 조명(High Key Lighting) 사용.
+2. 색감: 선명한 색상으로 시인성을 높인다 (칙칙하거나 회색조 금지).
+3. 구성: 시청자가 상황을 한눈에 이해하도록 피사체를 화면 중앙에 명확히 배치.
+4. 분위기: 교육적이되 사실적, 중립적, 몰입감 있게 (우울하거나 무섭거나 기괴한 느낌 절대 금지).
+5. 분할화면 금지 — 하나의 화면으로 연출.
+6. 화면 네 모서리/가장자리에 글자 배치 금지 — 글자는 반드시 중앙 피사체 주변에만.
+7. 캐릭터의 감정이 느껴지게.
+8. 특정 국가 관련 내용이면 배경에 그 국가 분위기를 잘 살린다.
+9. 배경은 평면이 아니라 깊이감과 질감이 살아있는 입체적 공간으로 — 추상적/흐릿한 배경 대신 구체적 환경 디테일(건축양식, 자연물, 소품, 거리 등)로 현장감을 극대화.
+
+[★ 핵심 주체 판별 — Subject-First Rule]
+대본을 먼저 읽고 핵심 주체가 사람인지, 사물인지, 장소인지 판별하십시오.
+- 사물/기술/제품이 주체: 캐릭터 없이 사물을 화면 중앙에 크게 클로즈업, 질감과 디테일을 살려 연출.
+- 장소/환경이 주체: 인물 없이 또는 실루엣만으로 공간의 스케일과 분위기에 집중.
+- 인물이 주체: 캐릭터의 행동과 표정에 집중.
+
+[작성 요구사항]
+- imagePrompt는 최소 7문장 이상으로 상세하게 묘사.
+- 추상적인 내용이면 시각적 은유 활용 (모래시계 모래가 떨어짐, 그래프 하락, 퍼즐 조각이 맞춰짐 등).
+- 필요 시 화면 중앙 피사체 주변에 핵심 키워드 텍스트를 자연스럽게 배치해도 됩니다 (2~3개, 과하지 않게).`,
+}
+
 // ─── 씬 생성 공통 프롬프트 빌더 ───────────────────────────────────────────────
 function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate = false, visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false) {
+  const dedicatedDirector = DEDICATED_STYLE_DIRECTORS[stylePreset.id]
   const isIllustration = /illustration|artwork|painting|manhwa|webtoon|anime|ghibli|watercolor|ink wash|clay|wool|diorama|fairy|folklore|3d.*anim|pixar/i.test(stylePreset.prompt)
   const directorMode   = isIllustration
     ? '[🎨 MASTER ILLUSTRATOR/WEBTOON DIRECTOR MODE]'
@@ -663,7 +738,30 @@ ${characterRoster}`}
 
 ${langConfig.outputInstruction}
 
-${isInfoviz || visualMode === 'documix' || visualMode === 'content' ? `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${dedicatedDirector ? `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${dedicatedDirector}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[MANDATORY DIALOGUE RULE]:
+⚠️ EVERY scene MUST have dialogue field filled:
+   - Provide ONLY a short snippet (around 8 seconds of speech). DO NOT copy the entire script length here!
+   - NO double quotes. Do not add extra surrounding quotes.
+   - If characters speak → use their exact spoken words from the scriptReference. DO NOT INCLUDE THE SPEAKER'S NAME.
+   - If no dialogue → use the narration from the script narration. DO NOT INCLUDE "나레이션: " PREFIX.
+   - NEVER invent dialogue not present in the scriptReference.
+
+[MANDATORY SHOT TYPE RULE]:
+⚠️ For the "shotType" field, output ONLY the exact camera shot name (e.g., "Infographic", "Object Close-up", "Wide Environment", "Quote & Person"). DO NOT add any extra descriptions.
+
+⚠️ Leave the "screenText" field as an empty string "" — this style bakes any on-image text (info boxes, speech bubbles, graph labels) directly into imagePrompt itself, described in English as part of the chosen mode above.
+
+[MANDATORY CHARACTER RULE]:
+⚠️ For the "involvedCharacters" array, use the exact ORIGINAL KOREAN NAMES from the roster (not tags). Return an empty array [] if no named person physically appears — this is EXPECTED and CORRECT for object/place/data-focused modes.
+⚠️ CRITICAL PRESENCE CHECK: ONLY include characters who are PHYSICALLY PRESENT AND VISIBLE in THIS EXACT script segment. Do NOT force a named character into every scene just because the roster has one.
+
+[FINAL SCENE GROUNDING OVERRIDE — HIGHEST PRIORITY, READ LAST]:
+⚠️ DO NOT DEFAULT TO FAMILIAR NAMED CHARACTERS OR A GENERIC "PERSON ON CAMERA" SHOT. Before writing imagePrompt, first identify WHO or WHAT this exact script segment is actually about — it may be a number/statistic, an object, a place, a different named person, or an unnamed party — and pick the matching mode above for THAT subject.
+⚠️ ADJACENT SCENE REDUNDANCY BAN: Do NOT reuse the same mode, data visual, or info-box layout that a neighboring scene (similar position in the story) would already use back-to-back. Vary the mode choice across the video.` : (isInfoviz || visualMode === 'documix' || visualMode === 'content' ? `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${visualModeInstruction}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` : `[ACTOR RULES]:
 ⚠️ NAMED actors listed above are the FOCAL POINT. Their appearance (age/outfit/hair) is ISOLATED — do NOT mix between actors.
@@ -729,7 +827,12 @@ GOOD imagePrompt: "EXTREME CLOSE-UP: trembling hands clutching crumpled prescrip
 ⚠️ For the "involvedCharacters" array, you MUST use the exact ORIGINAL KOREAN NAMES (e.g., "민기", "지은"), NOT the "ACTOR-X" labels. Return an empty array [] if no humans are in the scene.
 ⚠️ CRITICAL PRESENCE CHECK: ONLY include characters who are PHYSICALLY PRESENT AND VISIBLE in THIS EXACT script segment. If the segment describes a battle, landscape, crowd event, or a scene where named characters are NOT actively present — set involvedCharacters to [] and render period-appropriate anonymous figures (soldiers, officials, commoners) instead. Do NOT force a named character into every scene.
 ⚠️ PRESERVE ABSENT NAMES IN TEXT: If a character is absent but mentioned in the script, MUST preserve their true Korean name in the 'action' and 'description'.
-⚠️ NEVER output twins, clones, or multiple generic figures if only ONE named character is acting.`}
+⚠️ NEVER output twins, clones, or multiple generic figures if only ONE named character is acting.
+
+[FINAL SCENE GROUNDING OVERRIDE — HIGHEST PRIORITY, READ LAST]:
+⚠️ DO NOT DEFAULT TO FAMILIAR NAMED CHARACTERS. Before writing imagePrompt/involvedCharacters, first identify WHO or WHAT this exact script segment is actually about — it may be a different named character, an unnamed/anonymous party (a spy, an enemy commander, a crowd, an official), an object, or a location — NOT necessarily the character you used in the previous scene or the most "important" character in the roster.
+⚠️ If the segment describes another party's action, plan, or scheme (e.g. an opposing side plotting, an unnamed messenger, a court receiving news), depict THAT party doing THAT specific thing. Do not substitute a more familiar character sitting on a throne or reacting generically just because it feels safer — read the segment's actual subject and verb.
+⚠️ ADJACENT SCENE REDUNDANCY BAN: Do NOT reuse the same short quote, dialogue line, location, or emotional beat that a neighboring scene (same rough position in the story, e.g. consecutive scene IDs) would already cover. If the assigned segment overlaps in content with what a nearby scene likely depicts, find a distinct, more specific sub-moment, detail, or angle from THIS segment's exact wording instead of repeating the same iconic line or shot.`)}
 [STYLE]: ${stylePreset.prompt}
 
 ${resilienceNote}`
