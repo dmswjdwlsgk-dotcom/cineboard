@@ -7,6 +7,25 @@ const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
 // 기본 "텍스트 절대 금지" 규칙에서 제외한다.
 const TEXT_ALLOWED_STYLE_IDS = new Set(['issue_youtube', 'bright_info'])
 
+// ─── 왕족 복식 판별 — 왕(익선관/곤룡포)과 왕비/대비(활옷·원삼/봉황)를 구분 ─────
+// 이전엔 "왕비"도 "왕"에 포함돼 매칭되면서 왕 전용 익선관+곤룡포를 왕비한테도
+// 그대로 붙이던 버그가 있었음 — 여성 왕족 키워드를 먼저 검사해 분리한다.
+const QUEEN_KEYWORDS = /왕비|중전|왕후|황후|대비|\bqueen\b/i
+const KING_KEYWORDS  = /왕(?!비|후)|세자|대왕|황제|임금|전하|주상|상왕|\bking\b|crown prince/i
+const ROYAL_KEYWORDS = /왕(?!자녀|실)|세자|왕비|중전|왕후|대왕|황제|황후|임금|전하|주상|대비|상왕|\bking\b|\bqueen\b|crown prince/i
+
+function getRoyalAttireTag(text) {
+  const isQueen = QUEEN_KEYWORDS.test(text)
+  const isKing  = !isQueen && KING_KEYWORDS.test(text)
+  if (isQueen) {
+    return ' [👑ROYALTY (QUEEN / QUEEN CONSORT / DOWAGER) — CONTEXT-DEPENDENT ATTIRE: In formal/official scenes (throne room, court, ceremonies) → 활옷(hwarot, ornate crimson ceremonial robe with wide sleeves) or 원삼(wonsam, formal court robe), richly embroidered with 봉황(phoenix) motifs in gold, elaborate ceremonial headdress (족두리 or 대수) with ornaments. ⚠️ NEVER 익선관 (that headwear is King-only) and NEVER 곤룡포 dragon robe (that is King-only attire). In private/informal scenes → elegant 당의(dangui) or formal hanbok appropriate to her rank. Use scene context to decide.]'
+  }
+  if (isKing) {
+    return ' [👑ROYALTY (KING) — CONTEXT-DEPENDENT ATTIRE: In formal/official scenes (throne room, court, ceremonies) → 익선관(翼善冠, tall black dome cap, two small rear flaps) + 곤룡포(ENTIRELY VERMILLION RED dragon robe — ⚠️ ZERO blue fabric anywhere: NO blue inner sleeves, NO blue undershirt, NO blue visible at wrists or neckline — white inner collar ONLY). ⚠️ HAIR: ALL hair is completely hidden inside the 익선관 — NO hair visible hanging down outside the cap, NO flowing hair on sides or back. In private/informal/pre-coronation scenes → appropriate 평상복 or 도포. Use scene context to decide. When wearing royal headwear, it MUST be 익선관, NEVER 사모.]'
+  }
+  return ''
+}
+
 // ─── {{TEXT_LANG}} 플레이스홀더 치환 (텍스트가 그림 소재인 스타일 전용) ───────
 // 대본 원문 언어를 감지해 스타일 프롬프트 속 이미지 내 텍스트 언어를 맞춘다.
 // 해당 플레이스홀더가 없는 스타일(대부분)은 영향받지 않는다.
@@ -271,15 +290,13 @@ export async function generateSceneImage(
   }
 
   // 캐릭터 외형 정보
-  const ROYAL_KEYWORDS = /왕(?!자녀|실)|세자|왕비|중전|대왕|황제|황후|임금|전하|주상|대비|상왕|\bking\b|\bqueen\b|crown prince/i
   const sceneChars = resolveSceneCharacters(scene, bible)
   const castInfo   = sceneChars.length > 0
     ? sceneChars.map((c, i) => {
         const idx = bible.characters.findIndex(b => b.name === c.name)
         const tag = `ACTOR-${String.fromCharCode(65 + (idx !== -1 ? idx : i))}`
         const protagonist = c.isProtagonist ? ' [★PROTAGONIST]' : ''
-        const isRoyal = ROYAL_KEYWORDS.test(c.description || '') || ROYAL_KEYWORDS.test(c.name || '')
-        const royalTag = isRoyal ? ' [👑ROYALTY — CONTEXT-DEPENDENT ATTIRE: In formal/official scenes (throne room, court, ceremonies) → 익선관(翼善冠, tall black dome cap, two small rear flaps) + 곤룡포(ENTIRELY VERMILLION RED dragon robe — ⚠️ ZERO blue fabric anywhere: NO blue inner sleeves, NO blue undershirt, NO blue visible at wrists or neckline — white inner collar ONLY). ⚠️ HAIR: ALL hair is completely hidden inside the 익선관 — NO hair visible hanging down outside the cap, NO flowing hair on sides or back. In private/informal/pre-coronation scenes → appropriate 평상복 or 도포. Use scene context to decide. When wearing royal headwear, it MUST be 익선관, NEVER 사모.]' : ''
+        const royalTag = getRoyalAttireTag(`${c.description || ''} ${c.name || ''}`)
         return `[${tag}]${protagonist}${royalTag} AGE: ${c.age}${c.gender ? `, GENDER: ${c.gender}` : ''}. APPEARANCE: ${c.visualPrompt}`
       }).join('\n')
     : '(no specific characters - focus on environment and atmosphere)'
@@ -403,7 +420,7 @@ ${noExtraMode}
 ${textRule}`.trim()
 
   const contents = referenceImages.length > 0
-    ? { parts: [...referenceImages, { text: compositePrompt }] }
+    ? { role: 'user', parts: [...referenceImages, { text: compositePrompt }] }
     : compositePrompt
 
   return withRetry(async () => {
@@ -440,9 +457,15 @@ async function generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, 
 
   const castInfo = sceneChars.length > 0
     ? sceneChars.map(c => {
-        const isRoyal = ROYAL_KEYWORDS.test(c.description || '') || ROYAL_KEYWORDS.test(c.name || '')
+        const royalText = `${c.description || ''} ${c.name || ''}`
+        const isQueen = QUEEN_KEYWORDS.test(royalText)
+        const isKing  = !isQueen && KING_KEYWORDS.test(royalText)
         let vp = (c.visualPrompt || '').replace(/\b(blue|azure|indigo|cobalt|청색|파란|파랑)\b/gi, 'vermillion red')
-        const costumeTag = isRoyal ? ', ENTIRELY VERMILLION RED 곤룡포 robe — NO blue fabric anywhere, ALL hair hidden inside 익선관 — NO flowing hair visible' : ''
+        const costumeTag = isKing
+          ? ', ENTIRELY VERMILLION RED 곤룡포 robe — NO blue fabric anywhere, ALL hair hidden inside 익선관 — NO flowing hair visible'
+          : isQueen
+          ? ', formal 활옷/원삼 robe with gold phoenix (봉황) embroidery — NEVER 익선관 or 곤룡포 (those are King-only)'
+          : ''
         return `${c.name}: ${vp}${costumeTag}`
       }).join(', ')
     : ''
@@ -590,7 +613,7 @@ ${refImages.length > 0 ? '⚠️ CRITICAL: The character reference images above 
 ⚠️ Professional quality, 8K detail, edge-to-edge full frame.`
 
       const contents = refImages.length > 0
-        ? { parts: [...refImages, { text: thumbPrompt }] }
+        ? { role: 'user', parts: [...refImages, { text: thumbPrompt }] }
         : thumbPrompt
 
       const imageUrl = await withRetry(async () => {

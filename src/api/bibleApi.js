@@ -205,6 +205,7 @@ export async function analyzeCharacterImage(imageBase64) {
     const res = await client.models.generateContent({
       model: TEXT_MODEL,
       contents: {
+        role: 'user',
         parts: [
           { inlineData: { mimeType: mime, data } },
           { text: 'Analyze person. Age, gender, appearance, clothing.' },
