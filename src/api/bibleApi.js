@@ -2,7 +2,7 @@ import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, parseJson } fro
 import { Type } from '@google/genai'
 import { LANG_CONFIGS, detectLanguage, cleanScript } from '../data/languages.js'
 
-const TEXT_MODEL = 'gemini-3.5-flash-lite'
+const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
 // ─── 연속성 바이블 생성 (원본 hn 함수 이식) ──────────────────────────────────
 export async function generateContinuityBible(scriptText, stylePreset) {

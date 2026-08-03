@@ -2,7 +2,7 @@ import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, parseJson } fro
 import { Type } from '@google/genai'
 import { LANG_CONFIGS, detectLanguage, cleanScript } from '../data/languages.js'
 
-const TEXT_MODEL = 'gemini-3.5-flash-lite'
+const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
 // ─── 한국어 로마자 변환 ────────────────────────────────────────────────────────
 const CH  = ['g','kk','n','d','tt','r','m','b','pp','s','ss','','j','jj','ch','k','t','p','h']
