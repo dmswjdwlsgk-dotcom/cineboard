@@ -604,7 +604,7 @@ export default function Step1_Script() {
           <input
             type="range"
             min={5}
-            max={200}
+            max={100}
             step={5}
             value={targetSceneCount ?? 20}
             onChange={e => setTargetSceneCount(Number(e.target.value))}
@@ -612,10 +612,10 @@ export default function Step1_Script() {
           />
           <div className="flex justify-between text-xs text-gray-600">
             <span>5개</span>
+            <span>25개</span>
             <span>50개</span>
+            <span>75개</span>
             <span>100개</span>
-            <span>150개</span>
-            <span>200개</span>
           </div>
         </div>
 
