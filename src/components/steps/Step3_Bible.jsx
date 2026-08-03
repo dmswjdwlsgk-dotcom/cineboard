@@ -186,7 +186,7 @@ export default function Step3_Bible() {
     const isFlash = modelId.includes('flash') && !modelId.includes('pro') && !isLite
     const isPro   = modelId.includes('pro')
     const batchSize  = isNanoBanana2 ? 1 : isLite ? 1 : isFlash ? 5 : isPro ? 1 : 3
-    const batchDelay = isNanoBanana2 ? 10000 : isLite ? 10000 : isFlash ? 500 : isPro ? 10000 : 1500
+    const batchDelay = isNanoBanana2 ? 25000 : isLite ? 10000 : isFlash ? 500 : isPro ? 10000 : 1500
 
     const toGenerate = characters
       .map((char, idx) => ({ char, idx }))
