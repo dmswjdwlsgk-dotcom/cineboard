@@ -518,27 +518,26 @@ This script may be written as a DOCUMENTARY VOICEOVER (narrator speaking to audi
 - "이순신이 보고를 올렸다" → Admiral at a war camp candlelit tent writing or issuing orders
 - "기근으로 마을이 고요해졌다" → wide shot of a desolate Joseon village in winter, no animals, no smoke
 
-⚠️ ANTI-REPETITION MANDATE — HIGHEST PRIORITY:
-"Medium Shot" is BANNED as a default. It may only be used when a character is SPEAKING DIALOGUE in an interior setting with NO spatial or emotional alternative. If you are tempted to write "Medium Shot" without a clear reason — choose something else.
-SHOT TYPE DISTRIBUTION TARGET across all scenes:
-  • Extreme Wide / Wide Shot → 25% of scenes (establishing, spatial scale, processions)
-  • Full Shot → 20% (full body + environment, movement, entering/exiting)
-  • Over-the-Shoulder / Two-Shot → 20% (confrontation, dialogue tension)
-  • Close-Up / Extreme Close-Up → 20% (emotion peaks, hands, eyes, objects)
-  • Medium Shot → 10% (only for isolated dialogue moments)
-  • Bird's Eye / Low Angle / Dutch Angle / Frame-in-Frame → 5% each
-TREAT EACH SCENE AS PART OF A 30-SCENE FILM. Consciously vary from the most commonly used shots.
+⚠️ MINE YOUR OWN ASSIGNED SEGMENT FOR SPECIFICS — CRITICAL:
+Your assigned script segment is usually several sentences long and almost always contains something concrete: a specific number, a named person/place/document, a specific object, a specific action, or a specific absence of action. Before writing imagePrompt, re-read your ENTIRE assigned segment (not just the first clause) and identify that concrete element FIRST.
+- A generic mood/atmosphere shot (e.g. "a quiet palace at night") is a LAST RESORT — only acceptable if you re-read the segment and it truly contains nothing concrete, which is rare.
+- If the segment names a specific document/record (e.g. 승정원일기, 실록), show that object directly — an open ledger, a page, a stack of court records — not just a generic room.
+- If the segment states a specific fact, number, or duration (e.g. "33년 동안 찾지 않았다"), find a way to visualize THAT specific fact concretely (a calendar of untouched days, an empty threshold never crossed, a door unopened) rather than defaulting to the same establishing shot every other scene in this video would also use.
+- Do NOT reuse the exact same generic environment description (same time of day, same weather, same composition) that a neighboring scene in this video would also naturally produce — even when using the CANON BIBLE's shared environment DNA as your base palette, layer THIS segment's specific detail on top of it, don't just restate the environment DNA as the whole imagePrompt.
 
-⚠️ CONTENT TRIGGERS — MANDATORY (these override everything including defaults):
-- LOCATION / EXTERIOR / SPACE described → EXTREME WIDE or WIDE (no exceptions)
-- Character MOVING / ENTERING / WALKING / RIDING → FULL SHOT (full body visible)
-- 2+ characters in DIALOGUE / NEGOTIATION / CONFRONTATION → OVER-THE-SHOULDER or TWO-SHOT
-- COURT CEREMONY / MILITARY FORMATION / CROWD → WIDE or BIRD'S EYE VIEW
+⚠️ SHOT TYPE PRIORITY — FOLLOW THIS ORDER (HIGHEST PRIORITY):
+1. Your DEFAULT shot type is whatever [SCENE POSITION & SHOT VARIETY HINT] elsewhere in this prompt suggests for this scene's position — treat it as your starting point, not an optional suggestion.
+2. Deviate from that default ONLY when one of the few SPECIFIC TRIGGERS below clearly and narrowly applies to THIS exact scene. Generic conditions like "a character is moving" or "a place is mentioned" are NOT triggers — almost every historical scene involves some movement or location, so those alone never justify overriding the position hint.
+3. "Medium Shot" is BANNED as a default. It may only be used when a character is SPEAKING DIALOGUE in an interior setting with NO spatial or emotional alternative.
+4. ⚠️ ADJACENT SCENE REPETITION BAN: Do not pick the same shot type you'd expect a neighboring scene (similar position in the story) to also naturally land on. If both the position hint and the content weakly point toward an overused shot type, pick the next-best alternative that still fits the content, rather than repeating.
+
+[SPECIFIC TRIGGERS — narrow and rare, only override the position hint when unambiguously true]:
 - KING / AUTHORITY FIGURE declaring or being presented → LOW ANGLE looking up
 - Character OBSERVED through DOORWAY / LATTICE SCREEN / WINDOW → FRAME-IN-FRAME
-- LONE FIGURE against sky / fire / moonlight / vast landscape → WIDE SILHOUETTE
-- Single character at EMOTIONAL PEAK with no spatial context → CLOSE-UP or EXTREME CLOSE-UP
 - OBJECT or DETAIL carries the meaning (sword, letter, seal, hands trembling) → EXTREME CLOSE-UP on object
+- COURT CEREMONY / MILITARY FORMATION / CROWD SCALE is the entire point of the scene → BIRD'S EYE VIEW
+- SHOCK / BETRAYAL / psychological instability is the entire point of the scene → DUTCH ANGLE
+- 2+ characters in tense DIALOGUE / NEGOTIATION / CONFRONTATION is the entire point → OVER-THE-SHOULDER or TWO-SHOT
 
 CAMERA ANGLES — match to power/mood:
 • HIGH ANGLE (부감): powerless, being watched, overwhelmed
