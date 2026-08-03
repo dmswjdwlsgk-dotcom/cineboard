@@ -181,10 +181,12 @@ export default function Step3_Bible() {
     if (!isApiReady()) { setError('API 키가 설정되지 않았습니다.'); return }
     const characters = continuityBible?.characters || []
     const modelId = MODELS[useAppStore.getState().selectedModel]?.id || MODELS[0].id
-    const isFlash = modelId.includes('flash') && !modelId.includes('pro')
+    const isNanoBanana2 = modelId === 'gemini-3.1-flash-lite-image' || modelId === 'gemini-3.1-flash-image'
+    const isLite  = modelId.includes('lite')
+    const isFlash = modelId.includes('flash') && !modelId.includes('pro') && !isLite
     const isPro   = modelId.includes('pro')
-    const batchSize  = isFlash ? 5 : isPro ? 1 : 3
-    const batchDelay = isFlash ? 500 : isPro ? 10000 : 1500
+    const batchSize  = isNanoBanana2 ? 1 : isLite ? 1 : isFlash ? 5 : isPro ? 1 : 3
+    const batchDelay = isNanoBanana2 ? 10000 : isLite ? 10000 : isFlash ? 500 : isPro ? 10000 : 1500
 
     const toGenerate = characters
       .map((char, idx) => ({ char, idx }))
