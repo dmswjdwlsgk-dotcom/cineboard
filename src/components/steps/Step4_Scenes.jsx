@@ -252,11 +252,12 @@ export default function Step4_Scenes() {
     let completed = 0
     const myVersion = genVersionRef.current
 
+    const isNanoBanana2 = modelId === 'gemini-3.1-flash-lite-image' || modelId === 'gemini-3.1-flash-image' // 프로젝트 전역 429 이슈 확인된 모델군 — 라이트/일반 둘 다
     const isLite  = modelId.includes('lite')
     const isFlash = modelId.includes('flash') && !modelId.includes('pro') && !isLite
     const isPro   = modelId.includes('pro')
-    const batchSize  = isLite ? 1 : isFlash ? 5 : isPro ? 1 : 3
-    const batchDelay = isLite ? 10000 : isFlash ? 500 : isPro ? 10000 : 1500
+    const batchSize  = isNanoBanana2 ? 1 : isLite ? 1 : isFlash ? 5 : isPro ? 1 : 3
+    const batchDelay = isNanoBanana2 ? 10000 : isLite ? 10000 : isFlash ? 500 : isPro ? 10000 : 1500
 
     for (let i = 0; i < sceneList.length; i += batchSize) {
       if (genVersionRef.current !== myVersion) { setGeneratingImages(false); return }

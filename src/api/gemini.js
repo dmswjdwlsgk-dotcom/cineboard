@@ -346,14 +346,15 @@ export async function safeGenerate(client, params, label) {
   return null
 }
 
-// ─── 나노바나나 2 라이트 전용 동시성 세마포어 (개별 재생성 버튼도 여기로 통과) ──
-const LITE_IMAGE_MODEL = 'gemini-3.1-flash-lite-image'
+// ─── 나노바나나 2 계열(라이트+일반) 전용 동시성 세마포어 (개별 재생성 버튼도 여기로 통과) ──
+// 라이트 모델만 프로젝트 전역 429가 나는 게 아니라 일반(3.1 flash) 모델도 동일하게 걸림 확인됨
+const LITE_IMAGE_MODELS = new Set(['gemini-3.1-flash-lite-image', 'gemini-3.1-flash-image'])
 let _liteActive = 0
 
 async function acquireLiteSlot(label) {
   let waited = false
   while (_liteActive >= 1) {
-    if (!waited) { console.warn(`[LITE SLOT] ⏳ ${label} — 다른 라이트 요청 처리 중, 대기`); waited = true }
+    if (!waited) { console.warn(`[LITE SLOT] ⏳ ${label} — 다른 나노바나나2 요청 처리 중, 대기`); waited = true }
     await new Promise(r => setTimeout(r, 300))
   }
   _liteActive++
@@ -387,7 +388,7 @@ function backoffWithJitter(attempt, base, max) {
 // model: 나노바나나 2 라이트일 경우 동시 요청을 1개로 제한
 // smartBackoff: true면 서버 retryDelay 우선 사용 + 지수백오프/지터 (모델별 점진 적용 중)
 export async function withRetry(fn, maxRetries = 3, label = 'API', { model = null, smartBackoff = false } = {}) {
-  const isLiteImage = model === LITE_IMAGE_MODEL
+  const isLiteImage = LITE_IMAGE_MODELS.has(model)
   if (isLiteImage) await acquireLiteSlot(label)
   try {
   let lastErr

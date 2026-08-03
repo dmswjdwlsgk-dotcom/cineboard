@@ -22,7 +22,7 @@ function resolveTextLangPlaceholder(stylePrompt, scriptSample) {
   const langName = TEXT_LANG_NAMES[lang] || TEXT_LANG_NAMES.ko
   return stylePrompt.replaceAll('{{TEXT_LANG}}', langName)
 }
-const SMART_BACKOFF_MODELS = ['gemini-3.1-flash-lite-image'] // 나노바나나 2 라이트 — 신규 재시도 로직 시범 적용
+const SMART_BACKOFF_MODELS = ['gemini-3.1-flash-lite-image', 'gemini-3.1-flash-image'] // 나노바나나 2 (라이트+일반) — 둘 다 동일한 429 이슈 확인됨
 const ZIMAGE_API_BASE     = 'https://api.kie.ai/api/v1'
 const ZIMAGE_UPLOAD_URL   = 'https://kieai.redpandaai.co/api/file-stream-upload'
 const ZIMAGE_MAX_PROMPT   = 800
