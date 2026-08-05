@@ -33,6 +33,10 @@ function romanizeInEnglishPrompt(text, characters) {
       }
     })
   })
+  // AI\uAC00 "[@\uC774\uB984: romanized]" \uAC19\uC740 \uB300\uAD04\uD638 \uD0DC\uADF8 \uD45C\uAE30\uB97C \uC601\uC5B4 \uD544\uB4DC\uC5D0 \uADF8\uB300\uB85C \uB0A8\uAE30\uB294 \uACBD\uC6B0\uAC00
+  // \uC788\uC5B4(\uC608: \uB85C\uC2A4\uD130\uC5D0 \uC798\uBABB \uB4E4\uC5B4\uAC04 \uC77C\uD654 \uC18D \uC608\uC2DC \uC778\uBB3C) \uCD5C\uC885\uC801\uC73C\uB85C \uD55C \uBC88 \uB354 \uC815\uB9AC\uD55C\uB2E4.
+  result = result.replace(/\[@?[^\]:]*:\s*([^\]]+)\]/g, '$1') // "[@\uC774\uB984: romanized]" \u2192 romanized\uB9CC \uB0A8\uAE40
+  result = result.replace(/\[@?([^\]]+)\]/g, '$1')            // \uB0A8\uC740 "[@\uC774\uB984]"\uB958 \u2192 \uAD04\uD638\uB9CC \uC81C\uAC70
   result = result.replace(/[\uAC00-\uD7A3]+/g, w => romanize(w).toLowerCase())
   return result.replace(/\s{2,}/g, ' ').trim()
 }

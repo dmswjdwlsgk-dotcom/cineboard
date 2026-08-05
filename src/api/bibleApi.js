@@ -45,6 +45,7 @@ Extract ONLY the SINGLE most iconic core identity of each character. DO NOT spli
 - Even if a character ages, changes clothes, masks their identity, or wears a disguise, you MUST extract them AS A SINGLE UNIQUE CHARACTER representing their true, fundamental identity.
 - There should be STRICTLY ONE entry per individual person in the script.
 - STATUS TRANSITION EXCEPTION: If a character undergoes a FUNDAMENTAL RANK CHANGE during the script (e.g., prince/duke → king, general → ruler), add a "STATUS TRANSITION: [pre-rank] → [post-rank] (e.g., 수양대군(왕자/대군) → 세조(왕))" note at the START of their description field. Their visualPrompt should reflect their MOST FREQUENTLY APPEARING rank in the script.
+⚠️ ILLUSTRATIVE ANECDOTE EXCLUSION: Self-help/lecture-style scripts often use throwaway hypothetical examples ("한 사람이 있었습니다", "직장에서 명퇴 후 작은 가게를 차렸다가...") to illustrate a point, then never return to that person. Do NOT extract these one-off illustrative/hypothetical people as named roster characters — they are not real recurring characters. Only extract a character if they are the video's actual recurring subject (the historical figure, the channel's protagonist, a named person referenced multiple times across different segments).
 ${conf.costumeHierarchy}
 
 [LOCATION EXTRACTION - MANDATORY]:
