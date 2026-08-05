@@ -260,7 +260,9 @@ export default function Step4_Scenes() {
     // 나노바나나2는 성공 직후 10초 간격으로는 부족해서 성공/실패가 번갈아 나는(퐁당퐁당) 현상이
     // 관찰됨 — 실패 시 재시도 대기가 자연스럽게 긴 간격을 만들어주는 반면, 성공 직후엔 간격이
     // 짧아 바로 다음 요청이 또 걸리는 패턴. 기본 간격을 늘려 완화.
-    const batchDelay = isNanoBanana2 ? 25000 : isLite ? 10000 : isFlash ? 500 : isPro ? 10000 : 1500
+    // 나노바나나2 페이싱은 이제 gemini.js의 ImageRequestGate(최소 간격+회로차단기)가
+    // 담당하므로, 여기 고정 대기는 배치 루프 자체의 오버헤드만 줄이는 짧은 값이면 충분.
+    const batchDelay = isNanoBanana2 ? 500 : isLite ? 10000 : isFlash ? 500 : isPro ? 10000 : 1500
 
     for (let i = 0; i < sceneList.length; i += batchSize) {
       if (genVersionRef.current !== myVersion) { setGeneratingImages(false); return }

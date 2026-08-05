@@ -346,23 +346,68 @@ export async function safeGenerate(client, params, label) {
   return null
 }
 
-// ─── 나노바나나 2 계열(라이트+일반) 전용 동시성 세마포어 (개별 재생성 버튼도 여기로 통과) ──
-// 라이트 모델만 프로젝트 전역 429가 나는 게 아니라 일반(3.1 flash) 모델도 동일하게 걸림 확인됨
-const LITE_IMAGE_MODELS = new Set(['gemini-3.1-flash-lite-image', 'gemini-3.1-flash-image'])
-let _liteActive = 0
+// ─── 이미지 생성 슬롯 + 회로차단기 (원본 앱 방식 이식) ────────────────────────
+// 매 요청마다 고정 시간을 무조건 쉬는 대신: 평소엔 짧은 최소 간격(2초)만 지키며
+// 빠르게 돌리다가, 429가 실제로 나면 그때만 짧게 회로를 열어 쉬고 성공하면 즉시
+// 정상 페이스로 복귀한다. (원본: minIntervalMs=2000, 나노바나나2 계열 429 시
+// 7초 쿨다운, 그 외 3초)
+const FAST_IMAGE_MODEL      = 'gemini-2.5-flash-image'
+const NANO_BANANA_2_MODELS  = new Set(['gemini-3.1-flash-image', 'gemini-3.1-flash-lite-image', 'gemini-3-pro-image'])
+const slotsForImageModel    = model => model === FAST_IMAGE_MODEL ? 3 : 1
 
-async function acquireLiteSlot(label) {
-  let waited = false
-  while (_liteActive >= 1) {
-    if (!waited) { console.warn(`[LITE SLOT] ⏳ ${label} — 다른 나노바나나2 요청 처리 중, 대기`); waited = true }
-    await new Promise(r => setTimeout(r, 300))
+class ImageRequestGate {
+  constructor() {
+    this.activeCount     = 0
+    this.minIntervalMs   = 2000
+    this.isCircuitOpen   = false
+    this.circuitOpenUntil = 0
+    this.lastRequestTime = 0
   }
-  _liteActive++
+
+  async waitForSlot(label, model) {
+    const isFast = model === FAST_IMAGE_MODEL
+    const slots  = slotsForImageModel(model)
+    while (this.activeCount >= slots) {
+      await new Promise(r => setTimeout(r, 500 + Math.random() * 500))
+    }
+    this.activeCount++
+
+    if (!isFast) {
+      const elapsed = Date.now() - this.lastRequestTime
+      if (elapsed < this.minIntervalMs) {
+        await new Promise(r => setTimeout(r, this.minIntervalMs - elapsed))
+      }
+    }
+
+    if (this.isCircuitOpen && Date.now() < this.circuitOpenUntil) {
+      const remaining = this.circuitOpenUntil - Date.now()
+      console.warn(`[⚠️ CIRCUIT BREAKER] ${label} - 429 복구 대기중.. (${(remaining / 1000).toFixed(1)}초 남음)`)
+      await new Promise(r => setTimeout(r, remaining))
+      this.isCircuitOpen = false
+    }
+
+    this.lastRequestTime = Date.now()
+  }
+
+  releaseSlot() {
+    this.activeCount = Math.max(0, this.activeCount - 1)
+  }
+
+  reportSuccess() {
+    this.isCircuitOpen = false
+  }
+
+  reportError(model) {
+    const cooldown = NANO_BANANA_2_MODELS.has(model) ? 7000 : 3000
+    if (!this.isCircuitOpen || Date.now() > this.circuitOpenUntil) {
+      this.isCircuitOpen    = true
+      this.circuitOpenUntil = Date.now() + cooldown
+      console.error(`[🔥 CIRCUIT OPEN] 429 감지! 이미지 파이프라인 ${cooldown / 1000}초 쿨다운`)
+    }
+  }
 }
 
-function releaseLiteSlot() {
-  _liteActive = Math.max(0, _liteActive - 1)
-}
+const imageGate = new ImageRequestGate()
 
 // ─── 서버 지정 재시도 대기시간 파싱 (google.rpc.RetryInfo) ────────────────────
 function parseRetryDelayMs(err) {
@@ -388,14 +433,15 @@ function backoffWithJitter(attempt, base, max) {
 // model: 나노바나나 2 라이트일 경우 동시 요청을 1개로 제한
 // smartBackoff: true면 서버 retryDelay 우선 사용 + 지수백오프/지터 (모델별 점진 적용 중)
 export async function withRetry(fn, maxRetries = 3, label = 'API', { model = null, smartBackoff = false } = {}) {
-  const isLiteImage = LITE_IMAGE_MODELS.has(model)
-  if (isLiteImage) await acquireLiteSlot(label)
-  try {
+  const isImageCall = /^(generate(Scene)?Image|generateThumbnail)/.test(label)
   let lastErr
   let retries = maxRetries
   for (let attempt = 1; attempt <= retries; attempt++) {
+    if (isImageCall) await imageGate.waitForSlot(label, model)
     try {
-      return await fn()
+      const result = await fn()
+      if (isImageCall) imageGate.reportSuccess()
+      return result
     } catch (err) {
       lastErr = err
       const msg    = err.message || ''
@@ -414,6 +460,8 @@ export async function withRetry(fn, maxRetries = 3, label = 'API', { model = nul
 
       const is503 = msg.includes('503') || msg.includes('UNAVAILABLE') || msg.includes('overloaded')
       const isRateLimit = is429 && !isTokenLimit && !isContextLimit
+
+      if (isImageCall && isRateLimit) imageGate.reportError(model)
 
       // 재시도 횟수 자동 확장
       if ((is503 || isRateLimit) && retries < 5) {
@@ -437,12 +485,11 @@ export async function withRetry(fn, maxRetries = 3, label = 'API', { model = nul
         const wait = Math.pow(2, attempt - 1) * 1000
         await new Promise(r => setTimeout(r, wait))
       }
+    } finally {
+      if (isImageCall) imageGate.releaseSlot()
     }
   }
   throw lastErr
-  } finally {
-    if (isLiteImage) releaseLiteSlot()
-  }
 }
 
 // ─── 타임아웃 래퍼 ────────────────────────────────────────────────────────────

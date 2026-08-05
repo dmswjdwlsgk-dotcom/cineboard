@@ -186,7 +186,8 @@ export default function Step3_Bible() {
     const isFlash = modelId.includes('flash') && !modelId.includes('pro') && !isLite
     const isPro   = modelId.includes('pro')
     const batchSize  = isNanoBanana2 ? 1 : isLite ? 1 : isFlash ? 5 : isPro ? 1 : 3
-    const batchDelay = isNanoBanana2 ? 25000 : isLite ? 10000 : isFlash ? 500 : isPro ? 10000 : 1500
+    // 나노바나나2 페이싱은 이제 gemini.js의 ImageRequestGate(최소 간격+회로차단기)가 담당
+    const batchDelay = isNanoBanana2 ? 500 : isLite ? 10000 : isFlash ? 500 : isPro ? 10000 : 1500
 
     const toGenerate = characters
       .map((char, idx) => ({ char, idx }))
