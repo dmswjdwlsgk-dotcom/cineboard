@@ -53,6 +53,19 @@ function correctPostpositions(text) {
   })
 }
 
+// ─── 인물 태그 오배정 방지 — 배정된 인물의 이름이 실제 이 씬 구간 원문에
+// 등장하는지 검증한다. 등장인물이 15~20명 넘는 대본(예: 조선 왕 전기 모음)에서
+// AI가 로스터의 특정 인물(대개 가장 먼저 소개된 인물)에게 계속 쏠려서, 이미
+// 그 인물 얘기가 끝난 뒤 다른 인물 이야기를 하는 구간에도 같은 이름이 계속
+// 붙는 현상이 있었음 — 프롬프트 지침만으로는 안 잡혀서 코드로 직접 막는다.
+function nameAppearsInSegment(name, segment) {
+  if (!name) return false
+  if (!segment) return true // 검증할 원문이 없으면 걸러내지 않음 (안전 기본값)
+  const core = name.replace(/\([^)]*\)/g, '').trim()
+  if (!core) return true
+  return segment.includes(core)
+}
+
 function replaceActorTags(text, characters) {
   if (!text) return text
   let result = text
@@ -117,6 +130,26 @@ function programmaticSplit(scriptText, n) {
     let running     = 0
     for (const l of lens) { running += l; prefix.push(running) }
     const targetLen = totalLen / count
+
+    // ── 경계 다듬기: 그림으로 그릴 내용이 없는 "짧은 전환/연결 문장"
+    // (예: "그런데 말입니다.", "왜일까요.", "정리해 보겠습니다.") 위에 씬 경계가
+    // 걸리면 그 씬이 통째로 빈 문장 하나짜리가 된다. 문장 1개 폭 안에서만,
+    // 그마저도 분량이 목표의 ±20%를 벗어나지 않을 때만 옮긴다 — 분량 균등이
+    // 항상 우선이고, 이음새 다듬기는 그 안에서만 허용되는 보조 규칙이다.
+    // 내레이션 대본은 "여러분", "생각해보세요", "~해보겠습니다" 같은 시청자 호출/
+    // 전환용 화법이 구조적으로 많이 섞여 있다 — 문장 시작이 전형적인 전환어이거나,
+    // 문장 안에 시청자 호출/메타 화법 키워드가 있으면(그리고 짧으면) 내용이 없다고 본다.
+    const FILLER_START_RE   = /^(그런데|그리고|그래서|자[,.]?|여기서|이제|그렇다면|왜일까요|말입니다|정리해\s?볼까요|정리해\s?보겠습니다|물론)/
+    const FILLER_KEYWORD_RE = /(여러분|말씀드리|묻고\s?싶습니다|아시겠습니까|아십니까|해\s?보겠습니다|해\s?볼까요|해\s?보십시오|보려\s?합니다|시작하겠습니다|돌아가겠습니다|던지겠습니다|이야기하겠습니다|남겨주세요|뵙겠습니다|생각해\s?보세요|생각해\s?보십시오|궁금하|짚고\s?싶습니다|짚어보겠습니다|질문을\s?드리)/
+    const isWeakBoundary = (s) => {
+      if (!s) return true
+      const t = s.trim()
+      if (t.length <= 14) return true
+      if (FILLER_START_RE.test(t)) return true
+      if (t.length <= 40 && FILLER_KEYWORD_RE.test(t)) return true
+      return false
+    }
+
     const chunks    = []
     let cursor      = 0
     for (let i = 1; i < count; i++) {
@@ -126,6 +159,19 @@ function programmaticSplit(scriptText, n) {
       let j = minJ
       while (j < maxJ && prefix[j - 1] < targetCum) j++
       j = Math.min(j, maxJ)
+
+      if (isWeakBoundary(units[j - 1]) || isWeakBoundary(units[j])) {
+        for (const nj of [j - 1, j + 1]) {
+          if (nj < minJ || nj > maxJ) continue
+          const nLen = prefix[nj - 1] - (cursor > 0 ? prefix[cursor - 1] : 0)
+          if (nLen >= targetLen * 0.8 && nLen <= targetLen * 1.2 &&
+              !isWeakBoundary(units[nj - 1]) && !isWeakBoundary(units[nj])) {
+            j = nj
+            break
+          }
+        }
+      }
+
       chunks.push(units.slice(cursor, j).join(sep).trim())
       cursor = j
     }
@@ -168,12 +214,19 @@ function programmaticSplit(scriptText, n) {
     return chunks.filter(Boolean)
   }
 
-  // 1차: 문장 단위 분할
+  // 1차: 문장 단위 분할 — 문장부호뿐 아니라 줄바꿈도 경계로 본다.
+  // 낭독체 대본(광해군/정성왕후 등)은 한 호흡마다 줄을 바꾸고 마침표가 거의 없어,
+  // 줄바꿈을 안 보면 작성자가 이미 나눠둔 매듭(챕터 경계 포함)을 무시하고 엉뚱한
+  // 지점에서 잘리게 된다. 문장부호 구분자는 지금처럼 앞 문장에 붙이고(원문 보존),
+  // 줄바꿈 구분자는 내용 없이 그냥 경계로만 쓴다.
   const sentences = cleaned
-    .split(/([.!?。！？]+(?:\s+|$))/)
+    .split(/([.!?。！？]+(?:\s+|$)|\n+)/)
     .reduce((acc, part, idx) => {
-      if (idx % 2 === 0) { if (part.trim()) acc.push(part.trim()) }
-      else if (acc.length > 0) acc[acc.length - 1] += part.trimEnd()
+      if (idx % 2 === 0) {
+        if (part.trim()) acc.push(part.trim())
+      } else if (/[.!?。！？]/.test(part)) {
+        if (acc.length > 0) acc[acc.length - 1] += part.trimEnd()
+      } // 줄바꿈 구분자는 그냥 경계 역할만 하고 버림
       return acc
     }, [])
     .filter(s => s.trim().length > 0)
@@ -851,6 +904,7 @@ GOOD imagePrompt: "EXTREME CLOSE-UP: trembling hands clutching crumpled prescrip
 [MANDATORY CHARACTER RULE]:
 ⚠️ For the "involvedCharacters" array, you MUST use the exact ORIGINAL KOREAN NAMES (e.g., "민기", "지은"), NOT the "ACTOR-X" labels. Return an empty array [] if no humans are in the scene.
 ⚠️ CRITICAL PRESENCE CHECK: ONLY include characters who are PHYSICALLY PRESENT AND VISIBLE in THIS EXACT script segment. If the segment describes a battle, landscape, crowd event, or a scene where named characters are NOT actively present — set involvedCharacters to [] and render period-appropriate anonymous figures (soldiers, officials, commoners) instead. Do NOT force a named character into every scene.
+⚠️ LARGE-CAST SCRIPTS (many named people in the roster, e.g. a biography compilation covering many historical figures in turn): a character may ONLY be tagged if THIS segment's text itself names them (or unambiguously refers to them by title/role given the immediate surrounding sentences) — NOT because they appeared in an earlier scene or are the first/most prominent roster entry. When the segment has moved on to a different person's story, do NOT keep tagging the earlier person.
 ⚠️ PRESERVE ABSENT NAMES IN TEXT: If a character is absent but mentioned in the script, MUST preserve their true Korean name in the 'action' and 'description'.
 ⚠️ NEVER output twins, clones, or multiple generic figures if only ONE named character is acting.
 
@@ -921,10 +975,17 @@ export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, lang
     }
   })
 
+  // 등장인물이 많은 대본에서 특정 인물로 쏠려 이미 안 맞는 구간까지 같은 이름이
+  // 붙는 걸 막기 위해, 배정된 대본 구간에 실제로 이름이 나오는지 검증한다.
+  const verifiedSegment    = sceneRef.fullScriptSegment || sceneRef.scriptReference || ''
+  const verifiedCharacters = chars.length > 1
+    ? resolvedCharacters.filter(name => nameAppearsInSegment(name, verifiedSegment))
+    : resolvedCharacters
+
   return {
     ...cleanSceneOutput(raw, chars),
     id:               sceneRef.id || `scene_${Date.now()}`,
-    involvedCharacters: resolvedCharacters,
+    involvedCharacters: verifiedCharacters,
     setting:          sceneRef.setting || raw.setting || '',
     scriptReference:  sceneRef.scriptReference || '',
     scriptAnchor:     (sceneRef.scriptReference || '').replace(/\n/g, ' ').trim().slice(0, 30),
@@ -990,6 +1051,11 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
     if (chars.some(c => c.name === name) && !resolvedCharacters.includes(name)) resolvedCharacters.push(name)
   })
 
+  const verifiedSegment    = sceneRef.fullScriptSegment || sceneRef.scriptReference || ''
+  const verifiedCharacters = chars.length > 1
+    ? resolvedCharacters.filter(name => nameAppearsInSegment(name, verifiedSegment))
+    : resolvedCharacters
+
   const merged = {
     action:        raw.action        || sceneRef.action,
     description:   raw.description   || sceneRef.description,
@@ -1006,7 +1072,7 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
     cameraMovement:     raw.cameraMovement || sceneRef.cameraMovement,
     shotType:           raw.shotType       || sceneRef.shotType,
     duration:           raw.duration       || sceneRef.duration,
-    involvedCharacters: resolvedCharacters,
+    involvedCharacters: verifiedCharacters,
   }
 }
 
