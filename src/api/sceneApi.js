@@ -70,6 +70,27 @@ function nameAppearsInSegment(name, segment) {
   return segment.includes(core)
 }
 
+// ─── 인물 연속성 힌트 전파 (carry-forward) ───────────────────────────────────
+// 한국어 서술은 "세 번째, 이개." 처럼 이름을 한 번만 밝히고 이후로는 "이 사람",
+// "그는" 같은 대명사로만 지칭하는 경우가 많다. 씬 분할 경계가 그 "이름이 박힌
+// 한 문장"과 "실제 그 인물 얘기가 전개되는 문장들"을 서로 다른 씬으로 갈라놓으면,
+// 뒤쪽 씬들은 원문에 이름이 전혀 없는 채로 AI에게 넘어간다 — 이러면 AI든 코드
+// 검증이든 그 구간이 누구 얘기인지 알 방법이 없어 로스터 앞쪽 인물(대개 가장
+// 먼저·길게 소개된 인물)로 쏠린다. 씬 순서를 따라가며 "직전에 이름이 등장한
+// 인물"을 다음 씬들에도 기본값으로 이어서 전달한다 — 새 이름이 나오면 갱신.
+function attachCharacterContinuityHints(rawScenes, characters) {
+  if (!Array.isArray(characters) || characters.length < 2) return rawScenes
+  const tagged = characters.map((c, i) => ({ tag: `ACTOR-${String.fromCharCode(65 + i)}`, name: c.name }))
+  let lastNamed = null
+  return rawScenes.map(scene => {
+    const segment = scene.fullScriptSegment || scene.scriptReference || ''
+    const foundHere = tagged.filter(c => nameAppearsInSegment(c.name, segment))
+    const continuityCharacterHint = foundHere.length === 0 ? lastNamed : null
+    if (foundHere.length > 0) lastNamed = foundHere[foundHere.length - 1]
+    return { ...scene, detectedNamedActors: foundHere, continuityCharacterHint }
+  })
+}
+
 function replaceActorTags(text, characters) {
   if (!text) return text
   let result = text
@@ -744,6 +765,33 @@ function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate
         return `- [${tag}: ${char.name}]${protagonist}; // DO NOT hallucinate their clothes or age. Focus strictly on their actions.`
       }).join('\n')
 
+  // ─── 코드 검증 기반 인물 감지 힌트 ────────────────────────────────────────
+  // 대본 전체 + 로스터를 매 씬마다 통째로 던져주면, AI가 "이 이야기에서 가장
+  // 인상적인/먼저 나온 인물"(대개 로스터 앞쪽) 쪽으로 쏠리는 경향이 있다 —
+  // 배정된 구간에 다른 사람 이름이 분명히 적혀 있어도 그렇다. AI 판단에만
+  // 맡기지 말고, 코드로 먼저 "이 구간 원문에 실제로 등장하는 이름"을 찾아
+  // 프롬프트에 사실로 박아 넣는다.
+  const segmentText = sceneRef.fullScriptSegment || sceneRef.scriptReference || ''
+  // 배치 생성(generateAllScenes)에서는 attachCharacterContinuityHints가 이미 씬 순서를
+  // 훑어 계산해둔 값을 sceneRef에 실어 보낸다 — 여기서는 그걸 그대로 쓴다. 단일 씬
+  // 생성/재생성처럼 이웃 씬 맥락이 없는 경로에서는 이 씬 원문만으로 즉석 계산한다.
+  const detectedNamedActors = sceneRef.detectedNamedActors
+    ?? (!isInfoviz
+      ? (bible.characters || [])
+          .map((char, i) => ({ tag: `ACTOR-${String.fromCharCode(65 + i)}`, name: char.name }))
+          .filter(c => nameAppearsInSegment(c.name, segmentText))
+      : [])
+  const continuityHint = sceneRef.continuityCharacterHint ?? null
+  const nameDetectionHint = (bible.characters || []).length > 1
+    ? (detectedNamedActors.length > 0
+        ? `\n⚠️ NAME-MATCH DETECTED (CODE-VERIFIED FACT, NOT YOUR JUDGMENT CALL):
+Your ASSIGNED SEGMENT's raw text literally contains: ${detectedNamedActors.map(c => `"${c.name}" (${c.tag})`).join(', ')}.
+If a named human character appears in this scene, it should almost always be one of these — do NOT substitute a different, more familiar, or earlier-listed roster character who is NOT named in this segment's text just because they feel safer or appeared in a previous scene.`
+        : continuityHint
+          ? `\n⚠️ NO NAME LITERALLY IN THIS SEGMENT, BUT CONTINUITY CARRIED FORWARD (CODE-VERIFIED FACT): this segment's text refers back with pronouns only ("이 사람", "그는" etc.) rather than repeating a name. The nearest named character mentioned in an EARLIER segment (in script order, before this one) is "${continuityHint.name}" (${continuityHint.tag}). Unless THIS segment's content clearly shifts to a different subject (a different action, a new named party, a location-only description), assume the story is STILL about ${continuityHint.name} and use ${continuityHint.tag} — do NOT substitute a different, more familiar roster character instead.`
+          : `\n⚠️ NO ROSTER NAME DETECTED IN THIS SEGMENT (CODE-VERIFIED FACT): none of the named roster characters' names appear in this segment's raw text, and no earlier segment established a character to carry forward either. This is a strong signal that this scene is about something/someone else — set involvedCharacters to [] and depict an unnamed/anonymous figure, object, crowd, or place instead of defaulting to a familiar named character out of habit.`)
+    : ''
+
   const locationInfo = (() => {
     if (!bible.locations || bible.locations.length === 0) return '(no predefined locations)'
     const setting = (sceneRef.setting || '').trim()
@@ -816,7 +864,8 @@ ${characterRoster}
 - Use INFO-X tags in imagePrompt and action fields.`
   : `[CHARACTER ROSTER (Names Only) - ONLY THESE CHARACTERS EXIST IN THIS SCENE]:
 [FULL CHARACTER ROSTER - CHOOSE WHO APPEARS IN THIS SCENE]:
-${characterRoster}`}
+${characterRoster}
+${nameDetectionHint}`}
 
 ${langConfig.outputInstruction}
 
@@ -843,6 +892,7 @@ ${dedicatedDirector}
 
 [FINAL SCENE GROUNDING OVERRIDE — HIGHEST PRIORITY, READ LAST]:
 ⚠️ DO NOT DEFAULT TO FAMILIAR NAMED CHARACTERS OR A GENERIC "PERSON ON CAMERA" SHOT. Before writing imagePrompt, first identify WHO or WHAT this exact script segment is actually about — it may be a number/statistic, an object, a place, a different named person, or an unnamed party — and pick the matching mode above for THAT subject.
+⚠️ RE-CHECK THE NAME-MATCH DETECTION RESULT ABOVE (the code-verified fact, not the FULL SCRIPT CONTEXT) before finalizing which named character (if any) appears. That detection reflects THIS segment only — the earlier FULL SCRIPT CONTEXT block is background, not a cue for who belongs in THIS scene.
 ⚠️ ADJACENT SCENE REDUNDANCY BAN: Do NOT reuse the same mode, data visual, or info-box layout that a neighboring scene (similar position in the story) would already use back-to-back. Vary the mode choice across the video.` : (isInfoviz || visualMode === 'documix' || visualMode === 'content' ? `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${visualModeInstruction}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` : `[ACTOR RULES]:
@@ -1084,7 +1134,8 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
 export async function generateAllScenes(scriptText, bible, stylePreset, lang, onProgress, maxScenes = 30, currentMode = 'normal', visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false) {
   const langConfig   = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
   const bibleCtx     = { ...bible, _fullScript: scriptText }
-  const rawScenes    = await splitScriptToScenes(scriptText, maxScenes, visualMode)
+  const rawScenesSplit = await splitScriptToScenes(scriptText, maxScenes, visualMode)
+  const rawScenes    = attachCharacterContinuityHints(rawScenesSplit, bible.characters)
   const total        = rawScenes.length
   const results      = new Array(total).fill(null)
 
