@@ -270,7 +270,7 @@ export default function Step4_Scenes() {
       const batch = sceneList.slice(i, i + batchSize)
 
       batch.forEach((scene, j) => {
-        if (scene?.imagePrompt || scene?.imagePromptKo || scene?.action) {
+        if (!scene?.imageUrl && (scene?.imagePrompt || scene?.imagePromptKo || scene?.action)) {
           updateScene(i + j, { generating: true, imageError: null })
         }
       })
@@ -278,6 +278,13 @@ export default function Step4_Scenes() {
       await Promise.allSettled(
         batch.map(async (scene, j) => {
           const idx = i + j
+          // 이미 성공한(imageUrl 있는) 씬은 다시 생성하지 않고 건너뛴다 —
+          // "전체 생성"을 다시 눌러도 실패한 것만 재시도되는 효과.
+          if (scene?.imageUrl) {
+            completed++
+            if (genVersionRef.current === myVersion) setProgress(completed, sceneList.length)
+            return
+          }
           if (!scene?.imagePrompt && !scene?.imagePromptKo && !scene?.action) {
             completed++
             if (genVersionRef.current === myVersion) setProgress(completed, sceneList.length)
@@ -548,7 +555,11 @@ export default function Step4_Scenes() {
             size="lg"
           >
             <Image size={16} />
-            {generatingImages ? '이미지 생성 중...' : '전체 이미지 생성'}
+            {generatingImages
+              ? '이미지 생성 중...'
+              : scenes.some(s => s.imageUrl)
+                ? (scenes.some(s => !s.imageUrl && (s.imagePrompt || s.imagePromptKo || s.action)) ? '남은/실패 이미지 재시도' : '전체 이미지 생성')
+                : '전체 이미지 생성'}
           </Button>
         )}
 
