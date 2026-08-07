@@ -354,11 +354,14 @@ export async function safeGenerate(client, params, label) {
 const FAST_IMAGE_MODEL      = 'gemini-2.5-flash-image'
 const NANO_BANANA_2_MODELS  = new Set(['gemini-3.1-flash-image', 'gemini-3.1-flash-lite-image', 'gemini-3-pro-image'])
 const slotsForImageModel    = model => model === FAST_IMAGE_MODEL ? 3 : 1
+// 나노바나나2 계열은 2초 간격으로도 429가 한 칸씩 걸러 나는(퐁당퐁당) 현상이 실측
+// 재현됨 — 참조 이미지 기능(캐릭터 얼굴 일관성) 활성화 이후 요청당 페이로드가 커진
+// 영향도 있을 것으로 보고, 최소 간격을 더 넉넉하게 늘려본다.
+const minIntervalForModel   = model => NANO_BANANA_2_MODELS.has(model) ? 4500 : 2000
 
 class ImageRequestGate {
   constructor() {
     this.activeCount     = 0
-    this.minIntervalMs   = 2000
     this.isCircuitOpen   = false
     this.circuitOpenUntil = 0
     this.lastRequestTime = 0
@@ -373,9 +376,10 @@ class ImageRequestGate {
     this.activeCount++
 
     if (!isFast) {
+      const minInterval = minIntervalForModel(model)
       const elapsed = Date.now() - this.lastRequestTime
-      if (elapsed < this.minIntervalMs) {
-        await new Promise(r => setTimeout(r, this.minIntervalMs - elapsed))
+      if (elapsed < minInterval) {
+        await new Promise(r => setTimeout(r, minInterval - elapsed))
       }
     }
 
@@ -398,7 +402,7 @@ class ImageRequestGate {
   }
 
   reportError(model) {
-    const cooldown = NANO_BANANA_2_MODELS.has(model) ? 7000 : 3000
+    const cooldown = NANO_BANANA_2_MODELS.has(model) ? 10000 : 3000
     if (!this.isCircuitOpen || Date.now() > this.circuitOpenUntil) {
       this.isCircuitOpen    = true
       this.circuitOpenUntil = Date.now() + cooldown
