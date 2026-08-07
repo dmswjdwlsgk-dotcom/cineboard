@@ -279,7 +279,7 @@ export async function generateSceneImage(
           const tag     = `ACTOR-${String.fromCharCode(65 + charIdx)}`
           const data    = await resizeBase64Image(refImg, 256)
           if (data) {
-            referenceImages.push({ text: `[${tag}, age ${char.age}${char.gender ? `, gender ${char.gender}` : ''}] Preserve face/hair/outfit identity. Act the scene naturally.` })
+            referenceImages.push({ text: `[${tag}, reference age ${char.age}${char.gender ? `, gender ${char.gender}` : ''}] Preserve core face identity (bone structure, eye shape, facial features) — but this is a REFERENCE for identity, not a literal age lock. If the scene description below explicitly indicates a different life stage (younger: unlined skin, dark full hair, leaner; older: grey/white hair, wrinkles, frailer build), age the face UP or DOWN accordingly while keeping it recognizably the same person. Act the scene naturally.` })
             referenceImages.push({ inlineData: { mimeType: 'image/png', data } })
           }
         } catch (e) {
