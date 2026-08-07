@@ -622,6 +622,10 @@ This script may be written as a DOCUMENTARY VOICEOVER (narrator speaking to audi
 - "이순신이 보고를 올렸다" → Admiral at a war camp candlelit tent writing or issuing orders
 - "기근으로 마을이 고요해졌다" → wide shot of a desolate Joseon village in winter, no animals, no smoke
 
+⚠️ CHANNEL META-ADDRESS SEGMENTS (subscribe/like requests, "다음 이야기에서 뵙겠습니다", "댓글로 남겨주세요", intro/outro branding) — THESE ARE THE #1 CASE WHERE THIS RULE GETS BROKEN, READ CAREFULLY:
+These segments have ZERO historical content to visualize, which tempts you to fall back to "a narrator/speaker addressing an audience" — a modern lecture hall, a documentary studio, a silhouette bowing to a crowd. DO NOT DO THIS. The narrator is invisible even here — there is no exception for meta/closing segments.
+Instead, default to a QUIET CALLBACK SHOT: reuse the story's own established world — its most iconic already-mentioned location, object, or the main historical figure themselves (in the established art style, NOT a modern person) — shown in a still, contemplative wide shot or silhouette, as if the story is settling/fading rather than ending on a stage. Think of it as the closing shot of a documentary film returning to its subject, not a host signing off.
+
 ⚠️ MINE YOUR OWN ASSIGNED SEGMENT FOR SPECIFICS — CRITICAL:
 Your assigned script segment is usually several sentences long and almost always contains something concrete: a specific number, a named person/place/document, a specific object, a specific action, or a specific absence of action. Before writing imagePrompt, re-read your ENTIRE assigned segment (not just the first clause) and identify that concrete element FIRST.
 - A generic mood/atmosphere shot (e.g. "a quiet palace at night") is a LAST RESORT — only acceptable if you re-read the segment and it truly contains nothing concrete, which is rare.
