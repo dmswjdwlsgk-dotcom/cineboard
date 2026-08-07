@@ -4,7 +4,7 @@ import Button from '../ui/Button.jsx'
 import Spinner from '../ui/Spinner.jsx'
 import { useAppStore } from '../../store/useAppStore.js'
 import { STYLES, MODELS } from '../../data/styles.js'
-import { generateContinuityBible, analyzeCharacterImage } from '../../api/bibleApi.js'
+import { generateContinuityBible, verifyMissingCharacters, analyzeCharacterImage } from '../../api/bibleApi.js'
 import { generateImage } from '../../api/imageApi.js'
 import { isApiReady, createClient, safeGenerate } from '../../api/gemini.js'
 
@@ -92,6 +92,31 @@ export default function Step3_Bible() {
     setLoading(true)
     try {
       const bible = await generateContinuityBible(scriptText, style, detectedLanguage)
+      // 1차 추출은 대사가 없거나 호칭이 바뀌는 인물(예: 갓난아기 왕자, 계모 되기
+      // 전/후 다른 이름으로 불리는 왕비)을 종종 놓친다 — 이름이 이미 정해진
+      // 목록에 없는데 대본에 2회 이상 나오는 인물을 한 번 더 감사해서 합친다.
+      // 실패해도 1차 결과는 그대로 살리고 조용히 넘어간다.
+      try {
+        const existingNames = (bible.characters || []).map(c => c.name)
+        const missing = await verifyMissingCharacters(scriptText, existingNames, detectedLanguage)
+        if (Array.isArray(missing) && missing.length > 0) {
+          bible.characters = [
+            ...(bible.characters || []),
+            ...missing.map(c => ({
+              id: `char_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+              name: c.name || '',
+              role: '조연',
+              age: c.age || '',
+              gender: c.gender || '미상',
+              description: c.description || '',
+              imagePromptKo: c.imagePromptKo || '',
+              visualPrompt: c.visualPrompt || '',
+            })),
+          ]
+        }
+      } catch (auditErr) {
+        console.warn('[CineBoard] 누락 캐릭터 감사 실패 (무시하고 진행):', auditErr.message)
+      }
       setBible(bible)
     } catch (err) {
       setError('캐릭터 분석 실패: ' + err.message)

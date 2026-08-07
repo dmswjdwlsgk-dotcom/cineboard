@@ -152,23 +152,22 @@ export async function verifyMissingCharacters(scriptText, existingNames, lang = 
   const conf   = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
   const cleaned = cleanScript(scriptText)
 
-  const prompt = `[CRITICAL AUDIT]: Analyze the script and find ONLY major characters who SPEAK MULTIPLE TIMES (at least 2+ dialogue lines) in the script.
+  const prompt = `[CRITICAL AUDIT]: Analyze the script and find NAMED characters that were MISSED by the first extraction pass.
 
 **STRICT RULES:**
-1. ONLY return characters who SPEAK at least 2 TIMES in the provided script (have multiple dialogue lines)
-2. EXCLUDE characters who speak only ONCE - they are minor/extras
-3. EXCLUDE characters mentioned but have NO dialogue
-4. EXCLUDE background characters, extras, unnamed roles (마을사람, 행인, 여인, 남자 etc.)
-5. DO NOT invent new characters not in the script
-6. Characters already identified: ${existingNames.join(', ')}
-7. Return EMPTY array [] if no new MAJOR speaking characters are found
-8. EXCLUDE narrators (나레이션, 해설, 해설자, Narrator). They are NOT characters.
-9. Maximum 3 characters. Only return the MOST important missing ones.
+1. Include a character if they are referred to BY NAME (or an unambiguous title standing in for a name, e.g. "영창대군", "폐비 유씨") 2+ TIMES total in the script — this INCLUDES pure narration/description, NOT just dialogue. A character who is only ever acted upon (born, imprisoned, killed) and never speaks a single line is STILL a valid character if named 2+ times — do NOT require dialogue.
+2. ⚠️ TITLE-ALIAS: the same person may be called by different titles at different points in the story (e.g., before/after a status change — "인목왕후" before her stepson becomes king, "인목대비" after). Combine those mentions as ONE person, not two separate near-misses.
+3. EXCLUDE truly generic/unnamed background roles (마을사람, 행인, 여인, 남자 etc.) — this rule is about UNNAMED extras, not about characters who lack dialogue.
+4. DO NOT invent new characters not in the script.
+5. Characters already identified: ${existingNames.join(', ')}
+6. Return EMPTY array [] if nothing was missed.
+7. EXCLUDE narrators (나레이션, 해설, 해설자, Narrator). They are NOT characters.
+8. Maximum 3 characters. Only return the MOST important missing ones.
 
 **Script to analyze:**
 ${cleaned}
 
-Return MAJOR speaking characters (2+ lines) NOT in the existing list. Maximum 3.`
+Return NAMED characters (2+ mentions, dialogue not required) NOT in the existing list. Maximum 3.`
 
   return withRetry(async () => {
     const res = await client.models.generateContent({
