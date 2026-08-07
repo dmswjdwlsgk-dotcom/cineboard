@@ -188,9 +188,15 @@ export default function Step3_Bible() {
     setGeneratingCharImages(prev => ({ ...prev, [idx]: true }))
     try {
       const modelId = MODELS[selectedModel]?.id || MODELS[0].id
+      // ⚠️ age는 반드시 명시적으로 프롬프트에 박아 넣는다 — visualPrompt/imagePromptKo
+      // 텍스트가 나이를 확실히 담고 있지 않으면(대본이 인물의 생애를 넓게 다루는 전기물일
+      // 때 특히 그렇다), 이미지 모델이 대본에서 가장 인상 깊게 등장한 나이(예: 도입부의
+      // 죽음 장면 노년 묘사)로 임의로 되돌아가는 현상이 실측됨 — age 필드가 있어도 여기서
+      // 안 쓰이면 무용지물이었다.
+      const ageClause = char.age ? `EXACT AGE: ${char.age} years old — render this precise age, not older or younger.` : ''
       const prompt = char.visualPrompt || char.imagePromptKo
-        ? `Portrait of ${char.name}. ${char.visualPrompt || ''} ${char.imagePromptKo || ''}. Character portrait, full face visible, upper body shot, neutral background.`
-        : `Portrait of a character named ${char.name}, ${char.role}, ${char.gender}, ${char.age}. Character portrait, upper body shot.`
+        ? `Portrait of ${char.name}, ${ageClause}${char.gender ? ` GENDER: ${char.gender}.` : ''} ${char.visualPrompt || ''} ${char.imagePromptKo || ''}. Character portrait, full face visible, upper body shot, neutral background.`
+        : `Portrait of a character named ${char.name}, ${char.role}, ${char.gender}, ${ageClause}. Character portrait, upper body shot.`
       const url = await generateImage(prompt, style, modelId, '1:1', false)
       updateCharacter(idx, 'charImageUrl', url)
       updateCharacter(idx, 'imageUrl', url)
