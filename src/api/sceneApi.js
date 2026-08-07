@@ -310,6 +310,17 @@ async function enrichSceneSettings(scenes, client, visualMode = '') {
 씬 내용을 읽고 배경을 추론하라. 알 수 없으면 "미상"으로 쓸 것.
 ${modeHint}
 
+⚠️ 반복 방지 — 이 목록 전체를 한 번에 보고 있다는 이점을 활용하라:
+- 인물의 "기본 공간"(예: 작가라서 서재/책상, 학자라서 서재)에 안주하지 마라. 실제 나레이션 문장이
+  구체적 행동/장소를 담고 있으면(예: "상해로 건너가", "법정에 섰다", "거리에서 낭독했다", "감옥에 갇혔다")
+  그 장소를 그대로 써라 — 서재보다 훨씬 구체적인 단서가 있는데도 서재로 뭉개면 안 된다.
+- 나레이션이 화자의 논평/질문/요약(예: "그런데 그 계산이 틀렸습니다", "우리는 질문해야 합니다")처럼
+  구체적 장면 묘사가 없는 문장이어도, 인물의 기본 공간을 기계적으로 반복하지 말고 그 시점 이야기의
+  맥락에 맞는 다른 공간(거리, 인쇄소, 신문사, 법정, 항구, 기차역, 강연장, 감옥, 골목 등)이나 상징적
+  장소를 찾아라 — 정말 아무 단서가 없을 때만 최후 수단으로 인물의 기본 공간을 써라.
+- 목록 전체를 훑어서, 같은 setting 문자열(또는 사실상 같은 공간)이 연속으로 2번 이상 나오지 않도록
+  분산시켜라. 내용상 명백히 같은 장소가 이어지는 경우(같은 사건이 여러 씬에 걸친 경우)만 예외로 허용한다.
+
 씬 목록 (JSON):
 ${JSON.stringify(scenes.map(s => ({ id: s.id, text: s.fullScriptSegment.slice(0, 120) })))}
 
@@ -913,6 +924,12 @@ ${directorMode} — HIGHEST PRIORITY]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 You are not describing a scene. You are DIRECTING a movie or illustration.
 Your imagePrompt must be a DIRECTOR'S SHOT DESCRIPTION that captures the single most emotionally devastating moment.
+
+[STEP 0 — ABSTRACT COMMENTARY & HABITUAL-SPACE TRAP — CHECK THIS FIRST]:
+⚠️ Many scripts (especially documentary/biography narration) mix concrete action sentences with the narrator's ABSTRACT COMMENTARY — rhetorical questions, summary judgments, transitions ("이건 협박이 아니었습니다", "우리는 질문해야 합니다", "그런데 그 계산이 틀렸습니다") that describe NO physical action at all.
+⚠️ When your assigned segment is this kind of abstract commentary, DO NOT default to the character's single most "habitual" location/prop (e.g. a writer always shown at their desk with a pen, a scholar always in their study) just because it's the safest guess — if you find yourself about to write "sitting at a desk" again, STOP and ask whether the LOCATION field, the character's actual life stage at this point in the story, or a symbolic object/environment tied to THIS segment's specific claim would be more accurate and less repetitive.
+⚠️ Use the [LOCATION - THIS SCENE'S SETTING] field below as your primary anchor — it was chosen with visibility into the WHOLE scene list specifically to avoid this repetition. Trust it over your own instinct to reuse a "default" scene.
+⚠️ SELF-CHECK: would this exact composition (same pose, same prop, same room) also plausibly fit 3 other scenes in this video? If yes, it's too generic — find the specific physical space, object, or moment from the STORY'S actual timeline that this commentary is talking about instead.
 
 [STEP 1 — FIND THE EMOTIONAL PEAK]:
 Read the scriptReference carefully. Find the ONE MOMENT of maximum emotional intensity.
