@@ -179,6 +179,15 @@ function programmaticSplit(scriptText, n) {
     // 내레이션 대본은 "여러분", "생각해보세요", "~해보겠습니다" 같은 시청자 호출/
     // 전환용 화법이 구조적으로 많이 섞여 있다 — 문장 시작이 전형적인 전환어이거나,
     // 문장 안에 시청자 호출/메타 화법 키워드가 있으면(그리고 짧으면) 내용이 없다고 본다.
+    // ── 챕터/서수 경계 강제 스냅: "① 무정, 조선을 뒤흔들다", "첫 번째, 이개.",
+    // "제3장" 같은 표현은 대본 작성자가 이미 명시적으로 그어둔 챕터 경계다.
+    // 글자 수 균등분배가 이 경계를 무시하고 걸쳐버리면(예: 챕터②를 시작하자마자
+    // 씬이 끝나고, 다음 씬은 챕터②로 시작해 챕터③으로 끝나는 식) 챕터 하나가
+    // 두 씬에 쪼개져 나온다 — 아래 경계 다듬기(필러 회피)보다 먼저, 그리고 더
+    // 넓은 허용폭으로 처리한다: 챕터 경계 쪽으로 당겨가는 게 분량 균등보다 우선.
+    const ORDINAL_START_RE = /^([①-⑳➀-➉]|(첫|두|세|네|다섯|여섯|일곱|여덟|아홉|열)\s*번째|\d+\s*번째|제?\s*\d+\s*[장편화회부편])[,.\s]/
+    const isOrdinalStart = (s) => !!s && ORDINAL_START_RE.test(s.trim())
+
     const FILLER_START_RE   = /^(그런데|그리고|그래서|자[,.]?|여기서|이제|그렇다면|왜일까요|말입니다|정리해\s?볼까요|정리해\s?보겠습니다|물론)/
     const FILLER_KEYWORD_RE = /(여러분|말씀드리|묻고\s?싶습니다|아시겠습니까|아십니까|해\s?보겠습니다|해\s?볼까요|해\s?보십시오|보려\s?합니다|시작하겠습니다|돌아가겠습니다|던지겠습니다|이야기하겠습니다|남겨주세요|뵙겠습니다|생각해\s?보세요|생각해\s?보십시오|궁금하|짚고\s?싶습니다|짚어보겠습니다|질문을\s?드리)/
     const isWeakBoundary = (s) => {
@@ -200,7 +209,20 @@ function programmaticSplit(scriptText, n) {
       while (j < maxJ && prefix[j - 1] < targetCum) j++
       j = Math.min(j, maxJ)
 
-      if (isWeakBoundary(units[j - 1]) || isWeakBoundary(units[j])) {
+      // 챕터 경계 강제 스냅 — 이 경계 후보 주변(목표 분량의 0.5~1.5배 폭)에 서수로
+      // 시작하는 유닛이 있으면, 그중 목표치에 가장 가까운 것으로 경계를 당긴다.
+      // 분량 균등보다 챕터 경계 존중이 우선이라 허용폭을 필러 회피보다 넓게 둔다.
+      let bestOrdinal = -1, bestDiff = Infinity
+      for (let k = minJ; k < maxJ; k++) {
+        if (!isOrdinalStart(units[k])) continue
+        const chunkLen = prefix[k - 1] - (cursor > 0 ? prefix[cursor - 1] : 0)
+        if (chunkLen < targetLen * 0.5 || chunkLen > targetLen * 1.5) continue
+        const diff = Math.abs(chunkLen - targetLen)
+        if (diff < bestDiff) { bestDiff = diff; bestOrdinal = k }
+      }
+      if (bestOrdinal !== -1) {
+        j = bestOrdinal
+      } else if (isWeakBoundary(units[j - 1]) || isWeakBoundary(units[j])) {
         for (const nj of [j - 1, j + 1]) {
           if (nj < minJ || nj > maxJ) continue
           const nLen = prefix[nj - 1] - (cursor > 0 ? prefix[cursor - 1] : 0)
