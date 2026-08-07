@@ -78,15 +78,30 @@ function nameAppearsInSegment(name, segment) {
 // 검증이든 그 구간이 누구 얘기인지 알 방법이 없어 로스터 앞쪽 인물(대개 가장
 // 먼저·길게 소개된 인물)로 쏠린다. 씬 순서를 따라가며 "직전에 이름이 등장한
 // 인물"을 다음 씬들에도 기본값으로 이어서 전달한다 — 새 이름이 나오면 갱신.
+//
+// ⚠️ 단, 무한정 이어주면 안 된다 — "한 사람 얘기가 대명사로 계속 이어지는 구간"과
+// "여러 사람을 한꺼번에 요약/정리하는 결론부"를 코드가 구분할 방법이 없기 때문에,
+// 결론부처럼 일부러 이름을 다시 안 부르는 구간에서 마지막에 등장했던 단 한 명이
+// 끝까지 눌러앉는 사고가 났다("조선의 왕들" 대본 — 영조가 ⑦장에서 크게 다뤄진 뒤,
+// 여러 왕을 함께 정리하는 ⑧ 결론부 전체에 영조가 계속 지목됨). 이름이 다시 안
+// 나온 채로 일정 씬 이상 벌어지면 더 이상 특정 인물을 단정하지 않고 손을 뗀다.
+const CONTINUITY_MAX_GAP = 3
 function attachCharacterContinuityHints(rawScenes, characters) {
   if (!Array.isArray(characters) || characters.length < 2) return rawScenes
   const tagged = characters.map((c, i) => ({ tag: `ACTOR-${String.fromCharCode(65 + i)}`, name: c.name }))
   let lastNamed = null
+  let gap = 0
   return rawScenes.map(scene => {
     const segment = scene.fullScriptSegment || scene.scriptReference || ''
     const foundHere = tagged.filter(c => nameAppearsInSegment(c.name, segment))
-    const continuityCharacterHint = foundHere.length === 0 ? lastNamed : null
-    if (foundHere.length > 0) lastNamed = foundHere[foundHere.length - 1]
+    let continuityCharacterHint = null
+    if (foundHere.length > 0) {
+      lastNamed = foundHere[foundHere.length - 1]
+      gap = 0
+    } else {
+      gap++
+      continuityCharacterHint = gap <= CONTINUITY_MAX_GAP ? lastNamed : null
+    }
     return { ...scene, detectedNamedActors: foundHere, continuityCharacterHint }
   })
 }
@@ -613,6 +628,7 @@ Your assigned script segment is usually several sentences long and almost always
 - If the segment names a specific document/record (e.g. 승정원일기, 실록), show that object directly — an open ledger, a page, a stack of court records — not just a generic room.
 - If the segment states a specific fact, number, or duration (e.g. "33년 동안 찾지 않았다"), find a way to visualize THAT specific fact concretely (a calendar of untouched days, an empty threshold never crossed, a door unopened) rather than defaulting to the same establishing shot every other scene in this video would also use.
 - Do NOT reuse the exact same generic environment description (same time of day, same weather, same composition) that a neighboring scene in this video would also naturally produce — even when using the CANON BIBLE's shared environment DNA as your base palette, layer THIS segment's specific detail on top of it, don't just restate the environment DNA as the whole imagePrompt.
+- ⚠️ LIGHTING/MOOD WORD IS NOT MANDATORY PER SCENE: if the CANON BIBLE's Visual DNA contains a fixed mood/lighting word (e.g. "dim", "dark", "suffocating"), that is the video's ambient DEFAULT, not a rule to restate in every single scene's opening words. Many scenes in a long historical video need brighter, warmer, or more open lighting (a triumphant moment, daylight, an outdoor scene, a long and peaceful life) — use whatever lighting THIS specific scene's content actually calls for instead of opening with "dimly lit" / "dark" / "candlelit" out of habit.
 
 ⚠️ SHOT TYPE PRIORITY — FOLLOW THIS ORDER (HIGHEST PRIORITY):
 1. Your DEFAULT shot type is whatever [SCENE POSITION & SHOT VARIETY HINT] elsewhere in this prompt suggests for this scene's position — treat it as your starting point, not an optional suggestion.
@@ -930,6 +946,7 @@ Your imagePrompt must be a DIRECTOR'S SHOT DESCRIPTION that captures the single 
 ⚠️ When your assigned segment is this kind of abstract commentary, DO NOT default to the character's single most "habitual" location/prop (e.g. a writer always shown at their desk with a pen, a scholar always in their study) just because it's the safest guess — if you find yourself about to write "sitting at a desk" again, STOP and ask whether the LOCATION field, the character's actual life stage at this point in the story, or a symbolic object/environment tied to THIS segment's specific claim would be more accurate and less repetitive.
 ⚠️ Use the [LOCATION - THIS SCENE'S SETTING] field below as your primary anchor — it was chosen with visibility into the WHOLE scene list specifically to avoid this repetition. Trust it over your own instinct to reuse a "default" scene.
 ⚠️ SELF-CHECK: would this exact composition (same pose, same prop, same room) also plausibly fit 3 other scenes in this video? If yes, it's too generic — find the specific physical space, object, or moment from the STORY'S actual timeline that this commentary is talking about instead.
+⚠️ THE CANON BIBLE'S "Visual DNA" LINE BELOW IS A BASE PALETTE, NOT A MANDATORY MOOD FOR EVERY SCENE: it describes materials/architecture/colors that stay consistent across the video — it is NOT telling you every scene must be dim/dark/gloomy. If it contains a lighting or mood word (e.g. "dim", "suffocating"), treat that as the ambient default ONLY — override it with brighter, warmer, or more open lighting whenever THIS scene's actual content calls for it (daytime, triumph, a wide open space, a calm or long-lived moment). Do NOT open your imagePrompt with the same "dimly lit / dark / candlelit" phrasing you'd use for every other scene — vary it based on what THIS scene actually depicts.
 
 [STEP 1 — FIND THE EMOTIONAL PEAK]:
 Read the scriptReference carefully. Find the ONE MOMENT of maximum emotional intensity.

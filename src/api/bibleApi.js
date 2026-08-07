@@ -48,6 +48,11 @@ Extract ONLY the SINGLE most iconic core identity of each character. DO NOT spli
 ⚠️ ILLUSTRATIVE ANECDOTE EXCLUSION: Self-help/lecture-style scripts often use throwaway hypothetical examples ("한 사람이 있었습니다", "직장에서 명퇴 후 작은 가게를 차렸다가...") to illustrate a point, then never return to that person. Do NOT extract these one-off illustrative/hypothetical people as named roster characters — they are not real recurring characters. Only extract a character if they are the video's actual recurring subject (the historical figure, the channel's protagonist, a named person referenced multiple times across different segments).
 ${conf.costumeHierarchy}
 
+[ENVIRONMENT DNA ("environment" FIELD) - MANDATORY GUIDANCE]:
+⚠️ This "environment.visualPrompt" text is glued onto EVERY SINGLE SCENE in the entire video, no matter how different each scene's actual moment is. Write it as a NEUTRAL, REUSABLE BASE PALETTE only — NOT a fixed mood/lighting commitment.
+- INCLUDE: recurring architecture/material/texture details, era-appropriate color palette, recurring props — things that stay true across the WHOLE video regardless of scene content.
+- DO NOT INCLUDE a single fixed lighting or mood adjective meant to apply to every scene (e.g. do NOT write "dim", "dark", "suffocating", "gloomy" as the definitive mood) — even a heavy/tragic topic has scenes that need bright daylight, open air, or a lighter tone (a triumphant moment, a wide establishing shot, a scene about someone who lived long and well). Leave LIGHTING and MOOD to be decided PER SCENE based on that scene's own content, not fixed here for all 100 scenes at once.
+
 [LOCATION EXTRACTION - MANDATORY]:
 Extract 3~8 KEY LOCATIONS from the script (only the most important recurring ones). Each location MUST have:
 - name: Short location name in the script's language (e.g., ${conf.locationExamples})
