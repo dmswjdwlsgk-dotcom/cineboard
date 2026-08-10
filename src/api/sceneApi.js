@@ -809,6 +809,23 @@ function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate
 ⚠️ [NO STYLE-RECAP SENTENCE]: The overall art style (medium, brushwork, lighting mandate, palette) is already applied to every image by a separate system layer — do NOT open or close imagePrompt with a sentence that just restates it (e.g. "The scene is rendered as an academic oil painting with thick impasto brushstrokes and chiaroscuro lighting..."). Every word of imagePrompt should describe THIS scene's unique action, composition, or detail — a generic style-recap sentence repeats what's already guaranteed elsewhere and adds length without adding information.
 ` : ''
 
+  // ⚠️ watercolor_illust_v2 전용: 역사 인물 본인이 아닌 씬(모던 사례, 화자의 시청자 직접 발화 등)이
+  // 붓/먹/노년 등의 키워드 연상만으로 한복·한옥으로 새는 문제 대응. 다른 스타일에는 영향 없음.
+  const noHanbokDriftRule = stylePreset.id === 'watercolor_illust_v2' ? `
+⚠️ [TRADITIONAL COSTUME/ARCHITECTURE — RESTRICTED TO THE HISTORICAL FIGURE ONLY]: Hanbok (traditional Korean clothing) and hanok (traditional Korean architecture) must ONLY appear in a scene when the character on screen is the historical figure HIMSELF, explicitly and unambiguously identified as living in his own past era. For every OTHER character — a present-day anecdote's subject, a narrator addressing today's viewer, a generic "an elderly person" placeholder — you MUST explicitly state MODERN/contemporary clothing and a MODERN setting in imagePrompt, even when the scene involves an activity that's stereotypically associated with tradition (calligraphy, brush and ink, an old photograph, quiet reflection). Do NOT default to hanbok/hanok just because the scene involves a brush, old age, or a nostalgic mood — those associations are a common mistake, not a rule. If in doubt whether a scene is the historical figure's own era or a present-day scene, re-check which era the surrounding narration actually describes.
+` : ''
+
+  // ⚠️ watercolor_illust_v2 전용: 잔잔한 자기계발 내레이션 특성상 감정이 "그리움/고독" 쪽으로 쏠려
+  // 미디엄샷·클로즈업만 반복되는 문제 + 화자의 메타 발언 구간에서 강연장을 지어내는 문제 대응.
+  // hist_drama 모드에서 검증된 규칙 중 사극 전용(왕/궁중의식/용포 등) 트리거는 빼고 범용 부분만 이식.
+  const variedAngleRule = stylePreset.id === 'watercolor_illust_v2' ? `
+⚠️ [SHOT VARIETY ENFORCEMENT]:
+- "Medium Shot" is BANNED as a default. It may only be used when a character is SPEAKING DIALOGUE in an interior setting with NO spatial or emotional alternative.
+- ADJACENT SCENE REPETITION BAN: Do not pick the same shot type you'd expect a neighboring scene (similar position in the story) to also naturally land on. If both the mood and the content weakly point toward an overused shot type (Medium Shot, Close-up), pick the next-best alternative that still fits the content — Wide Shot, Extreme Close-Up on a symbolic object, Over-the-Shoulder, Low/High Angle, Bird's Eye View — rather than repeating.
+- SELF-CHECK before finalizing shotType: "Is this the MOST INTERESTING choice for this specific moment, or just the safest?" If it's just safe, change it.
+⚠️ [NARRATOR META-ADDRESS — NO INVENTED LECTURE HALL]: When the assigned segment is the narrator speaking directly to today's viewer (a self-affirmation line, "여러분", subscribe/like requests, an outro) with no concrete story action to visualize, do NOT invent a speaker-and-audience scene (a lecture hall, a stage, a crowd) — this is a meta framing device that doesn't exist in the story world. Instead default to a QUIET CALLBACK SHOT: reuse an already-established location, object, or the historical figure himself (in his own era), shown in a still, symbolic wide shot or silhouette — like a documentary camera lingering on its subject, not cutting to a host addressing a room.
+` : ''
+
   const isInfoviz = visualMode === 'infoviz'
   const withTextInt = isImageTextEnabled && (visualMode === 'content' || visualMode === 'infoviz')
   const visualModeInstruction = getVisualModeInstruction(visualMode, withTextInt)
@@ -1015,7 +1032,7 @@ GOOD imagePrompt: "EXTREME CLOSE-UP: trembling hands clutching crumpled prescrip
 - NO subtitles, captions, title cards, watermarks in the scene description.
 - The scene must be PURELY VISUAL — zero textual elements in the rendered frame.
 
-${noStyleRecapRule}
+${noStyleRecapRule}${noHanbokDriftRule}${variedAngleRule}
 [MANDATORY DIALOGUE RULE]:
 ⚠️ EVERY scene MUST have dialogue field filled:
    - Provide ONLY a short snippet (around 8 seconds of speech). DO NOT copy the entire script length here!
