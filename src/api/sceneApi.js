@@ -987,6 +987,7 @@ ${langConfig.costumeHierarchy || ''}
 ⚠️ ANTI-CLONE PROTOCOL (CRITICAL!):
    - If you add background figures (staff, passersby), you MUST explicitly describe them as "faceless, distant, generic silhouettes".
    - NEVER describe a background character doing the exact same action or wearing the same clothes as the [ACTOR].
+⚠️ ANONYMOUS/UNNAMED CHARACTER ETHNICITY (CRITICAL — COMMONLY MISSED): Named actors above already carry ethnicity in their reference. But when imagePrompt describes a person with NO name tag — a generic placeholder like "an elderly person", "a middle-aged woman", "a farmer" — that description carries NO ethnicity by default, and the image model tends to default to a Western appearance unless told otherwise. Whenever you describe such an anonymous person, explicitly state their ethnicity/appearance matching this script's cultural context: ${langConfig.ethnicityHint || 'appearance matching the script\'s own cultural setting'}. Do NOT leave an anonymous character's ethnicity unstated.
 ${visualModeInstruction ? `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${visualModeInstruction}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${directorMode} — HIGHEST PRIORITY]
