@@ -19,6 +19,22 @@ export async function generateContinuityBible(scriptText, stylePreset) {
     : '3. FACE: distinctive facial features, skin tone, age-appropriate wrinkles/smoothness'
   const narratorNames = conf.narratorNames.slice(0, 4).join(', ')
 
+  // ⚠️ watercolor_illust_v2 전용: 이 스타일만 시대 락(SETTING LOCK)이 없으므로,
+  // 역사 인물 + 현대 사례가 섞인 대본에서 environment DNA가 한쪽 시대로 고정되지 않게 강제.
+  // 다른 스타일(쇼펜하우어/joseon_painting 등)은 자체 SETTING LOCK이 있어 영향받지 않음.
+  const multiEraRule = stylePreset.id === 'watercolor_illust_v2' ? `
+⚠️ [MULTI-ERA / MIXED-SETTING SCRIPTS — CRITICAL]: Some scripts interweave a historical figure's own era with a present-day frame story (e.g. a historical sage's teachings illustrated with modern-day anecdotes about ordinary people, or flashback/present-day dual timelines). If ANY part of the script is clearly set in the present day (modern anecdotes, statistics, a narrator addressing today's viewer, an apartment/office/smartphone-era example) while another part is clearly historical, this "environment.visualPrompt" must NOT commit to only one era's architecture or materials — do not write things like "traditional wooden architecture" or "paper sliding doors" here if a modern-day scene also exists in the video, since that text would then contradict and override the modern scene. In this case keep environment.visualPrompt to genuinely era-neutral rendering/medium texture only (e.g. "soft watercolor pigment bleed, visible paper grain, warm muted palette") and put ALL era-specific architecture into the individual LOCATION entries instead — including separate location entries for the modern-day settings, not just the historical ones.` : ''
+
+  // ⚠️ schopenhauer_victorian 전용: 서재/응접실 반복 및 환경DNA 가구 중복 문제 대응.
+  // 다른 스타일에는 영향 없음.
+  const schopenhauerEnvRule = stylePreset.id === 'schopenhauer_victorian' ? `
+- DO NOT INCLUDE specific room-defining furniture/architecture (e.g. "mahogany paneling", "velvet drapery", "leather-bound books", "gilt-framed portraits", "oriental rugs") — those belong ONLY inside individual LOCATION entries below. If a signature piece of furniture is written here, it gets forced onto every location in the video regardless of type, so a street, a garden, a ballroom, and a study all end up looking like the same generic room.` : ''
+  const schopenhauerLocationRule = stylePreset.id === 'schopenhauer_victorian' ? `
+⚠️ Many scripts (essays, self-help narration, philosophical commentary addressed directly at the viewer) name almost NO literal places — they describe RECURRING SITUATIONS instead (a social gathering where people gossip, a workplace power imbalance, a private moment of reflection, a betrayal by someone once trusted, a public street encounter). When the script reads like this, do NOT wait for the same literal place-word to repeat before extracting it — instead identify the RECURRING SITUATION TYPES the narration keeps returning to, and invent ONE period-appropriate location archetype per situation type that is genuinely, materially different from the others (different room type, different furniture set, different light source) rather than a re-skin of the same room under a new name.
+⚠️ If the script DOES explicitly name a concrete place — even just once (e.g. "식당", "직장", "기차역") — you MUST still extract it as one of your locations; do not discard a real location cue just because it isn't repeated elsewhere.
+⚠️ DO NOT lift the example setting words mentioned in the [VISUAL STYLE TARGET] section above (e.g. its own sample mentions of "study", "drawing room", "garden", "street") as a shortcut — those are illustrative examples for the ART STYLE, not a location list for THIS script. Every location you output must trace back to an actual recurring situation/place in THIS script's content.
+Extract 4~9 locations (not just 3), and vary indoor ROOM TYPES — do not just redecorate the same study/drawing-room twice under different names.` : ''
+
   const prompt = `[ANALYSIS]: Extract characters, env, and KEY LOCATIONS. IMPORTANT: Do NOT include narrators (${narratorNames}) as characters. They are NOT characters in the story.
 ⚡ [VISUAL STYLE TARGET]: ${stylePreset.prompt}
 
@@ -54,10 +70,10 @@ ${conf.costumeHierarchy}
 [ENVIRONMENT DNA ("environment" FIELD) - MANDATORY GUIDANCE]:
 ⚠️ This "environment.visualPrompt" text is glued onto EVERY SINGLE SCENE in the entire video, no matter how different each scene's actual moment is. Write it as a NEUTRAL, REUSABLE BASE PALETTE only — NOT a fixed mood/lighting commitment.
 - INCLUDE: recurring architecture/material/texture details, era-appropriate color palette, recurring props — things that stay true across the WHOLE video regardless of scene content.
-- DO NOT INCLUDE a single fixed lighting or mood adjective meant to apply to every scene (e.g. do NOT write "dim", "dark", "suffocating", "gloomy" as the definitive mood) — even a heavy/tragic topic has scenes that need bright daylight, open air, or a lighter tone (a triumphant moment, a wide establishing shot, a scene about someone who lived long and well). Leave LIGHTING and MOOD to be decided PER SCENE based on that scene's own content, not fixed here for all 100 scenes at once.
+- DO NOT INCLUDE a single fixed lighting or mood adjective meant to apply to every scene (e.g. do NOT write "dim", "dark", "suffocating", "gloomy" as the definitive mood) — even a heavy/tragic topic has scenes that need bright daylight, open air, or a lighter tone (a triumphant moment, a wide establishing shot, a scene about someone who lived long and well). Leave LIGHTING and MOOD to be decided PER SCENE based on that scene's own content, not fixed here for all 100 scenes at once.${multiEraRule}${schopenhauerEnvRule}
 
 [LOCATION EXTRACTION - MANDATORY]:
-Extract 3~8 KEY LOCATIONS from the script (only the most important recurring ones). Each location MUST have:
+Extract 3~8 KEY LOCATIONS from the script (only the most important recurring ones). Each location MUST have:${schopenhauerLocationRule}
 - name: Short location name in the script's language (e.g., ${conf.locationExamples})
 - visualPrompt: Detailed English environment description (50~100 words) including:
   * Architecture/nature details (materials, textures, structures)

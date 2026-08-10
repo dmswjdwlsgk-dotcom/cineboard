@@ -134,6 +134,13 @@ export const STYLES = [
     thumbnail: 'style_thumbs/watercolor_illust.png',
   },
   {
+    id: 'watercolor_illust_v2',
+    label: '수채화 일러스트 v2 (Watercolor v2)',
+    prompt: 'traditional watercolor illustration style, soft flowing pigment bleeds, subtle paper grain texture within the painted surface, gentle color washes, delicate ink line accents, light pastel tones, organic edge softness in the linework, hand-painted artistic feel, children\'s book illustration aesthetic, airy bright atmosphere, 4k resolution. ⚠️FULL BLEED MANDATE — CRITICAL: this is a borderless full-frame illustration, NOT a framed watercolor painting on visible paper stock. The painted scene MUST extend all the way to all four edges of the canvas with ZERO white margin, ZERO deckled/torn/rough paper edge, ZERO visible paper border, ZERO vignette or fade-to-white at the corners or sides. Do NOT frame the illustration like a postcard or art print. Edge-to-edge full frame, NO text, NO borders, NO frame, NO card border, NO white margin.',
+    palette: ['#fce7f3', '#d1fae5', '#bfdbfe'],
+    thumbnail: 'style_thumbs/watercolor_illust_v2.png',
+  },
+  {
     id: 'lofi_urban',
     label: '로파이 어반 (Lo-fi Urban)',
     prompt: 'lo-fi urban illustration style, cozy warm color palette, soft grain texture, dim lamp lighting, melancholic chill atmosphere, anime-inspired urban scenery, hazy bokeh background, lo-fi hip hop album cover aesthetic, nostalgic mood, 4k resolution, edge-to-edge full frame, NO text, NO borders.',

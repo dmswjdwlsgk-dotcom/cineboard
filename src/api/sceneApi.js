@@ -803,6 +803,12 @@ function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate
     ? '[🎨 MASTER ILLUSTRATOR/WEBTOON DIRECTOR MODE]'
     : '[🎬 MASTER CINEMATOGRAPHER MODE]'
 
+  // ⚠️ schopenhauer_victorian / joseon_painting 전용: 이 두 스타일만 STYLE 지침이 매우 길어서
+  // LLM이 imagePrompt 끝에 화풍을 재요약하는 사족 문장을 붙이는 문제가 관측됨. 다른 스타일은 영향 없음.
+  const noStyleRecapRule = ['schopenhauer_victorian', 'joseon_painting'].includes(stylePreset.id) ? `
+⚠️ [NO STYLE-RECAP SENTENCE]: The overall art style (medium, brushwork, lighting mandate, palette) is already applied to every image by a separate system layer — do NOT open or close imagePrompt with a sentence that just restates it (e.g. "The scene is rendered as an academic oil painting with thick impasto brushstrokes and chiaroscuro lighting..."). Every word of imagePrompt should describe THIS scene's unique action, composition, or detail — a generic style-recap sentence repeats what's already guaranteed elsewhere and adds length without adding information.
+` : ''
+
   const isInfoviz = visualMode === 'infoviz'
   const withTextInt = isImageTextEnabled && (visualMode === 'content' || visualMode === 'infoviz')
   const visualModeInstruction = getVisualModeInstruction(visualMode, withTextInt)
@@ -1009,6 +1015,7 @@ GOOD imagePrompt: "EXTREME CLOSE-UP: trembling hands clutching crumpled prescrip
 - NO subtitles, captions, title cards, watermarks in the scene description.
 - The scene must be PURELY VISUAL — zero textual elements in the rendered frame.
 
+${noStyleRecapRule}
 [MANDATORY DIALOGUE RULE]:
 ⚠️ EVERY scene MUST have dialogue field filled:
    - Provide ONLY a short snippet (around 8 seconds of speech). DO NOT copy the entire script length here!
