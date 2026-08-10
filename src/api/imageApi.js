@@ -267,9 +267,9 @@ export async function generateSceneImage(
   }
 
   if (useReferenceImages && bible.characters && !fixedCharStyleType) {
-    const sceneChars = (scene.involvedCharacters || [])
-      .map(name => bible.characters.find(c => c.name === name))
-      .filter(Boolean)
+    // ⚠️ 이름 완전일치(c.name === name) 대신 resolveSceneCharacters의 유연한 매칭(조사 제거 + 부분일치)을 사용.
+    // 씬마다 "정약용"/"다산"/"다산 정약용"처럼 표기가 조금씩 달라져도 참조 이미지가 정상 첨부되도록.
+    const sceneChars = resolveSceneCharacters(scene, bible)
 
     for (const char of sceneChars) {
       const refImg = char.referenceThumb || char.imageUrl
