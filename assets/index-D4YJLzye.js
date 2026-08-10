@@ -1463,6 +1463,7 @@ ${(e.scriptReference||"").slice(0,60)}
 [씬 배경(Setting)]: ${e.setting||""}`:`[CINEMATIC SCENE GENERATION - ULTRA DETAILED]
 
 [FULL SCRIPT CONTEXT — UNDERSTAND THE ENTIRE STORY]:
+⚠️ READ-ONLY BACKGROUND — NOT A SOURCE OF CONTENT: this full script is given so you understand who these people are and how the story fits together. It is NOT where imagePrompt's content comes from. When a single anecdote/paragraph is long enough to be split across MULTIPLE scenes, every one of those scenes will show you this SAME full script for context — but each of you is assigned a different slice of it. Do NOT scan this full text for "the single most vivid/famous beat of this anecdote" and paint that beat regardless of which slice is actually yours (e.g. if your assigned segment is the AFTERMATH of a story — "now his balcony is a small garden he shares with neighbors" — do NOT default back to painting the anecdote's more famous MIDDLE beat — "him watering the plant" — just because that's the more filmable image; paint the aftermath your OWN segment actually describes). The concrete action/moment you depict MUST come from [ORIGINAL SCRIPT CONTEXT — FULL ASSIGNED SEGMENT] below, never borrowed from elsewhere in this full script just because it's more vivid.
 ${sr(t._fullScript||e.scriptReference||"")}
 
 [ORIGINAL SCRIPT CONTEXT — FULL ASSIGNED SEGMENT]:
@@ -1563,8 +1564,8 @@ Your imagePrompt must be a DIRECTOR'S SHOT DESCRIPTION that captures the single 
 ⚠️ PAST-IDENTITY REVEAL SHOTS: when narration explicitly reveals or states a character's FORMER title/role/identity for dramatic contrast ("이 노인은 한때 왕이었습니다", "그는 원래 장군이었다") — especially right after establishing their CURRENT diminished/different state — this is a strong cue to actually SHOW that former role (their past attire, setting, bearing) rather than just continuing to show their present/current-scene appearance unchanged. The dramatic point of a "was once X" line is the CONTRAST; a static repeat of the previous scene's visual wastes it. Prefer depicting the past role plainly, or a composition that visually bridges past and present (e.g. same posture/space, but during their time in power), over defaulting to whatever the immediately preceding scene already showed.
 
 [STEP 1 — FIND THE EMOTIONAL PEAK]:
-Read the scriptReference carefully. Find the ONE MOMENT of maximum emotional intensity.
-Ask yourself: "What is the exact millisecond that would make an audience gasp, weep, or hold their breath?"
+Read the scriptReference carefully — this means YOUR ASSIGNED SEGMENT specifically, NOT the full script shown above for background. Find the ONE MOMENT of maximum emotional intensity WITHIN YOUR OWN SEGMENT'S TEXT.
+Ask yourself: "What is the exact millisecond, WITHIN MY OWN ASSIGNED SENTENCES, that would make an audience gasp, weep, or hold their breath?" If your segment is one part of a longer multi-scene anecdote, your "peak" is whatever peak exists inside YOUR slice — not the anecdote's overall most famous moment if that moment belongs to a different scene's slice.
 
 [STEP 2 — CHOOSE YOUR FILM TECHNIQUE]:
 Consider: does this scene need a FACE (close-up) or a WORLD (wide shot)? Both are equally valid emotional tools.
