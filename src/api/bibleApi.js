@@ -19,10 +19,11 @@ export async function generateContinuityBible(scriptText, stylePreset) {
     : '3. FACE: distinctive facial features, skin tone, age-appropriate wrinkles/smoothness'
   const narratorNames = conf.narratorNames.slice(0, 4).join(', ')
 
-  // ⚠️ watercolor_illust_v2 전용: 이 스타일만 시대 락(SETTING LOCK)이 없으므로,
-  // 역사 인물 + 현대 사례가 섞인 대본에서 environment DNA가 한쪽 시대로 고정되지 않게 강제.
-  // 다른 스타일(쇼펜하우어/joseon_painting 등)은 자체 SETTING LOCK이 있어 영향받지 않음.
-  const multiEraRule = stylePreset.id === 'watercolor_illust_v2' ? `
+  // watercolor_illust_v2: 원래 시대 락(SETTING LOCK)이 없는 스타일.
+  // joseon_painting: CASE A(정약용 본인)만 조선시대 고정, CASE B(현대인 사연)는 현대 배경 —
+  // 즉 이 스타일도 이제 혼합시대이므로 environment DNA가 한쪽 시대 건축으로 고정되면 안 됨.
+  // (쇼펜하우어 등 다른 단일시대 SETTING LOCK 스타일은 영향받지 않음.)
+  const multiEraRule = (stylePreset.id === 'watercolor_illust_v2' || stylePreset.id === 'joseon_painting') ? `
 ⚠️ [MULTI-ERA / MIXED-SETTING SCRIPTS — CRITICAL]: Some scripts interweave a historical figure's own era with a present-day frame story (e.g. a historical sage's teachings illustrated with modern-day anecdotes about ordinary people, or flashback/present-day dual timelines). If ANY part of the script is clearly set in the present day (modern anecdotes, statistics, a narrator addressing today's viewer, an apartment/office/smartphone-era example) while another part is clearly historical, this "environment.visualPrompt" is glued onto EVERY scene INCLUDING ones with no Korean/historical content at all (a storm at sea, a generic room, an unrelated location) — so it must contain ZERO architecture or building vocabulary of any kind, whether historical or modern. Do NOT write "architecture", "architectural elements", a "blend of traditional and modern [anything]", "traditional wooden architecture", "paper sliding doors", or any other structure/building-type noun, EVEN when trying to describe both eras at once — a "blend" phrasing still counts as a violation because the word "traditional" alone is enough to bias every unrelated scene toward it. The ONLY acceptable content here is rendering medium and color-grading vocabulary with NO reference to any building, room, or culture-specific structure — e.g. "soft watercolor pigment bleed, visible paper grain, delicate ink line accents, warm muted color palette." Every architecture/location detail, for BOTH eras, belongs ONLY inside individual LOCATION entries instead — including separate location entries for the modern-day settings, not just the historical ones.` : ''
 
   // ⚠️ schopenhauer_victorian 전용: 서재/응접실 반복 및 환경DNA 가구 중복 문제 대응.

@@ -809,9 +809,11 @@ function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate
 ⚠️ [NO STYLE-RECAP SENTENCE]: The overall art style (medium, brushwork, lighting mandate, palette) is already applied to every image by a separate system layer — do NOT open or close imagePrompt with a sentence that just restates it (e.g. "The scene is rendered as an academic oil painting with thick impasto brushstrokes and chiaroscuro lighting..."). Every word of imagePrompt should describe THIS scene's unique action, composition, or detail — a generic style-recap sentence repeats what's already guaranteed elsewhere and adds length without adding information.
 ` : ''
 
-  // ⚠️ watercolor_illust_v2 전용: 역사 인물 본인이 아닌 씬(모던 사례, 화자의 시청자 직접 발화 등)이
-  // 붓/먹/노년 등의 키워드 연상만으로 한복·한옥으로 새는 문제 대응. 다른 스타일에는 영향 없음.
-  const noHanbokDriftRule = stylePreset.id === 'watercolor_illust_v2' ? `
+  // watercolor_illust_v2: 역사 인물 본인이 아닌 씬(모던 사례, 화자의 시청자 직접 발화 등)이
+  // 붓/먹/노년 등의 키워드 연상만으로 한복·한옥으로 새는 문제 대응.
+  // joseon_painting: 이 스타일도 CASE A(정약용 본인)만 조선시대, CASE B(현대인 사연)는 현대 배경으로
+  // 바뀌었으므로 같은 드리프트 방지 규칙이 필요함. (다른 단일시대 SETTING LOCK 스타일은 영향 없음.)
+  const noHanbokDriftRule = ['watercolor_illust_v2', 'joseon_painting'].includes(stylePreset.id) ? `
 ⚠️ [TRADITIONAL COSTUME/ARCHITECTURE — RESTRICTED TO THE HISTORICAL FIGURE ONLY]: Hanbok (traditional Korean clothing) and hanok/traditional Korean architecture — including vaguer phrasings like "an old Korean inn", "a traditional room", "a rustic back room" — must ONLY appear in a scene when the character on screen is the historical figure HIMSELF (or another real person confirmed to be part of HIS OWN historical story), explicitly and unambiguously living in that past era. For every OTHER character — a present-day anecdote's subject, a narrator addressing today's viewer, a generic "an elderly person" placeholder — you MUST explicitly state MODERN/contemporary clothing AND a MODERN/contemporary room or building (an apartment, a modern kitchen, a community center, a hospital, a present-day street) in imagePrompt, even when the scene involves an activity that's stereotypically associated with tradition (calligraphy, brush and ink, an old photograph, quiet reflection). Do NOT default to hanbok/hanok/"traditional [anything]" just because the scene involves a brush, old age, or a nostalgic mood — those associations are a common mistake, not a rule. CONTINUITY CHECK: if this same character (by name) appears in another scene with an established modern setting (an apartment, a balcony, a community center), keep them in a modern setting here too — do not let them drift into a traditional room between scenes. If in doubt whether a scene is the historical figure's own era or a present-day scene, re-check which era the surrounding narration actually describes.
 ` : ''
 
