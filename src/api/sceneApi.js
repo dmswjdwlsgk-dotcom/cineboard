@@ -106,6 +106,64 @@ function attachCharacterContinuityHints(rawScenes, characters) {
   })
 }
 
+// ─── flat_editorial 전용 — 조명 다양화 (2단계) ───────────────────────────────
+// 이 스타일은 프롬프트에 "vivid sunset skies" 류 표현이 반복돼 있어 AI가 노을/골든아워를
+// 기본값으로 수렴하는 문제가 있었다(주황색 쏠림). 씬마다 조명을 명시적으로 배정해서 막는다.
+// 1단: 대본 원문에 이미 시간대/날씨가 적혀 있으면(nameAppearsInSegment와 같은 방식으로
+//      코드가 직접 검출) 그 신호를 그대로 쓴다 — AI 판단에 맡기지 않는다.
+// 2단: 신호가 없을 때만 라운드로빈으로 배정한다. 노을은 이 풀에서 아예 제외 — 대본이
+//      "노을/석양/황혼"을 명시할 때만(1단에서) 나오게 한다. 직전 씬과 같은 값은 건너뛴다.
+const FLAT_EDITORIAL_LIGHTING_POOL = [
+  '흐린 한낮 (overcast midday — flat, soft grey-white daylight, low shadow contrast)',
+  '창백한 새벽 (pale dawn — cool desaturated blue-grey light, long soft shadows)',
+  '맑은 정오 (clear noon — hard overhead sun, minimal shadow, bleached highlights)',
+  '늦은 오후 (late afternoon — low warm-but-muted sidelight, elongated shadows)',
+  '짙은 남색 밤 (deep navy night — artificial/moonlight only, near-black shadow planes)',
+  '실내 미색 조명 (indoor cream-toned lamp light — warm neutral interior glow)',
+  '사막 백색광 (desert white light — high-key bleached overexposed highlights)',
+  '비 오는 회청색 (rainy slate-blue overcast — flat diffused grey-blue light, wet reflections)',
+]
+const FLAT_EDITORIAL_SUNSET = '노을/황혼 (sunset or dusk — warm amber sky)'
+
+function detectScriptLightingSignal(segment) {
+  if (!segment) return null
+  if (/노을|석양|황혼/.test(segment)) return FLAT_EDITORIAL_SUNSET
+  if (/한밤중|밤중|밤하늘|깊은\s*밤|밤이\s*되|야밤|심야|자정/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[4]
+  if (/새벽|동트|동틀|여명|아침/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[1]
+  if (/비\s*(가|는)?\s*(오는|내리는|쏟아지는)|빗속|장맛비|폭우|가랑비|이슬비/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[7]
+  if (/사막|모래바람|사구/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[6]
+  if (/오후/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[3]
+  if (/정오|한낮|대낮/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[2]
+  if (/흐린|구름\s*낀|잔뜩\s*흐림/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[0]
+  return null
+}
+
+function attachLightingHints(rawScenes, stylePreset) {
+  if (stylePreset?.id !== 'flat_editorial') return rawScenes
+  let rotationPtr  = 0
+  let prevLighting = null
+  return rawScenes.map(scene => {
+    const segment  = scene.fullScriptSegment || scene.scriptReference || ''
+    const detected = detectScriptLightingSignal(segment)
+    let assignedLighting, lightingSource
+    if (detected) {
+      assignedLighting = detected
+      lightingSource   = 'script'
+    } else {
+      let candidate = FLAT_EDITORIAL_LIGHTING_POOL[rotationPtr % FLAT_EDITORIAL_LIGHTING_POOL.length]
+      if (candidate === prevLighting) {
+        rotationPtr++
+        candidate = FLAT_EDITORIAL_LIGHTING_POOL[rotationPtr % FLAT_EDITORIAL_LIGHTING_POOL.length]
+      }
+      rotationPtr++
+      assignedLighting = candidate
+      lightingSource   = 'rotation'
+    }
+    prevLighting = assignedLighting
+    return { ...scene, assignedLighting, lightingSource }
+  })
+}
+
 function replaceActorTags(text, characters) {
   if (!text) return text
   let result = text
@@ -874,6 +932,16 @@ If a named human character appears in this scene, it should almost always be one
           : `\n⚠️ NO ROSTER NAME DETECTED IN THIS SEGMENT (CODE-VERIFIED FACT): none of the named roster characters' names appear in this segment's raw text, and no earlier segment established a character to carry forward either. This is a strong signal that this scene is about something/someone else — set involvedCharacters to [] and depict an unnamed/anonymous figure, object, crowd, or place instead of defaulting to a familiar named character out of habit.`)
     : ''
 
+  // ─── flat_editorial 전용 — 조명 힌트 주입 ─────────────────────────────────
+  // 배치 경로(generateAllScenes)는 attachLightingHints가 미리 계산해 sceneRef에 실어준
+  // assignedLighting을 그대로 사실로 박아 넣는다. 재생성/단일 씬 생성처럼 이웃 씬 맥락이
+  // 없는 경로는 assignedLighting이 없으므로, 노을 기본값 금지 규칙만 텍스트로 남긴다.
+  const lightingHint = stylePreset.id === 'flat_editorial'
+    ? (sceneRef.assignedLighting
+        ? `\n⚠️ LIGHTING ASSIGNED FOR THIS SCENE (CODE-VERIFIED FACT, NOT YOUR CHOICE): ${sceneRef.assignedLighting}${sceneRef.lightingSource === 'script' ? ' — this segment\'s own text names this time/weather.' : ' — no time/weather stated in this segment; assigned by diversity rotation so consecutive scenes don\'t repeat.'} Render this scene's flat-color lighting to match this condition. Do NOT substitute a sunset/golden-hour sky instead.`
+        : `\n⚠️ NO PRE-ASSIGNED LIGHTING: pick whichever of these best fits this segment's own time/place cues — overcast midday, pale dawn, clear noon, late afternoon, deep navy night, indoor cream light, desert white light, or rainy slate-blue overcast. Do NOT default to a sunset or golden-hour sky unless the script itself explicitly names 노을/석양/황혼.`)
+    : ''
+
   const locationInfo = (() => {
     if (!bible.locations || bible.locations.length === 0) return '(no predefined locations)'
     const setting = (sceneRef.setting || '').trim()
@@ -1066,6 +1134,7 @@ ${noStyleRecapRule}${noHanbokDriftRule}${variedAngleRule}
 ⚠️ DO NOT DEFAULT TO FAMILIAR NAMED CHARACTERS. Before writing imagePrompt/involvedCharacters, first identify WHO or WHAT this exact script segment is actually about — it may be a different named character, an unnamed/anonymous party (a spy, an enemy commander, a crowd, an official), an object, or a location — NOT necessarily the character you used in the previous scene or the most "important" character in the roster.
 ⚠️ If the segment describes another party's action, plan, or scheme (e.g. an opposing side plotting, an unnamed messenger, a court receiving news), depict THAT party doing THAT specific thing. Do not substitute a more familiar character sitting on a throne or reacting generically just because it feels safer — read the segment's actual subject and verb.
 ⚠️ ADJACENT SCENE REDUNDANCY BAN: Do NOT reuse the same short quote, dialogue line, location, or emotional beat that a neighboring scene (same rough position in the story, e.g. consecutive scene IDs) would already cover. If the assigned segment overlaps in content with what a nearby scene likely depicts, find a distinct, more specific sub-moment, detail, or angle from THIS segment's exact wording instead of repeating the same iconic line or shot.`)}
+${lightingHint}
 [STYLE]: ${stylePreset.prompt}
 
 ${resilienceNote}`
@@ -1235,7 +1304,8 @@ export async function generateAllScenes(scriptText, bible, stylePreset, lang, on
   const langConfig   = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
   const bibleCtx     = { ...bible, _fullScript: scriptText }
   const rawScenesSplit = await splitScriptToScenes(scriptText, maxScenes, visualMode)
-  const rawScenes    = attachCharacterContinuityHints(rawScenesSplit, bible.characters)
+  const rawScenesNamed = attachCharacterContinuityHints(rawScenesSplit, bible.characters)
+  const rawScenes    = attachLightingHints(rawScenesNamed, stylePreset)
   const total        = rawScenes.length
   const results      = new Array(total).fill(null)
 
