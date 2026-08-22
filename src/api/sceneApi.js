@@ -106,61 +106,114 @@ function attachCharacterContinuityHints(rawScenes, characters) {
   })
 }
 
-// ─── flat_editorial 전용 — 조명 다양화 (2단계) ───────────────────────────────
-// 이 스타일은 프롬프트에 "vivid sunset skies" 류 표현이 반복돼 있어 AI가 노을/골든아워를
-// 기본값으로 수렴하는 문제가 있었다(주황색 쏠림). 씬마다 조명을 명시적으로 배정해서 막는다.
-// 1단: 대본 원문에 이미 시간대/날씨가 적혀 있으면(nameAppearsInSegment와 같은 방식으로
-//      코드가 직접 검출) 그 신호를 그대로 쓴다 — AI 판단에 맡기지 않는다.
-// 2단: 신호가 없을 때만 라운드로빈으로 배정한다. 노을은 이 풀에서 아예 제외 — 대본이
-//      "노을/석양/황혼"을 명시할 때만(1단에서) 나오게 한다. 직전 씬과 같은 값은 건너뛴다.
-const FLAT_EDITORIAL_LIGHTING_POOL = [
-  '흐린 한낮 (overcast midday — flat, soft grey-white daylight, low shadow contrast)',
-  '창백한 새벽 (pale dawn — cool desaturated blue-grey light, long soft shadows)',
-  '맑은 정오 (clear noon — hard overhead sun, minimal shadow, bleached highlights)',
-  '늦은 오후 (late afternoon — low warm-but-muted sidelight, elongated shadows)',
-  '짙은 남색 밤 (deep navy night — artificial/moonlight only, near-black shadow planes)',
-  '실내 미색 조명 (indoor cream-toned lamp light — warm neutral interior glow)',
-  '사막 백색광 (desert white light — high-key bleached overexposed highlights)',
-  '비 오는 회청색 (rainy slate-blue overcast — flat diffused grey-blue light, wet reflections)',
-]
-const FLAT_EDITORIAL_SUNSET = '노을/황혼 (sunset or dusk — warm amber sky)'
-
-function detectScriptLightingSignal(segment) {
-  if (!segment) return null
-  if (/노을|석양|황혼/.test(segment)) return FLAT_EDITORIAL_SUNSET
-  if (/한밤중|밤중|밤하늘|깊은\s*밤|밤이\s*되|야밤|심야|자정/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[4]
-  if (/새벽|동트|동틀|여명|아침/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[1]
-  if (/비\s*(가|는)?\s*(오는|내리는|쏟아지는)|빗속|장맛비|폭우|가랑비|이슬비/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[7]
-  if (/사막|모래바람|사구/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[6]
-  if (/오후/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[3]
-  if (/정오|한낮|대낮/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[2]
-  if (/흐린|구름\s*낀|잔뜩\s*흐림/.test(segment)) return FLAT_EDITORIAL_LIGHTING_POOL[0]
-  return null
+// ─── flat_editorial 전용 — 장면 모드 5종 배정 ────────────────────────────────
+// 레퍼런스 157장 실측 결과, "조명(시간대)"이 아니라 "내용(전투/집회/밤/노을/그외)"에
+// 따라 팔레트를 통째로 갈아 끼우는 게 실제 패턴이었다. 대부분(A, ~60%)은 저채도
+// 크림+청록이고, 고채도 주황/빨강(D)은 전투·학살 장면에서만, 노을(F)조차 저채도로
+// 절제해서 쓴다 — v1이 주황에 쏠렸던 것도, v2/v3 패치가 밋밋해진 것도 이 "모드 전환"
+// 구조를 못 맞췄기 때문. 이전의 시간대 기반 조명 로테이션(창백한 새벽/늦은 오후 등)은
+// 전부 A 모드 하나로 흡수된다 — 대본에 전투/집회/밤/노을이 명시되지 않으면 항상 A.
+const FLAT_EDITORIAL_MODE_PALETTES = {
+  A: {
+    label: '기본 서술 — 설명·이동·일상·풍경 (default narration; use unless another mode clearly fits; ~60% of scenes)',
+    colors: [
+      '#ECEADA cream (V .93 / S .08)',
+      '#DED0B8 sand (V .87 / S .17)',
+      '#B3D8D5 pale teal (V .85 / S .17)',
+      '#8DC8D9 sky blue (V .85 / S .35)',
+      '#B69E86 taupe (V .71 / S .26)',
+      '#607A83 slate (V .51 / S .27)',
+      '#251D1E near-black (V .15 / S .22)',
+    ],
+  },
+  C: {
+    label: '집회·깃발 — protest, rally, crowd, flags, march',
+    colors: [
+      '#E6E3D4 cream (V .90 / S .08)',
+      '#97C6CC pale teal (V .80 / S .26)',
+      '#B69E6B khaki gold (V .71 / S .41)',
+      '#4E6B66 mid teal (V .42 / S .27)',
+      '#1D3639 deep teal (V .22 / S .49)',
+      '#070A0C black (V .05 / S .42)',
+      '#B23A2A brick red (V .70 / S .76) — HIGH saturation, but ONLY on flags/banners/crowd clothing, max ~9% of the frame; keep the rest of the background as low-saturation as Mode A',
+    ],
+  },
+  D: {
+    label: '전쟁·격정 — battle, bombing, massacre, screaming, fire. THE ONLY mode where a saturated orange/red sky is allowed. Use ONLY when the script explicitly depicts violent conflict',
+    colors: [
+      '#E9AE4F amber (V .91 / S .66) — sky, ~22% of frame',
+      '#EBD0A8 pale sand (V .92 / S .29)',
+      '#BA5039 rust (V .73 / S .69) — ~18% of frame',
+      '#892F1E deep rust (V .54 / S .78)',
+      '#511A0F dark brick (V .32 / S .81)',
+      '#38353C charcoal-purple (V .24 / S .12)',
+      '#0B090D black (V .05 / S .31) — render people as black silhouettes or cool grey, separated from the burning sky',
+    ],
+  },
+  E: {
+    label: '밤 — night, midnight, after dark. Hue locked 200-222°',
+    colors: [
+      '#C8D9DF pale blue (V .87 / S .10)',
+      '#386079 mid blue (V .47 / S .54)',
+      '#193651 deep blue (V .32 / S .69)',
+      '#0D1E30 shadow blue (V .19 / S .73)',
+      '#04070E black (V .05 / S .71)',
+      '#473F4A purple-grey (V .29 / S .15)',
+      '#AB7C71 warm window/fire light (V .67 / S .34) — small point-light accents only, the ONLY warm colour allowed',
+    ],
+  },
+  F: {
+    label: '노을·황혼 — sunset/dusk. ONLY when the script explicitly says 노을/석양/해질/황혼. Keep saturation LOW (S 0.28-0.60) — a highly saturated orange sunset is WRONG, this is the exact bug this style used to have',
+    colors: [
+      '#DFC5A0 (V .87 / S .28)',
+      '#C5A27A (V .77 / S .38)',
+      '#997C5D (V .60 / S .39)',
+      '#70442D (V .44 / S .60) — this is the most saturated colour allowed in this mode',
+      '#1C1612 (V .11 / S .36)',
+      '#DBE1D7 (V .88 / S .04)',
+      '#7EB1AF (V .69 / S .29) — keep some teal present even in a sunset, do not let warm tones take over',
+    ],
+  },
 }
 
-function attachLightingHints(rawScenes, stylePreset) {
+const FLAT_EDITORIAL_MODE_TARGET_RATIO = { A: 0.605, C: 0.172, E: 0.108, D: 0.089, F: 0.025 }
+// D·F는 과사용되면 원래 v1의 주황 쏠림 버그가 그대로 재발하는 지점이라 더 타이트하게 캡을 건다.
+const FLAT_EDITORIAL_MODE_CAP_MULTIPLIER = { C: 1.6, E: 1.6, D: 1.4, F: 1.8 }
+
+// 우선순위 순서대로 검사 — 대본이 예: "전투 중 밤"처럼 겹치면 더 강한 시각 임팩트가
+// 있는 모드(D)를 먼저 판정한다.
+const FLAT_EDITORIAL_MODE_CUES = [
+  ['D', /전투|폭격|학살|공습|화염|불타|처형|절규|비명|총격|무장\s?공격/],
+  ['E', /한밤중|밤중|밤하늘|깊은\s*밤|밤이\s*되|야밤|심야|자정|새벽\s*두\s*시/],
+  ['C', /시위|집회|군중|깃발|행진|봉기|환호|혁명/],
+  ['F', /노을|석양|해질|황혼/],
+]
+
+function detectSceneModeSignal(segment) {
+  if (!segment) return 'A'
+  for (const [mode, re] of FLAT_EDITORIAL_MODE_CUES) {
+    if (re.test(segment)) return mode
+  }
+  return 'A'
+}
+
+function attachSceneModeHints(rawScenes, stylePreset) {
   if (stylePreset?.id !== 'flat_editorial') return rawScenes
-  let rotationPtr  = 0
-  let prevLighting = null
-  return rawScenes.map(scene => {
+  const counts = { A: 0, C: 0, E: 0, D: 0, F: 0 }
+  return rawScenes.map((scene, i) => {
     const segment  = scene.fullScriptSegment || scene.scriptReference || ''
-    const detected = detectScriptLightingSignal(segment)
-    let assignedLighting, lightingSource
-    if (detected) {
-      assignedLighting = detected
-      lightingSource   = 'script'
-    } else {
-      let candidate = FLAT_EDITORIAL_LIGHTING_POOL[rotationPtr % FLAT_EDITORIAL_LIGHTING_POOL.length]
-      if (candidate === prevLighting) {
-        rotationPtr++
-        candidate = FLAT_EDITORIAL_LIGHTING_POOL[rotationPtr % FLAT_EDITORIAL_LIGHTING_POOL.length]
-      }
-      rotationPtr++
-      assignedLighting = candidate
-      lightingSource   = 'rotation'
+    const detected = detectSceneModeSignal(segment)
+    let mode = detected
+    if (mode !== 'A') {
+      const n              = i + 1
+      const projectedShare = (counts[mode] + 1) / n
+      const cap            = FLAT_EDITORIAL_MODE_CAP_MULTIPLIER[mode] * FLAT_EDITORIAL_MODE_TARGET_RATIO[mode]
+      // 그 모드가 대본에서 처음 나온 경우는 막지 않는다 — 실제로 그런 장면이라서
+      // 검출된 것이므로. 목표 비중을 넘겨서 "반복"될 때만 A로 되돌린다(특히 D·F).
+      if (counts[mode] >= 1 && projectedShare > cap) mode = 'A'
     }
-    prevLighting = assignedLighting
-    return { ...scene, assignedLighting, lightingSource }
+    counts[mode] = (counts[mode] || 0) + 1
+    return { ...scene, assignedMode: mode }
   })
 }
 
@@ -932,14 +985,15 @@ If a named human character appears in this scene, it should almost always be one
           : `\n⚠️ NO ROSTER NAME DETECTED IN THIS SEGMENT (CODE-VERIFIED FACT): none of the named roster characters' names appear in this segment's raw text, and no earlier segment established a character to carry forward either. This is a strong signal that this scene is about something/someone else — set involvedCharacters to [] and depict an unnamed/anonymous figure, object, crowd, or place instead of defaulting to a familiar named character out of habit.`)
     : ''
 
-  // ─── flat_editorial 전용 — 조명 힌트 주입 ─────────────────────────────────
-  // 배치 경로(generateAllScenes)는 attachLightingHints가 미리 계산해 sceneRef에 실어준
-  // assignedLighting을 그대로 사실로 박아 넣는다. 재생성/단일 씬 생성처럼 이웃 씬 맥락이
-  // 없는 경로는 assignedLighting이 없으므로, 노을 기본값 금지 규칙만 텍스트로 남긴다.
-  const lightingHint = stylePreset.id === 'flat_editorial'
-    ? (sceneRef.assignedLighting
-        ? `\n⚠️ LIGHTING ASSIGNED FOR THIS SCENE (CODE-VERIFIED FACT, NOT YOUR CHOICE): ${sceneRef.assignedLighting}${sceneRef.lightingSource === 'script' ? ' — this segment\'s own text names this time/weather.' : ' — no time/weather stated in this segment; assigned by diversity rotation so consecutive scenes don\'t repeat.'} Render this scene's flat-color lighting to match this condition. Do NOT substitute a sunset/golden-hour sky instead.`
-        : `\n⚠️ NO PRE-ASSIGNED LIGHTING: pick whichever of these best fits this segment's own time/place cues — overcast midday, pale dawn, clear noon, late afternoon, deep navy night, indoor cream light, desert white light, or rainy slate-blue overcast. Do NOT default to a sunset or golden-hour sky unless the script itself explicitly names 노을/석양/황혼.`)
+  // ─── flat_editorial 전용 — 장면 모드 힌트 주입 ────────────────────────────
+  // 배치 경로(generateAllScenes)는 attachSceneModeHints가 미리 계산해 sceneRef에 실어준
+  // assignedMode를 그대로 사실로 박아 넣는다(그 모드의 7색 팔레트 전체를 인용). 재생성/
+  // 단일 씬 생성처럼 이웃 씬 맥락이 없는 경로는 assignedMode가 없으므로, 5개 모드를
+  // 전부 나열해서 AI가 직접 판별하게 하되 A가 기본값임을 강하게 못박는다.
+  const modeHint = stylePreset.id === 'flat_editorial'
+    ? (sceneRef.assignedMode
+        ? `\n⚠️ [SCENE PALETTE — CODE-ASSIGNED FACT, NOT YOUR JUDGMENT CALL]\nThis scene is MODE ${sceneRef.assignedMode} — ${FLAT_EDITORIAL_MODE_PALETTES[sceneRef.assignedMode].label}. Build it from exactly these seven colours: ${FLAT_EDITORIAL_MODE_PALETTES[sceneRef.assignedMode].colors.join('; ')}. Do not import colours from another mode. Wide areas take the low-saturation colours; high-saturation colours appear only in the small shapes noted above.`
+        : `\n⚠️ NO PRE-ASSIGNED SCENE MODE: analyze this segment yourself and pick exactly ONE of these five modes, never blend them — A 기본 서술 (default: low-saturation cream/pale-teal/slate/taupe; use this unless the content below clearly matches one of the others; roughly 60% of scenes should be A), C 집회·깃발 (protest/rally/crowd/flags/march — A's low-saturation background plus small high-chroma flag/banner/uniform accents only), E 밤 (night/midnight/after dark — locked blue palette, hue 200-222°, only small warm window or fire point-lights), D 전쟁·격정 (battle/bombing/massacre/screaming/fire — the ONLY mode where a saturated orange/red sky and dominant rust/amber tones are allowed, characters render as black silhouettes — use ONLY when the script explicitly depicts violent conflict), F 노을·황혼 (sunset/dusk — ONLY when the script explicitly says 노을/석양/해질/황혼; keep saturation LOW, roughly S 0.28-0.60 — a highly saturated orange sunset is wrong). When in doubt, choose A.`)
     : ''
 
   const locationInfo = (() => {
@@ -1134,7 +1188,7 @@ ${noStyleRecapRule}${noHanbokDriftRule}${variedAngleRule}
 ⚠️ DO NOT DEFAULT TO FAMILIAR NAMED CHARACTERS. Before writing imagePrompt/involvedCharacters, first identify WHO or WHAT this exact script segment is actually about — it may be a different named character, an unnamed/anonymous party (a spy, an enemy commander, a crowd, an official), an object, or a location — NOT necessarily the character you used in the previous scene or the most "important" character in the roster.
 ⚠️ If the segment describes another party's action, plan, or scheme (e.g. an opposing side plotting, an unnamed messenger, a court receiving news), depict THAT party doing THAT specific thing. Do not substitute a more familiar character sitting on a throne or reacting generically just because it feels safer — read the segment's actual subject and verb.
 ⚠️ ADJACENT SCENE REDUNDANCY BAN: Do NOT reuse the same short quote, dialogue line, location, or emotional beat that a neighboring scene (same rough position in the story, e.g. consecutive scene IDs) would already cover. If the assigned segment overlaps in content with what a nearby scene likely depicts, find a distinct, more specific sub-moment, detail, or angle from THIS segment's exact wording instead of repeating the same iconic line or shot.`)}
-${lightingHint}
+${modeHint}
 [STYLE]: ${stylePreset.prompt}
 
 ${resilienceNote}`
@@ -1305,7 +1359,7 @@ export async function generateAllScenes(scriptText, bible, stylePreset, lang, on
   const bibleCtx     = { ...bible, _fullScript: scriptText }
   const rawScenesSplit = await splitScriptToScenes(scriptText, maxScenes, visualMode)
   const rawScenesNamed = attachCharacterContinuityHints(rawScenesSplit, bible.characters)
-  const rawScenes    = attachLightingHints(rawScenesNamed, stylePreset)
+  const rawScenes    = attachSceneModeHints(rawScenesNamed, stylePreset)
   const total        = rawScenes.length
   const results      = new Array(total).fill(null)
 
