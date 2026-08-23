@@ -1,6 +1,6 @@
 import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, parseJson } from './gemini.js'
 import { Type } from '@google/genai'
-import { LANG_CONFIGS, detectLanguage, cleanScript } from '../data/languages.js'
+import { LANG_CONFIGS, detectLanguage, cleanScript, resolveCultureContext } from '../data/languages.js'
 
 const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
@@ -11,7 +11,9 @@ export async function generateContinuityBible(scriptText, stylePreset) {
   const conf   = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
   const cleaned = cleanScript(scriptText)
 
-  console.log(`[CineBoard] 대본 언어 감지: ${lang.toUpperCase()} → ${conf.ethnicityHint.split('.')[0]}`)
+  // 대본 언어가 아니라 대본이 실제로 다루는 시대·지역에서 외형/복식을 정한다.
+  const culture = resolveCultureContext(lang, cleaned)
+  console.log(`[CineBoard] 대본 언어 감지: ${lang.toUpperCase()} → 무대: ${culture.native ? '자국 배경 (언어 기본값 적용)' : '해외/타시대 배경 (대본에서 외형 추론)'}`)
 
   const isIllustration = /illustration|artwork|painting|manhwa|webtoon|anime|ghibli|watercolor|ink wash|clay|wool|diorama|fairy|folklore|3d.*anim|pixar/i.test(stylePreset.prompt)
   const faceRule = isIllustration
@@ -40,7 +42,7 @@ Extract 4~9 locations (not just 3), and vary indoor ROOM TYPES — do not just r
 ⚡ [VISUAL STYLE TARGET]: ${stylePreset.prompt}
 
 [CHARACTER CULTURE CONTEXT]:
-${conf.ethnicityHint}
+${culture.ethnicityHint}
 
 [CHARACTER VISUAL PROMPT REQUIREMENTS - MANDATORY]:
 ⚠️ NON-HUMAN EXCEPTION (CRITICAL): If the character is an animal, object, or abstract concept, DO NOT force human features on them. Describe their NATURAL physical form. NEVER give them human hair, human clothes, a human face, or human limbs unless explicitly stated they are anthropomorphized.
@@ -66,7 +68,7 @@ Extract ONLY the SINGLE most iconic core identity of each character. DO NOT spli
 ⚠️ ILLUSTRATIVE ANECDOTE EXCLUSION — NARROW SCOPE, DO NOT OVER-APPLY: Self-help/lecture-style scripts sometimes use a throwaway HYPOTHETICAL example ("한 사람이 있었습니다", "직장에서 명퇴 후 작은 가게를 차렸다가...") — a nameless or thinly-sketched invented person used ONCE to illustrate a point, then never mentioned again. Exclude ONLY this narrow case.
 ⚠️ THIS EXCLUSION DOES NOT APPLY to real named people in a historical/biographical script — family members, rivals, allies, victims, or other figures who are named and appear or are referenced more than once, even if the video's title/framing centers on ONE main figure. A biography naturally has a supporting cast (e.g. a king's father, siblings, spouse, children, political enemies) — extract EVERY named person who recurs, not just the title character. When in doubt, extract the character rather than excluding them.
 ⚠️ TITLE-ALIAS COUNTING RULE — CRITICAL, COMMONLY MISSED: the SAME person is often called by DIFFERENT titles at different points (e.g., a queen consort becomes a queen dowager after her husband's successor takes the throne: "인목왕후" → "인목대비"; a prince becomes a king). Before deciding a person is "only mentioned once," CHECK whether an earlier/later different title refers to the SAME individual and COMBINE those mentions — do not undercount a recurring person just because their title changed. Also: a character who DIES partway through the story (including a child who dies young) is NOT automatically minor — if their birth, life, or death is a specific plot event the script describes, extract them as a real character with their own visualPrompt, even though their sole role is being born, imprisoned, or dying. Do not skip a character just because they never speak or act with agency.
-${conf.costumeHierarchy}
+${culture.costumeHierarchy}
 
 [ENVIRONMENT DNA ("environment" FIELD) - MANDATORY GUIDANCE]:
 ⚠️ This "environment.visualPrompt" text is glued onto EVERY SINGLE SCENE in the entire video, no matter how different each scene's actual moment is. Write it as a NEUTRAL, REUSABLE BASE PALETTE only — NOT a fixed mood/lighting commitment.

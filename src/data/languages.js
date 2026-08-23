@@ -200,3 +200,96 @@ You MUST determine each character's ethnicity from their NAME and the SCRIPT'S C
     dialogueRule: 'Dialogue must be under 35 Korean characters.',
   },
 }
+
+// ─── 대본의 "언어"와 대본의 "배경"을 분리한다 ────────────────────────────────
+// LANG_CONFIGS의 ethnicityHint / costumeHierarchy는 대본 "언어"만 보고 붙는다.
+// 그래서 한국어로 쓴 세계사 대본("세 종교는 어디서 갈라졌나": 아브라함, 메소포타미아,
+// 로마, 오스만)에도 "Korean appearance, Korean names, Korean cultural context by
+// default"와 조선 복식 위계(곤룡포, 관복+사모, 도포+갓)가 그대로 주입돼,
+// 메소포타미아 인물이 동아시아 얼굴에 조선 관복 차림으로 생성되는 문제가 있었다.
+//
+// ⚠️ 다만 이 채널의 대본 대부분은 실제로 한국사다. 그래서 판별을 "한국이라는 증거가
+// 있을 때만 한국"으로 짜면 안 된다 — 광해군 한 명만 다루면서 "조선"을 한 번도 안 쓰는
+// 대본이 얼마든지 있고, 그런 대본이 외국인으로 생성되면 더 큰 사고다.
+// 기본값은 언어 설정(한국어 → 한국인) 그대로 두고, 대본이 명백히 다른 시대·지역을
+// 무대로 할 때만 푼다. 판단은 두 신호를 함께 본다:
+//   - 한국 신호가 하나라도 있으면 → 한국 (외국 신호가 섞여 있어도 한국사 대본으로 본다.
+//     한국사에는 명나라·일제·몽골이 얼마든지 등장한다)
+//   - 한국 신호가 전혀 없고 + 외국 무대 신호가 2종류 이상이면 → 대본에서 외형을 끌어온다
+//   - 둘 다 애매하면 → 기본값(언어 설정) 유지
+// 한국 왕조·국가를 직접 가리키는 토큰 — 하나만 나와도 한국사 대본으로 본다.
+// (세계사 대본에서 우연히 등장하는 일이 사실상 없다)
+const KOREA_DYNASTY = /조선|고려|신라|백제|고구려|발해|고조선|대한제국|대한민국|한반도|한국전쟁|임진왜란|병자호란|일제강점기|훈민정음|한양|경복궁|창덕궁|덕수궁|판문점|휴전선|삼팔선|38선/
+
+// 한국을 가리키지만 세계사 대본에도 비교·단위로 한두 번 나올 수 있는 토큰.
+// 실제 대본 측정값: 한국사 대본 22~106회 / 세계사 대본 0~2회 — 개수로 가른다.
+// ⚠️ 일반 단어와 겹치는 토큰(전하→"전하죠", 가야→"오가야", 세자→"납세자",
+//    임금→임금 인상, 대비→대비하다)은 넣지 않는다. 오탐의 원인이었다.
+const KOREA_WEAK = /한국|서울|남한|북한|국군|우리나라|한강|한복|한옥|양반|사대부|선비|사또|서당|과거시험|훈련도감|판서|정승|대감|이순신|세종대왕|정약용|안중근|김구|유관순|장영실|신사임당|왕건|광개토|을지문덕|계백|김유신|흥선대원군|인천상륙|낙동강|압록강|두만강/g
+const KOREA_WEAK_MIN = 5
+
+// 외국 무대 신호 — 종류별로 묶어서, 2종류 이상 걸릴 때만 "확실한 외국 배경"으로 본다
+const FOREIGN_SETTING_GROUPS = [
+  /메소포타미아|바빌론|수메르|아시리아|가나안|유프라테스|티그리스/,
+  /이집트|파라오|나일|피라미드|스핑크스/,
+  /로마|비잔틴|콘스탄티노플|카이사르|콜로세움|원로원|교황|바티칸/,
+  /그리스|아테네|스파르타|올림포스|헬라/,
+  /예루살렘|유대|이스라엘|팔레스타인|메카|메디나|카바|성전산|십자군/,
+  /오스만|술탄|이스탄불|튀르키예|아라비아|베두인/,
+  /페르시아|테헤란|조로아스터/,
+  /프랑스|파리|영국|런던|잉글랜드|독일|베를린|스페인|이탈리아|합스부르크|중세 유럽/,
+  /인도|무굴|갠지스|힌두/,
+  /잉카|마야|아즈텍|아메리카 원주민/,
+  /아브라함|모세|예수|무함마드|하갈|이스마엘|야곱|사라/,
+  /아프리카|사하라|콩고|나이지리아|에티오피아|케냐|사헬|짐바브웨|말리|가나 제국/,
+  /앙코르|캄보디아|크메르|인도네시아|자바|보로부두르|수마트라|태국|베트남|미얀마|라오스/,
+  /중국|중화|베이징|자금성|만리장성|명나라|청나라|당나라|송나라|원나라|진시황|실크로드/,
+  /일본|도쿄|교토|오사카|에도|막부|사무라이|쇼군|메이지 유신/,
+  /몽골|칭기즈|초원 제국/,
+  /러시아|모스크바|소련|차르|시베리아/,
+  /북유럽|바이킹|스칸디나비아|노르드/,
+]
+
+const DERIVE_FROM_SCRIPT_HINT =
+  'Derive each character\'s ethnicity, features and clothing from the ERA and REGION this script itself describes — ' +
+  'not from the language the script is written in. A script written in Korean about Mesopotamia, Rome, medieval Europe ' +
+  'or the Ottoman world has NO Korean characters in it. Read the script\'s own place names, period markers and personal ' +
+  'names, and state the matching appearance explicitly (e.g. ancient Near Eastern, Semitic, Mediterranean, North African, ' +
+  'Persian, Turkic, Northern European). Never default to Korean or East Asian appearance for these characters.'
+
+// 이 대본의 무대가 대본 언어의 문화권인지 판별한다. 애매하면 true(기본값 유지).
+export function isNativeSetting(lang, scriptText) {
+  const text = scriptText || ''
+  if (lang !== 'ko') return true                        // 판별 규칙이 있는 건 한국어뿐
+  if (KOREA_DYNASTY.test(text)) return true             // 왕조·국가명이 나오면 한국사
+  const weak = (text.match(KOREA_WEAK) || []).length
+  if (weak >= KOREA_WEAK_MIN) return true               // 한국 관련어가 충분히 반복되면 한국사
+  const foreign = FOREIGN_SETTING_GROUPS.filter(re => re.test(text)).length
+  return foreign < 2                                    // 외국 무대 신호가 2종류 미만이면 기본값 유지
+}
+
+// 씬 단위 재판별 — 한 대본 안에서 무대가 갈리는 경우를 위한 것.
+// 예: "동양의 거대 유적" 대본은 인도네시아·이집트·앙코르를 다루면서 중간에
+// 광개토대왕릉 논쟁 챕터가 들어간다. 대본 전체로는 한국사로 판정되지만
+// 앙코르와트 씬에 조선 복식이 붙으면 안 된다.
+// 씬 원문에 신호가 없으면 대본 전체 판정을 그대로 따른다.
+export function resolveSceneCulture(segmentText, fallback) {
+  const t = segmentText || ''
+  if (!t) return fallback
+  const korean = KOREA_DYNASTY.test(t) || (t.match(KOREA_WEAK) || []).length > 0
+  if (korean) return LANG_CONFIGS.ko.costumeHierarchy
+    ? { ethnicityHint: LANG_CONFIGS.ko.ethnicityHint, costumeHierarchy: LANG_CONFIGS.ko.costumeHierarchy, native: true }
+    : fallback
+  const foreign = FOREIGN_SETTING_GROUPS.some(re => re.test(t))
+  if (foreign) return { ethnicityHint: DERIVE_FROM_SCRIPT_HINT, costumeHierarchy: '', native: false }
+  return fallback
+}
+
+// 이 대본에 실제로 써야 할 외형/복식 지침을 돌려준다.
+export function resolveCultureContext(lang, scriptText) {
+  const conf = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
+  if (isNativeSetting(lang, scriptText)) {
+    return { ethnicityHint: conf.ethnicityHint, costumeHierarchy: conf.costumeHierarchy, native: true }
+  }
+  return { ethnicityHint: DERIVE_FROM_SCRIPT_HINT, costumeHierarchy: '', native: false }
+}

@@ -10,13 +10,43 @@ const TEXT_ALLOWED_STYLE_IDS = new Set(['issue_youtube', 'bright_info'])
 // ─── 왕족 복식 판별 — 왕(익선관/곤룡포)과 왕비/대비(활옷·원삼/봉황)를 구분 ─────
 // 이전엔 "왕비"도 "왕"에 포함돼 매칭되면서 왕 전용 익선관+곤룡포를 왕비한테도
 // 그대로 붙이던 버그가 있었음 — 여성 왕족 키워드를 먼저 검사해 분리한다.
-const QUEEN_KEYWORDS = /왕비|중전|왕후|황후|대비|\bqueen\b/i
-const KING_KEYWORDS  = /왕(?!비|후)|세자|대왕|황제|임금|전하|주상|상왕|\bking\b|crown prince/i
+//
+// ⚠️ 익선관·곤룡포·활옷·원삼은 한국 왕조 전용 복식이다. 그런데 왕족 키워드만 보고
+// 태그를 붙이다 보니 세계사 대본에도 조선 관복이 붙는 사고가 났다("세 종교는 어디서
+// 갈라졌나" 대본 — 콘스탄티누스 황제, 에드워드 1세, 필리프 4세가 전부 곤룡포 차림으로
+// 생성됨). 원인이 두 겹이었다:
+//   (1) 왕(?!비|후)가 "왕국/왕조/왕권"의 왕까지 매칭 — 왕이 등장하지도 않는 씬에 태그가 붙음
+//   (2) 매칭되면 시대·지역 판별 없이 무조건 한국 복식을 지정
+// 애매한 호칭(왕/대왕/황제/king/queen)은 한국 왕조 맥락이 확인될 때만 태그를 붙이고,
+// 외국 군주 신호가 있으면 붙이지 않는다. 한국 전용 호칭(세자/임금/전하/주상/중전 등)은
+// 그 자체가 한국 맥락이므로 그대로 통과시킨다.
+
+// 한국에서만 쓰는 왕실 호칭 — 이것만으로 한국 맥락이 확정된다
+const KR_ONLY_KING  = /세자|임금|전하|주상|상왕|국왕|대군/i
+const KR_ONLY_QUEEN = /왕비|중전|왕후|대비|빈궁|후궁/i
+// 여러 문화권에 공통인 호칭 — 한국 맥락이 따로 확인돼야 한다
+const AMBIG_KING    = /왕(?!비|후|국|조|권|좌|위|실|족|가)|대왕|황제|\bking\b|crown prince|emperor/i
+const AMBIG_QUEEN   = /황후|\bqueen\b|empress/i
+// 한국 왕조 맥락 신호
+const KOREAN_CONTEXT = /조선|고려|신라|백제|고구려|발해|가야|대한제국|한양|도성|경복궁|창덕궁|한복|사극|양반|사대부|joseon|goryeo|silla|korean|minhwa|hanbok|sageuk/i
+// 외국 군주 신호 — 있으면 한국 복식을 붙이지 않는다
+const FOREIGN_MONARCH = /로마|비잔틴|스페인|프랑스|영국|잉글랜드|독일|오스트리아|러시아|오스만|투르크|술탄|파라오|이집트|바빌론|메소포타미아|페르시아|아시리아|유럽|중국|명나라|청나라|일본|막부|천황|쇼군|교황|차르|합스부르크|칼리프|무굴|\broman\b|\bbyzantine\b|spanish|french|english|british|german|ottoman|sultan|pharaoh|\bpope\b|\btsar\b|caliph|mughal|persian|babylon|mesopotam/i
+
 const ROYAL_KEYWORDS = /왕(?!자녀|실)|세자|왕비|중전|왕후|대왕|황제|황후|임금|전하|주상|대비|상왕|\bking\b|\bqueen\b|crown prince/i
 
 function getRoyalAttireTag(text) {
-  const isQueen = QUEEN_KEYWORDS.test(text)
-  const isKing  = !isQueen && KING_KEYWORDS.test(text)
+  const t = text || ''
+  // 한국 전용 호칭이면 맥락 확인 없이 통과
+  const krKing  = KR_ONLY_KING.test(t)
+  const krQueen = KR_ONLY_QUEEN.test(t)
+  let isQueen = krQueen
+  let isKing  = !krQueen && krKing
+  if (!isQueen && !isKing) {
+    // 애매한 호칭 — 한국 맥락이 있고 외국 군주 신호가 없을 때만
+    if (FOREIGN_MONARCH.test(t) || !KOREAN_CONTEXT.test(t)) return ''
+    isQueen = AMBIG_QUEEN.test(t)
+    isKing  = !isQueen && AMBIG_KING.test(t)
+  }
   if (isQueen) {
     return ' [👑ROYALTY (QUEEN / QUEEN CONSORT / DOWAGER) — CONTEXT-DEPENDENT ATTIRE: In formal/official scenes (throne room, court, ceremonies) → 활옷(hwarot, ornate crimson ceremonial robe with wide sleeves) or 원삼(wonsam, formal court robe), richly embroidered with 봉황(phoenix) motifs in gold, elaborate ceremonial headdress (족두리 or 대수) with ornaments. ⚠️ NEVER 익선관 (that headwear is King-only) and NEVER 곤룡포 dragon robe (that is King-only attire). In private/informal scenes → elegant 당의(dangui) or formal hanbok appropriate to her rank. Use scene context to decide.]'
   }
@@ -296,7 +326,7 @@ export async function generateSceneImage(
         const idx = bible.characters.findIndex(b => b.name === c.name)
         const tag = `ACTOR-${String.fromCharCode(65 + (idx !== -1 ? idx : i))}`
         const protagonist = c.isProtagonist ? ' [★PROTAGONIST]' : ''
-        const royalTag = getRoyalAttireTag(`${c.description || ''} ${c.name || ''}`)
+        const royalTag = getRoyalAttireTag(`${c.description || ''} ${c.name || ''} ${scene.setting || ''} ${stylePreset.id || ''}`)
         return `[${tag}]${protagonist}${royalTag} AGE: ${c.age}${c.gender ? `, GENDER: ${c.gender}` : ''}. APPEARANCE: ${c.visualPrompt}`
       }).join('\n')
     : '(no specific characters - focus on environment and atmosphere)'
@@ -472,9 +502,11 @@ async function generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, 
 
   const fixedCharPrompt = fixedCharStyleType ? getFixedCharPrompt(fixedCharStyleType, fixedCharSampleImage) : ''
 
-  // imagePrompt에서도 곤룡포 관련 blue 제거
+  // imagePrompt에서도 곤룡포 관련 blue 제거 — 단 곤룡포 태그가 실제로 붙은 씬에서만.
+  // 예전엔 ROYAL_KEYWORDS만 보고 치환해서, 조선과 무관한 대본의 파란 옷·파란 소매까지
+  // 주홍으로 바뀌던 문제가 있었다.
   let imagePromptText = scene.imagePrompt || scene.imagePromptKo || ''
-  if (ROYAL_KEYWORDS.test(castInfo)) {
+  if (castInfo.includes('👑ROYALTY (KING)')) {
     imagePromptText = imagePromptText.replace(/\b(blue|azure|cobalt)\b(?=.*(?:sleeve|robe|inner|cuff|collar|fabric))/gi, 'vermillion red')
   }
   const actionText = scene.action || ''

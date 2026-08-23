@@ -1,6 +1,6 @@
 import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, parseJson } from './gemini.js'
 import { Type } from '@google/genai'
-import { LANG_CONFIGS, detectLanguage, cleanScript } from '../data/languages.js'
+import { LANG_CONFIGS, detectLanguage, cleanScript, resolveCultureContext, resolveSceneCulture } from '../data/languages.js'
 
 const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
@@ -943,6 +943,15 @@ function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate
 - ⚠️ [NO SUBSTITUTE PRESENTER — CLOSING THE LOOPHOLE]: The presenter-and-audience ban is NOT satisfied just by swapping in a NAMED character (the historical figure, [ACTOR-A], etc.) instead of an anonymous presenter. If the narration at this point is the modern narrator/host's own meta-commentary about the video itself (e.g. "오늘 이 이야기가 끝날 때쯤이면", "이 네 가지를 알려드리겠습니다", intro/outro, subscribe requests) — this is the HOST's voice, not something the historical figure ever said or did. Do NOT depict the historical figure standing at a podium/stage, gesturing calmly to an unseen audience, or otherwise performing the host's narration — that is the exact banned pattern wearing a different name. Before tagging the historical figure into a scene, re-check whether the segment is literally HIS OWN words/actions from his own story, or the modern host talking about the video — only the former justifies showing him.
 ` : ''
 
+  // ─── 외형/복식 문화 맥락 ────────────────────────────────────────────────
+  // langConfig(대본 언어)만 보고 붙이면, 한국어로 쓴 세계사 대본에도 한국인 외형과
+  // 조선 복식 위계가 주입된다. generateAllScenes가 전체 대본으로 미리 판별해
+  // bible._culture에 실어 보내고, 단일 씬/재생성 경로에서는 여기서 즉석 계산한다.
+  const cultureSource = bible._fullScript || sceneRef.fullScriptSegment || sceneRef.scriptReference || ''
+  const baseCulture = bible._culture ?? resolveCultureContext(detectLanguage(cultureSource), cultureSource)
+  // 혼합 대본을 위해 이 씬 원문으로 한 번 더 좁힌다 — 신호가 없으면 대본 전체 판정을 따른다.
+  const culture = resolveSceneCulture(sceneRef.fullScriptSegment || sceneRef.scriptReference || '', baseCulture)
+
   const isInfoviz = visualMode === 'infoviz'
   const withTextInt = isImageTextEnabled && (visualMode === 'content' || visualMode === 'infoviz')
   const visualModeInstruction = getVisualModeInstruction(visualMode, withTextInt)
@@ -1104,7 +1113,7 @@ ${visualModeInstruction}
 ⚠️ NAMED actors listed above are the FOCAL POINT. Their appearance (age/outfit/hair) is ISOLATED — do NOT mix between actors.
 ⚠️ IF Historical Drama (사극): dragon robes(용포) = 왕/세자 ONLY. Political power ≠ royalty — even the most powerful minister wears 관복/사모관대 with 흉배, NEVER 용포. IF Modern: NO traditional clothes.
 ⚠️ HEADWEAR RULE: When a character wears 사모, 갓, 익선관, or any traditional hat — ALL hair is completely hidden inside the hat. NEVER describe or render visible hair protruding above or outside the hat.
-${langConfig.costumeHierarchy || ''}
+${culture.costumeHierarchy || ''}
 ⚠️ RANK-AT-TIME-OF-SCENE (사극 CRITICAL): If a character's description contains a STATUS TRANSITION note (e.g., 수양대군→세조), dress them according to their rank AT THE MOMENT of THIS script segment — NOT their final rank. If the segment is set BEFORE coronation/ascension, they wear pre-royal costume (도포, 왕자복, 갑옷 etc.), NOT 용포/익선관. Only dress them as king AFTER the coronation moment in the script.
 ⚠️ AGE-AT-TIME-OF-SCENE (LIFE-SPANNING BIOGRAPHIES): the character's reference portrait/visualPrompt reflects ONE representative "prime" age. If THIS segment's chronological moment is clearly a DIFFERENT life stage than that (e.g., them as a teenager/young adult decades before their reign, or as an old/dying person decades after it), you MUST explicitly describe the age-appropriate differences in imagePrompt so the rendered age matches the story moment, not just the reference: for a YOUNGER moment — smooth unlined skin, dark/full hair, leaner build, more energetic posture; for an OLDER moment — visible grey/white hair, deeper wrinkles, frailer or more weathered build, slower posture. Do not let a fixed reference identity keep every scene looking like the same middle-aged snapshot regardless of what point in their life this segment describes.
 ⚠️ CRITICAL APPEARANCE OVERRIDE: YOU MUST COMPLETELY IGNORE the script's clothing descriptions.
@@ -1113,7 +1122,7 @@ ${langConfig.costumeHierarchy || ''}
 ⚠️ ANTI-CLONE PROTOCOL (CRITICAL!):
    - If you add background figures (staff, passersby), you MUST explicitly describe them as "faceless, distant, generic silhouettes".
    - NEVER describe a background character doing the exact same action or wearing the same clothes as the [ACTOR].
-⚠️ ANONYMOUS/UNNAMED CHARACTER ETHNICITY (CRITICAL — COMMONLY MISSED): Named actors above already carry ethnicity in their reference. But when imagePrompt describes a person with NO name tag — a generic placeholder like "an elderly person", "a middle-aged woman", "a farmer" — that description carries NO ethnicity by default, and the image model tends to default to a Western appearance unless told otherwise. Whenever you describe such an anonymous person, explicitly state their ethnicity/appearance matching this script's cultural context: ${langConfig.ethnicityHint || 'appearance matching the script\'s own cultural setting'}. Do NOT leave an anonymous character's ethnicity unstated.
+⚠️ ANONYMOUS/UNNAMED CHARACTER ETHNICITY (CRITICAL — COMMONLY MISSED): Named actors above already carry ethnicity in their reference. But when imagePrompt describes a person with NO name tag — a generic placeholder like "an elderly person", "a middle-aged woman", "a farmer" — that description carries NO ethnicity by default, and the image model tends to default to a Western appearance unless told otherwise. Whenever you describe such an anonymous person, explicitly state their ethnicity/appearance matching this script's cultural context: ${culture.ethnicityHint || 'appearance matching the script\'s own cultural setting'}. Do NOT leave an anonymous character's ethnicity unstated.
 ${visualModeInstruction ? `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${visualModeInstruction}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${directorMode} — HIGHEST PRIORITY]
@@ -1356,7 +1365,7 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
 // ─── 전체 씬 생성 (어댑티브 동시성) ──────────────────────────────────────────
 export async function generateAllScenes(scriptText, bible, stylePreset, lang, onProgress, maxScenes = 30, currentMode = 'normal', visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false) {
   const langConfig   = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
-  const bibleCtx     = { ...bible, _fullScript: scriptText }
+  const bibleCtx     = { ...bible, _fullScript: scriptText, _culture: resolveCultureContext(lang, scriptText) }
   const rawScenesSplit = await splitScriptToScenes(scriptText, maxScenes, visualMode)
   const rawScenesNamed = attachCharacterContinuityHints(rawScenesSplit, bible.characters)
   const rawScenes    = attachSceneModeHints(rawScenesNamed, stylePreset)
