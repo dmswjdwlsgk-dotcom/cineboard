@@ -1372,12 +1372,13 @@ ${i||"(없음)"}
 [에디토리얼 씬 규칙]:
 - action: 핵심 정보/사실을 1~2문장으로 압축. 숫자·통계·날짜 적극 활용.
 - dialogue: 해설자 나레이션 또는 인용구 (약 8초 분량). 화자명 포함 금지.
-- imagePrompt (영어): 인포그래픽 비주얼 묘사. 그래프·차트·아이콘·지도·타임라인 등 데이터 시각화 요소 포함 가능. 텍스트 레이블 허용.
+- imagePrompt (영어): 인포그래픽 비주얼 묘사. 그래프·차트·아이콘·지도·타임라인 등 데이터 시각화 요소 포함 가능. 텍스트 레이블 허용(단, 레이블/문구의 실제 내용은 대본 언어로 작성 — 아래 참조).
 - shotType: "Infographic", "Data Visualization", "Explainer", "Timeline", "Chart" 중 택일.
 - involvedCharacters: 실제 등장 인물만 (없으면 빈 배열).
 
 ${r.outputInstruction}
-⚠️ imagePrompt는 반드시 영어로 작성. 300자 이상 상세하게.
+⚠️ imagePrompt의 지문(연출 묘사)은 반드시 영어로 작성. 300자 이상 상세하게.
+⚠️ 단, imagePrompt 안에서 이미지에 박힐 텍스트(정보 상자/말풍선/그래프 라벨 등)의 실제 문구는 대본 언어(한국어)로 작성하고 따옴표로 감싸서 지정할 것. 예: a navy info box with Korean text "25,000년 전" — "in English" 같은 지시를 절대 넣지 말 것.
 RESILIENCE: If content is blocked, return a safe/neutral version. NEVER return null or empty strings.`}const q_={issue_youtube:`[📰 HIGH-END DOCUMENTARY & INFOGRAPHIC DIRECTOR MODE — PRIMARY DIRECTIVE, REPLACES GENERIC CINEMATOGRAPHY]
 당신은 '지식한입', '슈카월드' 스타일의 하이엔드 다큐멘터리 자료 화면 및 인포그래픽 디렉터입니다. 대본 내용을 가장 효과적으로 전달할 [최적의 비주얼 포맷] 하나를 선택해 고퀄리티 imagePrompt를 작성합니다. 단순 텍스트 나열이 아니라 시각적 연출(Visual Storytelling)이 핵심입니다.
 
@@ -1410,7 +1411,7 @@ RESILIENCE: If content is blocked, return a safe/neutral version. NEVER return n
 - TV 뉴스 자막바(Ticker), 방송국 로고, 프레임 절대 금지 — 유튜브 썸네일/다큐멘터리 인서트 컷처럼 세련되게.
 - 색감: 신뢰감 있는 네이비/블랙/다크그레이 베이스 + 골드/레드/블루 포인트 컬러.
 - 이미지 내 텍스트에 괄호와 다른 언어 병기 금지 — 대본 언어로만 표기.
-- imagePrompt(영어)에 위에서 고른 모드의 텍스트 요소(정보 상자, 말풍선, 그래프 라벨 등)를 구체적으로 영어로 묘사하십시오 — 이 스타일은 이미지 안에 텍스트가 있는 것이 정상입니다.
+- imagePrompt의 연출 지문 자체는 영어로 작성하되, 위에서 고른 모드의 텍스트 요소(정보 상자, 말풍선, 그래프 라벨 등)를 구체적으로 묘사할 때 그 문구의 실제 내용은 대본 언어(한국어)로 작성하고 따옴표로 감싸서 지정하십시오. 예: a navy info box with Korean text "25,000년 전, 빙하기 기원?" — "in English"처럼 영어 표기를 지시하는 문구는 절대 넣지 마십시오. 이 스타일은 이미지 안에 (대본 언어) 텍스트가 있는 것이 정상입니다.
 
 [임무]
 ★ 사물/기술/제품이 핵심 주체면 모드 6, 장소/환경/분위기가 핵심이면 모드 7을 적극 활용하십시오. 인물이 언급되지 않는 대본에서 억지로 인물을 등장시키지 마십시오.
@@ -1527,7 +1528,7 @@ ${c}
 [MANDATORY SHOT TYPE RULE]:
 ⚠️ For the "shotType" field, output ONLY the exact camera shot name (e.g., "Infographic", "Object Close-up", "Wide Environment", "Quote & Person"). DO NOT add any extra descriptions.
 
-⚠️ Leave the "screenText" field as an empty string "" — this style bakes any on-image text (info boxes, speech bubbles, graph labels) directly into imagePrompt itself, described in English as part of the chosen mode above.
+⚠️ Leave the "screenText" field as an empty string "" — this style bakes any on-image text (info boxes, speech bubbles, graph labels) directly into imagePrompt itself, as part of the chosen mode above. The imagePrompt's scene description stays in English, but the actual wording of any on-image text must be written in the script's language (Korean) and wrapped in quotes — e.g. a navy info box with Korean text "25,000년 전". Never instruct "in English" for on-image text.
 
 [MANDATORY CHARACTER RULE]:
 ⚠️ For the "involvedCharacters" array, use the exact ORIGINAL KOREAN NAMES from the roster (not tags). Return an empty array [] if no named person physically appears — this is EXPECTED and CORRECT for object/place/data-focused modes.
