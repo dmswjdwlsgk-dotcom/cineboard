@@ -22,10 +22,18 @@ const TEXT_ALLOWED_STYLE_IDS = new Set(['issue_youtube', 'bright_info'])
 // 그 자체가 한국 맥락이므로 그대로 통과시킨다.
 
 // 한국에서만 쓰는 왕실 호칭 — 이것만으로 한국 맥락이 확정된다
-const KR_ONLY_KING  = /세자|임금|전하|주상|상왕|국왕|대군/i
+// ⚠️ 여기 있는 호칭은 한국 맥락 확인 없이 곧바로 조선 복식을 확정시킨다. 그래서
+//    일반명사·다른 문화권과 겹치는 단어를 넣으면 안 된다. 실측(손자병법 대본):
+//      임금 11회 — "제나라 임금", "임금의 명이라도" (고전 번역의 일반 군주 호칭)
+//      대군  4회 — "십만 대군"(大軍)이지 대군(大君)이 아니다
+//      전하  3회 — "자료마다 다르게 전하는데"
+//    셋 다 빼고 한국 왕조에서만 쓰는 호칭만 남긴다. 넘어간 호칭은 AMBIG_KING에서
+//    한국 맥락이 확인될 때만 태그가 붙는다. (c40828e에서 languages.js에 적용한 것과
+//    같은 정리 — 그때 imageApi.js가 누락됐다.)
+const KR_ONLY_KING  = /(?<!납)세자|주상|상왕|대군마마|중전마마/i
 const KR_ONLY_QUEEN = /왕비|중전|왕후|대비|빈궁|후궁/i
 // 여러 문화권에 공통인 호칭 — 한국 맥락이 따로 확인돼야 한다
-const AMBIG_KING    = /왕(?!비|후|국|조|권|좌|위|실|족|가)|대왕|황제|\bking\b|crown prince|emperor/i
+const AMBIG_KING    = /왕(?!비|후|국|조|권|좌|위|실|족|가)|대왕|황제|임금|국왕|전하(?![는죠지고며])|\bking\b|crown prince|emperor/i
 const AMBIG_QUEEN   = /황후|\bqueen\b|empress/i
 // 한국 왕조 맥락 신호
 const KOREAN_CONTEXT = /조선|고려|신라|백제|고구려|발해|가야|대한제국|한양|도성|경복궁|창덕궁|한복|사극|양반|사대부|joseon|goryeo|silla|korean|minhwa|hanbok|sageuk/i
@@ -487,10 +495,16 @@ async function generateSceneImageZImage(scene, bible, stylePreset, aspectRatio, 
 
   const castInfo = sceneChars.length > 0
     ? sceneChars.map(c => {
-        const royalText = `${c.description || ''} ${c.name || ''}`
-        const isQueen = QUEEN_KEYWORDS.test(royalText)
-        const isKing  = !isQueen && KING_KEYWORDS.test(royalText)
-        let vp = (c.visualPrompt || '').replace(/\b(blue|azure|indigo|cobalt|청색|파란|파랑)\b/gi, 'vermillion red')
+        // ⚠️ KING_KEYWORDS/QUEEN_KEYWORDS는 어디에도 정의돼 있지 않았다(ReferenceError).
+        //    문화권 판별이 들어간 getRoyalAttireTag 하나로 통일한다.
+        const royalTag = getRoyalAttireTag(`${c.description || ''} ${c.name || ''} ${scene.setting || ''} ${stylePreset.id || ''}`)
+        const isKing  = royalTag.includes('ROYALTY (KING)')
+        const isQueen = !isKing && royalTag.includes('QUEEN')
+        // 곤룡포 태그가 붙은 인물에게만 파랑→주홍 치환. 예전엔 무조건 치환해서
+        // 조선과 무관한 인물의 파란 옷까지 주홍으로 바뀌었다.
+        let vp = isKing
+          ? (c.visualPrompt || '').replace(/\b(blue|azure|indigo|cobalt|청색|파란|파랑)\b/gi, 'vermillion red')
+          : (c.visualPrompt || '')
         const costumeTag = isKing
           ? ', ENTIRELY VERMILLION RED 곤룡포 robe — NO blue fabric anywhere, ALL hair hidden inside 익선관 — NO flowing hair visible'
           : isQueen
