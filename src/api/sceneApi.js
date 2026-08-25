@@ -217,6 +217,76 @@ function attachSceneModeHints(rawScenes, stylePreset) {
   })
 }
 
+// ─── 씬 배경/피사체 분산 배정 ─────────────────────────────────────────────────
+// 색 모드(attachSceneModeHints)와 같은 이유로 존재한다. 씬 100개는 서로를 모르는
+// 100번의 독립 호출로 만들어지므로, 각 호출은 자기 문단에 대해 "가장 무난한 그림"을
+// 고른다. 그 결과 분포가 한쪽으로 쏠려도 어떤 호출도 그걸 알 수 없다.
+//
+// 손자병법 대본 100장 실측 — 연출 모드를 사극↔캐릭터로 통째로 바꿔 재생성했을 때
+// (문장은 100장 전부 새로 쓰였다: 앞 40자 일치 0장)
+//   문서·죽간 42% / 42%   얼굴 클로즈업 68% / 68%   인물 없는 컷 11% / 11%
+//   실내 52% / 49%        최다 인물 35% / 34%
+// 지침을 갈아끼워도 분포가 그대로였다. 그래서 지침이 아니라 코드가 분배한다.
+const SUBJECT_SHARE_CAP  = 0.25   // 한 인물이 차지할 수 있는 최대 비중
+const OUTDOOR_FORCE_EVERY = 2     // 실내 단서가 없는 씬 중 몇 개마다 야외를 강제할지
+const FIGURE_FREE_EVERY  = 5      // 몇 씬마다 한 번은 인물 없는 컷으로
+
+// ⚠️ 실내 쏠림은 대본이 실내를 지시해서 생기는 게 아니다. 손자병법 대본 100씬 분할
+// 실측: 실내 단서가 있는 씬은 5개뿐인데 결과물은 실내가 52%였다. 대본이 아니라 각
+// 호출이 "무난한 그림"으로 실내를 고르는 것이다. 그래서 대본 단서를 세어 상한을
+// 거는 방식(detect-then-cap)으로는 잡히지 않는다 — 실내 단서 없는 씬에 야외를
+// 직접 배정한다.
+
+// 대본 문단이 자연히 실내를 부르는지 판정. 여기 걸리는 문단이 많을수록 쏠린다.
+const INTERIOR_CUES = /서재|책상|방 안|실내|막사|장막|궁궐|전각|누각|서고|침소|대전|조정|앉아|앉은|서안|등잔|촛불/
+// 문단이 텍스트·기록을 논하는지 판정 — 두루마리/죽간 그림을 부르는 문단들이다.
+const TEXT_CUES     = /원문|구절|문장|편에|편의|기록|적었|적어|썼습니다|책|병법서|주석|번역|죽간/
+
+// 야외로 돌릴 때 쓸 배경 — 대본 어디에나 있을 수 있는 범용 카테고리로만 구성
+const OUTDOOR_FALLBACKS = [
+  'open terrain — a field, ridge, plain or road under open sky',
+  'a battlefield or a marching column seen from a distance',
+  'water — a river bank, a ford, a shoreline, a boat deck',
+  'weather and sky — rain, snow, dust, night sky, dawn light',
+  'a threshold — a gate, a city wall, a doorway seen from outside',
+  'a crowd or a street with many small figures',
+]
+
+function attachSceneSettingHints(rawScenes, visualMode) {
+  // 인포그래픽 계열은 배경 개념이 달라서 제외한다(Step4_Scenes.jsx의 EDITORIAL_MODES와 동일).
+  if (['content', 'infoviz', 'docu'].includes(visualMode)) return rawScenes
+
+  if (!rawScenes.length) return rawScenes
+
+  const subjectCount = {}
+
+  return rawScenes.map((scene, i) => {
+    const segment = scene.fullScriptSegment || scene.scriptReference || ''
+    const n       = i + 1
+
+    // ── 배경: 대본이 실내를 명시한 씬은 그대로 두고, 나머지는 주기적으로 야외를 배정한다.
+    //    (강제하지 않은 씬은 지금처럼 자유롭게 고르게 두어 대본 내용을 거스르지 않는다)
+    const wantsInterior   = INTERIOR_CUES.test(segment)
+    const forceOutdoor    = !wantsInterior && n % OUTDOOR_FORCE_EVERY === 0
+    const assignedSetting = forceOutdoor ? OUTDOOR_FALLBACKS[i % OUTDOOR_FALLBACKS.length] : ''
+
+    // ── 인물 없는 컷: 정해진 주기마다. 텍스트를 논하는 문단이면 그쪽을 우선 고른다.
+    const figureFree = n % FIGURE_FREE_EVERY === 0
+      || (TEXT_CUES.test(segment) && n % (FIGURE_FREE_EVERY * 2) === FIGURE_FREE_EVERY - 1)
+
+    // ── 인물 편중: 이어받기로 지목된 인물이 이미 상한을 넘겼으면 주인공 자리에서 뺀다
+    const carried = scene.continuityCharacterHint || ''
+    let subjectBlocked = ''
+    if (carried) {
+      const projected = ((subjectCount[carried] || 0) + 1) / n
+      if ((subjectCount[carried] || 0) >= 1 && projected > SUBJECT_SHARE_CAP) subjectBlocked = carried
+      else subjectCount[carried] = (subjectCount[carried] || 0) + 1
+    }
+
+    return { ...scene, assignedSetting, figureFree, subjectBlocked }
+  })
+}
+
 function replaceActorTags(text, characters) {
   if (!text) return text
   let result = text
@@ -1006,6 +1076,22 @@ If a named human character appears in this scene, it should almost always be one
         : `\n⚠️ NO PRE-ASSIGNED SCENE MODE: analyze this segment yourself and pick exactly ONE of these five modes, never blend them — A 기본 서술 (default: low-saturation cream/pale-teal/slate/taupe; use this unless the content below clearly matches one of the others; roughly 60% of scenes should be A), C 집회·깃발 (protest/rally/crowd/flags/march — A's low-saturation background plus small high-chroma flag/banner/uniform accents only), E 밤 (night/midnight/after dark — locked blue palette, hue 200-222°, only small warm window or fire point-lights), D 전쟁·격정 (battle/bombing/massacre/screaming/fire — the ONLY mode where a saturated orange/red sky and dominant rust/amber tones are allowed, characters render as black silhouettes — use ONLY when the script explicitly depicts violent conflict), F 노을·황혼 (sunset/dusk — ONLY when the script explicitly says 노을/석양/해질/황혼; keep saturation LOW, roughly S 0.28-0.60 — a highly saturated orange sunset is wrong). When in doubt, choose A.`)
     : ''
 
+  // 코드가 배정한 배경/피사체 분산 — modeHint(색)와 같은 방식으로 "사실"로 통보한다.
+  // AI에게 판단을 맡기면 100번의 독립 호출이 각자 무난한 쪽을 골라 분포가 쏠린다.
+  const spreadHint = (() => {
+    const parts = []
+    if (sceneRef.assignedSetting && sceneRef.assignedSetting !== 'interior') {
+      parts.push(`SETTING — CODE-ASSIGNED FACT, NOT YOUR JUDGMENT CALL: this scene must be set OUTDOORS, specifically ${sceneRef.assignedSetting}. Too many neighbouring scenes are already indoors. Even if the narration talks about a book, a document, a plan or a conversation, place THIS scene outdoors and show what the words refer to — the battle, the terrain, the march, the consequence — never a room, a study, a tent interior or a desk.`)
+    }
+    if (sceneRef.figureFree) {
+      parts.push('NO HUMAN FIGURE — CODE-ASSIGNED FACT: this scene must contain NO person at all. Use terrain, weather, architecture seen from outside, an object, an animal, tracks, wreckage, or an empty aftermath. Do NOT render anyone holding, reading, writing or pointing at anything.')
+    }
+    if (sceneRef.subjectBlocked) {
+      parts.push(`SUBJECT CAP — CODE-ASSIGNED FACT: ${sceneRef.subjectBlocked} already carries too many images in this video. Do NOT make ${sceneRef.subjectBlocked} the subject of this frame. Feature instead the event, the place, the object, the opposing side, or a secondary person this segment names.`)
+    }
+    return parts.length ? `\n⚠️ [SCENE SPREAD]\n${parts.map(p => `- ${p}`).join('\n')}` : ''
+  })()
+
   const locationInfo = (() => {
     if (!bible.locations || bible.locations.length === 0) return '(no predefined locations)'
     const setting = (sceneRef.setting || '').trim()
@@ -1125,6 +1211,7 @@ ${culture.costumeHierarchy || ''}
    - NEVER describe a background character doing the exact same action or wearing the same clothes as the [ACTOR].
 ⚠️ ANONYMOUS/UNNAMED CHARACTER ETHNICITY (CRITICAL — COMMONLY MISSED): Named actors above already carry ethnicity in their reference. But when imagePrompt describes a person with NO name tag — a generic placeholder like "an elderly person", "a middle-aged woman", "a farmer" — that description carries NO ethnicity by default, and the image model tends to default to a Western appearance unless told otherwise. Whenever you describe such an anonymous person, explicitly state their ethnicity/appearance matching this script's cultural context: ${culture.ethnicityHint || 'appearance matching the script\'s own cultural setting'}. Do NOT leave an anonymous character's ethnicity unstated.
 ${visualModeInstruction ? `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${visualModeInstruction}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` : ''}
+${spreadHint}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${directorMode} — HIGHEST PRIORITY]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1369,7 +1456,8 @@ export async function generateAllScenes(scriptText, bible, stylePreset, lang, on
   const bibleCtx     = { ...bible, _fullScript: scriptText, _culture: resolveCultureContext(lang, scriptText) }
   const rawScenesSplit = await splitScriptToScenes(scriptText, maxScenes, visualMode)
   const rawScenesNamed = attachCharacterContinuityHints(rawScenesSplit, bible.characters)
-  const rawScenes    = attachSceneModeHints(rawScenesNamed, stylePreset)
+  const rawScenesMode = attachSceneModeHints(rawScenesNamed, stylePreset)
+  const rawScenes     = attachSceneSettingHints(rawScenesMode, visualMode)
   const total        = rawScenes.length
   const results      = new Array(total).fill(null)
 
