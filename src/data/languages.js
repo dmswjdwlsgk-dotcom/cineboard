@@ -217,9 +217,13 @@ You MUST determine each character's ethnicity from their NAME and the SCRIPT'S C
 //     한국사에는 명나라·일제·몽골이 얼마든지 등장한다)
 //   - 한국 신호가 전혀 없고 + 외국 무대 신호가 2종류 이상이면 → 대본에서 외형을 끌어온다
 //   - 둘 다 애매하면 → 기본값(언어 설정) 유지
-// 한국 왕조·국가를 직접 가리키는 토큰 — 하나만 나와도 한국사 대본으로 본다.
-// (세계사 대본에서 우연히 등장하는 일이 사실상 없다)
-const KOREA_DYNASTY = /조선|고려|신라|백제|고구려|발해|고조선|대한제국|대한민국|한반도|한국전쟁|임진왜란|병자호란|일제강점기|훈민정음|한양|경복궁|창덕궁|덕수궁|판문점|휴전선|삼팔선|38선/
+// 한국 왕조·국가를 직접 가리키는 토큰.
+// ⚠️ 1회만 나와도 확정하면 안 된다 — 세계사 대본이 한국을 한 번 비교로 언급하는 일이 있다.
+// 실측: 한국사 대본 8~17회 / 한국을 스쳐 언급한 세계사 대본 1회
+// (손자병법 대본이 한산도 학익진 대목의 "조선 수군" 한 번 때문에 한국사로 확정되어
+//  100씬 전부에 조선 복식·한국인 외모가 주입됐다.)
+const KOREA_DYNASTY = /조선|고려|신라|백제|고구려|발해|고조선|대한제국|대한민국|한반도|한국전쟁|임진왜란|병자호란|일제강점기|훈민정음|한양|경복궁|창덕궁|덕수궁|판문점|휴전선|삼팔선|38선/g
+const KOREA_DYNASTY_MIN = 2
 
 // 한국을 가리키지만 세계사 대본에도 비교·단위로 한두 번 나올 수 있는 토큰.
 // 실제 대본 측정값: 한국사 대본 22~106회 / 세계사 대본 0~2회 — 개수로 가른다.
@@ -238,13 +242,13 @@ const FOREIGN_SETTING_GROUPS = [
   /오스만|술탄|이스탄불|튀르키예|아라비아|베두인/,
   /페르시아|테헤란|조로아스터/,
   /프랑스|파리|영국|런던|잉글랜드|독일|베를린|스페인|이탈리아|합스부르크|중세 유럽/,
-  /인도|무굴|갠지스|힌두/,
+  /인도양|인도 아대륙|인더스|델리|무굴|갠지스|힌두/,
   /잉카|마야|아즈텍|아메리카 원주민/,
-  /아브라함|모세|예수|무함마드|하갈|이스마엘|야곱|사라/,
+  /아브라함|모세|예수(?!회)|무함마드|하갈|이스마엘|야곱|사라의 몸종|아내 사라/,
   /아프리카|사하라|콩고|나이지리아|에티오피아|케냐|사헬|짐바브웨|말리|가나 제국/,
   /앙코르|캄보디아|크메르|인도네시아|자바|보로부두르|수마트라|태국|베트남|미얀마|라오스/,
-  /중국|중화|베이징|자금성|만리장성|명나라|청나라|당나라|송나라|원나라|진시황|실크로드/,
-  /일본|도쿄|교토|오사카|에도|막부|사무라이|쇼군|메이지 유신/,
+  /중국|중화|베이징|자금성|만리장성|명나라|청나라|당나라|송나라|원나라|진시황|실크로드|춘추전국|전국시대|삼국지|제나라|초나라|위나라|촉나라|오나라|진나라|한나라|장강|황하|중원|낙양|장안/,
+  /일본|도쿄|교토|오사카|에도 막부|에도 시대|막부|사무라이|쇼군|메이지 유신/,
   /몽골|칭기즈|초원 제국/,
   /러시아|모스크바|소련|차르|시베리아/,
   /북유럽|바이킹|스칸디나비아|노르드/,
@@ -261,7 +265,8 @@ const DERIVE_FROM_SCRIPT_HINT =
 export function isNativeSetting(lang, scriptText) {
   const text = scriptText || ''
   if (lang !== 'ko') return true                        // 판별 규칙이 있는 건 한국어뿐
-  if (KOREA_DYNASTY.test(text)) return true             // 왕조·국가명이 나오면 한국사
+  const dynasty = (text.match(KOREA_DYNASTY) || []).length
+  if (dynasty >= KOREA_DYNASTY_MIN) return true         // 왕조·국가명이 반복되면 한국사
   const weak = (text.match(KOREA_WEAK) || []).length
   if (weak >= KOREA_WEAK_MIN) return true               // 한국 관련어가 충분히 반복되면 한국사
   const foreign = FOREIGN_SETTING_GROUPS.filter(re => re.test(text)).length
@@ -276,7 +281,7 @@ export function isNativeSetting(lang, scriptText) {
 export function resolveSceneCulture(segmentText, fallback) {
   const t = segmentText || ''
   if (!t) return fallback
-  const korean = KOREA_DYNASTY.test(t) || (t.match(KOREA_WEAK) || []).length > 0
+  const korean = (t.match(KOREA_DYNASTY) || []).length > 0 || (t.match(KOREA_WEAK) || []).length > 0
   if (korean) return LANG_CONFIGS.ko.costumeHierarchy
     ? { ethnicityHint: LANG_CONFIGS.ko.ethnicityHint, costumeHierarchy: LANG_CONFIGS.ko.costumeHierarchy, native: true }
     : fallback
