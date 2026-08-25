@@ -197,7 +197,16 @@ function detectSceneModeSignal(segment) {
   return 'A'
 }
 
+// ⚠️ [1단계 A/B — 임시] flat_editorial 색 지침을 원본 기준으로 되돌리면서, 코드가 씬마다
+// 주입하던 모드 팔레트를 잠시 끈다. 프롬프트의 색 규칙과 코드의 7색 hex 지정이 동시에
+// 걸려 있으면 어느 쪽이 결과를 만들었는지 가릴 수 없기 때문. 원본 색 규칙만으로 뽑아본
+// 뒤 다시 켠다. 켤 때는 detect-then-cap이 아니라 attachSceneSettingHints(fb45f8d)처럼
+// 강제 분배 방식으로 바꿔야 한다 — 지금 방식은 96씬 중 93씬이 A로 떨어지고 캡은 한 번도
+// 발동하지 않는다(대본 3종 시뮬레이션에서 전부 0회).
+const FLAT_EDITORIAL_MODE_INJECTION = false
+
 function attachSceneModeHints(rawScenes, stylePreset) {
+  if (!FLAT_EDITORIAL_MODE_INJECTION) return rawScenes
   if (stylePreset?.id !== 'flat_editorial') return rawScenes
   const counts = { A: 0, C: 0, E: 0, D: 0, F: 0 }
   return rawScenes.map((scene, i) => {
@@ -1070,7 +1079,7 @@ If a named human character appears in this scene, it should almost always be one
   // assignedMode를 그대로 사실로 박아 넣는다(그 모드의 7색 팔레트 전체를 인용). 재생성/
   // 단일 씬 생성처럼 이웃 씬 맥락이 없는 경로는 assignedMode가 없으므로, 5개 모드를
   // 전부 나열해서 AI가 직접 판별하게 하되 A가 기본값임을 강하게 못박는다.
-  const modeHint = stylePreset.id === 'flat_editorial'
+  const modeHint = (FLAT_EDITORIAL_MODE_INJECTION && stylePreset.id === 'flat_editorial')
     ? (sceneRef.assignedMode
         ? `\n⚠️ [SCENE PALETTE — CODE-ASSIGNED FACT, NOT YOUR JUDGMENT CALL]\nThis scene is MODE ${sceneRef.assignedMode} — ${FLAT_EDITORIAL_MODE_PALETTES[sceneRef.assignedMode].label}. Build it from exactly these seven colours: ${FLAT_EDITORIAL_MODE_PALETTES[sceneRef.assignedMode].colors.join('; ')}. Do not import colours from another mode. Wide areas take the low-saturation colours; high-saturation colours appear only in the small shapes noted above.`
         : `\n⚠️ NO PRE-ASSIGNED SCENE MODE: analyze this segment yourself and pick exactly ONE of these five modes, never blend them — A 기본 서술 (default: low-saturation cream/pale-teal/slate/taupe; use this unless the content below clearly matches one of the others; roughly 60% of scenes should be A), C 집회·깃발 (protest/rally/crowd/flags/march — A's low-saturation background plus small high-chroma flag/banner/uniform accents only), E 밤 (night/midnight/after dark — locked blue palette, hue 200-222°, only small warm window or fire point-lights), D 전쟁·격정 (battle/bombing/massacre/screaming/fire — the ONLY mode where a saturated orange/red sky and dominant rust/amber tones are allowed, characters render as black silhouettes — use ONLY when the script explicitly depicts violent conflict), F 노을·황혼 (sunset/dusk — ONLY when the script explicitly says 노을/석양/해질/황혼; keep saturation LOW, roughly S 0.28-0.60 — a highly saturated orange sunset is wrong). When in doubt, choose A.`)
