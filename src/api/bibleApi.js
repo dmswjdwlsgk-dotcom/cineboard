@@ -163,6 +163,10 @@ ${conf.outputInstruction} RESILIENCE: If content is blocked, return a safe/neutr
     }
     if (!Array.isArray(bible.locations)) bible.locations = []
 
+    // 이미지 생성 단계에서도 이 대본의 무대를 알아야 한다 — 조선 왕실 복식 지침을
+    // 한국사 대본에만 붙이기 위해서. 바이블에 실어 보내면 씬 이미지 생성까지 따라간다.
+    bible.cultureNative = culture.native
+
     return bible
   }, 3, 'generateContinuityBible', { model: TEXT_MODEL, smartBackoff: true })
 }
