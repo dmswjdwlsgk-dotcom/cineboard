@@ -256,6 +256,36 @@ async function generateZImage(prompt, aspectRatio = '16:9', imageUrl = null, den
   throw new Error('Z-Image 생성 시간 초과 (30초)')
 }
 
+// ─── 스타일 프롬프트와 중복되는 고정 문구 정리 ────────────────────────────────
+// [COMPOSITION] 블록과 텍스트 금지 규칙은 스타일 프롬프트가 이미 같은 말을 하고 있는
+// 경우가 많다 — 49개 스타일 중 풀블리드 73%, 보더 금지 53%, 단일 프레임 45%,
+// 텍스트 금지 47%가 자기 문장으로 이미 담고 있다. 예를 들어 webtoon 스타일은
+//   "ONE single continuous horizontal illustration that fills the entire wide frame.
+//    No panel borders, no gutters, no dividing lines... NO text, full frame edge-to-edge"
+// 를 이미 말하는데, 그 아래에 사실상 같은 내용이 400자 더 붙는다.
+//
+// 중복 지시는 무해하지 않다. 이미지 모델은 프롬프트가 길어질수록 각 지시를 덜 따르고
+// 선·질감 같은 미세 렌더링부터 포기한다. 원본 앱(김씨네)이 씬당 약 840자를 보내는 동안
+// 이 앱은 약 3,700자를 보내고 있었고, 같은 모델·같은 1K인데 화질이 눈에 띄게 떨어졌다.
+// 스타일이 이미 말한 항목은 붙이지 않는다.
+const STYLE_COVERS = {
+  fullBleed:   /full bleed|edge.to.edge|fills? the entire|full frame/i,
+  noBorders:   /no borders?|no letterbox|no black bars|no white borders?|no panel borders/i,
+  singleFrame: /single (view|frame|panel|scene|cinematic)|one (single|unified)|no split/i,
+  noText:      /no text|no speech bubbles|no typography/i,
+}
+
+function buildCompositionRule(stylePrompt) {
+  const lines = []
+  if (!STYLE_COVERS.fullBleed.test(stylePrompt))
+    lines.push('CRITICAL LAYOUT MANDATE: The output MUST perfectly fill the entire canvas space (100% FULL BLEED).')
+  if (!STYLE_COVERS.noBorders.test(stylePrompt))
+    lines.push('ABSOLUTELY NO LETTERBOXING, NO BLACK BARS, and NO WHITE BORDERS.')
+  if (!STYLE_COVERS.singleFrame.test(stylePrompt))
+    lines.push('ONE UNIFIED SINGLE FRAME ONLY. NO picture-in-picture, NO split screen.')
+  return lines.length ? `[COMPOSITION]\n${lines.join('\n')}` : ''
+}
+
 // ─── 씬 이미지 생성 ───────────────────────────────────────────────────────────
 export async function generateSceneImage(
   scene,
@@ -351,7 +381,10 @@ export async function generateSceneImage(
     ? `⚠️ [ON-IMAGE TEXT — ALLOWED FOR THIS STYLE]:
 - This style's info boxes, speech bubbles, graph labels, and keyword callouts described in the imagePrompt SHOULD be rendered as clean, legible in-image typography.
 - Do NOT render random unrelated text, watermarks, or signatures — ONLY the specific text elements described in the imagePrompt.`
-    : `⚠️ [imagePrompt ABSOLUTE PROHIBITION — NO EXCEPTIONS]:
+    : STYLE_COVERS.noText.test(resolvedStylePrompt)
+      // 스타일이 이미 "NO text"를 말한 경우 — 스타일에 없는 항목(간판·자막·워터마크)만 짧게
+      ? 'No text, no signs, no subtitles, no watermarks anywhere in the frame.'
+      : `⚠️ [imagePrompt ABSOLUTE PROHIBITION — NO EXCEPTIONS]:
 - NO visible text, letters, words, signs, signage, banners, posters, newspapers, books with visible text, chalkboards, whiteboards, or any surface displaying readable characters.
 - NO subtitles, captions, title cards, watermarks in the scene description.
 - The scene must be PURELY VISUAL — zero textual elements in the rendered frame.`
@@ -465,10 +498,7 @@ ${backgroundExtrasNote ? `\n${backgroundExtrasNote}\n` : ''}
 - NO EYE CONTACT WITH CAMERA. NEVER look directly at the viewer.
 - ALL characters are ADULTS. NO violence, blood, or gore. Safe, PG-13 drama.
 
-[COMPOSITION]
-CRITICAL LAYOUT MANDATE: The output MUST perfectly fill the entire canvas space (100% FULL BLEED).
-ABSOLUTELY NO LETTERBOXING, NO BLACK BARS, and NO WHITE BORDERS.
-ONE UNIFIED SINGLE FRAME ONLY. NO picture-in-picture, NO split screen.
+${buildCompositionRule(resolvedStylePrompt)}
 ${noExtraMode}
 ${textRule}`.trim()
 
