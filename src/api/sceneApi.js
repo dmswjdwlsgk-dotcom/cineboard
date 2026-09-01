@@ -996,6 +996,20 @@ function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate
 
   // ⚠️ schopenhauer_victorian / joseon_painting 전용: 이 두 스타일만 STYLE 지침이 매우 길어서
   // LLM이 imagePrompt 끝에 화풍을 재요약하는 사족 문장을 붙이는 문제가 관측됨. 다른 스타일은 영향 없음.
+  // ─── 화풍 충돌 방지 ─────────────────────────────────────────────────────────
+  // 씬 생성 LLM은 [STYLE]을 받으면서도 imagePrompt에 다른 화풍을 적는 일이 있다.
+  // 웹툰으로 뽑은 30씬 중 4씬이 "dark, moody Joseon-era ink-wash painting style"
+  // 처럼 수묵화·목탄을 지시했고, 그게 [STYLE]의 "sharp clean lines, vibrant colors"와
+  // 정면으로 충돌해 결과가 무르게 나왔다. 조선시대·어두운 방·촛불 같은 맥락에서
+  // 수묵화가 그럴듯해 보이기 때문에 생기는 실수다.
+  //
+  // 화풍 언급 자체를 막지는 않는다. 원본 앱(김씨네)은 30씬 중 16씬에 webtoon/manhwa를
+  // 반복해서 넣고 충돌은 0건이며 결과가 더 선명하다 — 프롬프트 뒤쪽 씬 묘사에서 화풍을
+  // 다시 못 박는 게 오히려 도움이 된다. 금지가 아니라 잠금으로 건다.
+  const artStyleLockRule = `
+⚠️ [ART STYLE LOCK]: if imagePrompt names a rendering style or medium at all, it must name ONLY the style given in [STYLE] above, and nothing else. NEVER introduce a different medium — ink-wash/수묵화, watercolor, oil painting, painterly, charcoal, pencil sketch, woodblock, engraving, 3D render, photorealistic. This mistake happens most often in historical, dark, candlelit or contemplative scenes, where an ink-wash or painterly phrasing feels natural but directly contradicts the selected style. Describing lighting, contrast, mood and texture is fine and encouraged; naming a competing medium is not.
+`
+
   const noStyleRecapRule = ['schopenhauer_victorian', 'joseon_painting'].includes(stylePreset.id) ? `
 ⚠️ [NO STYLE-RECAP SENTENCE]: The overall art style (medium, brushwork, lighting mandate, palette) is already applied to every image by a separate system layer — do NOT open or close imagePrompt with a sentence that just restates it (e.g. "The scene is rendered as an academic oil painting with thick impasto brushstrokes and chiaroscuro lighting..."). Every word of imagePrompt should describe THIS scene's unique action, composition, or detail — a generic style-recap sentence repeats what's already guaranteed elsewhere and adds length without adding information.
 ` : ''
@@ -1278,7 +1292,7 @@ GOOD imagePrompt: "EXTREME CLOSE-UP: trembling hands clutching crumpled prescrip
 - NO subtitles, captions, title cards, watermarks in the scene description.
 - The scene must be PURELY VISUAL — zero textual elements in the rendered frame.
 
-${noStyleRecapRule}${noHanbokDriftRule}${variedAngleRule}
+${artStyleLockRule}${noStyleRecapRule}${noHanbokDriftRule}${variedAngleRule}
 [MANDATORY DIALOGUE RULE]:
 ⚠️ EVERY scene MUST have dialogue field filled:
    - Provide ONLY a short snippet (around 8 seconds of speech). DO NOT copy the entire script length here!
