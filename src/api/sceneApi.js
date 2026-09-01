@@ -1032,6 +1032,19 @@ function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate
   // 혼합 대본을 위해 이 씬 원문으로 한 번 더 좁힌다 — 신호가 없으면 대본 전체 판정을 따른다.
   const culture = resolveSceneCulture(sceneRef.fullScriptSegment || sceneRef.scriptReference || '', baseCulture)
 
+  // ─── 사극 복식 규칙 — 한국사 대본에서만 ────────────────────────────────────
+  // 용포·익선관·사모관대·관복·도포는 조선 복식이다. 그런데 아래 세 줄이 문화권 조건 없이
+  // [ACTOR RULES]에 하드코딩돼 있어서, 세계사 대본("세 종교는 어디서 갈라졌나")의 씬을
+  // 쓰는 LLM도 이 단어들을 읽고 imagePrompt에 그대로 옮겨 적었다 — 콘스탄티누스 황제가
+  // 곤룡포 차림으로 나온 경로 중 하나다. imageApi 쪽 두 경로(getRoyalAttireTag,
+  // KOREAN ROYAL ATTIRE 블록)는 막았지만 여기가 남아 있었다.
+  // 바로 아래 culture.costumeHierarchy와 같은 기준으로 묶는다.
+  const sageukCostumeRule = culture.native === false ? '' : `⚠️ IF Historical Drama (사극): dragon robes(용포) = 왕/세자 ONLY. Political power ≠ royalty — even the most powerful minister wears 관복/사모관대 with 흉배, NEVER 용포. IF Modern: NO traditional clothes.
+⚠️ HEADWEAR RULE: When a character wears 사모, 갓, 익선관, or any traditional hat — ALL hair is completely hidden inside the hat. NEVER describe or render visible hair protruding above or outside the hat.
+`
+  const sageukRankRule = culture.native === false ? '' : `⚠️ RANK-AT-TIME-OF-SCENE (사극 CRITICAL): If a character's description contains a STATUS TRANSITION note (e.g., 수양대군→세조), dress them according to their rank AT THE MOMENT of THIS script segment — NOT their final rank. If the segment is set BEFORE coronation/ascension, they wear pre-royal costume (도포, 왕자복, 갑옷 etc.), NOT 용포/익선관. Only dress them as king AFTER the coronation moment in the script.
+`
+
   const isInfoviz = visualMode === 'infoviz'
   const withTextInt = isImageTextEnabled && (visualMode === 'content' || visualMode === 'infoviz')
   const visualModeInstruction = getVisualModeInstruction(visualMode, withTextInt)
@@ -1207,11 +1220,8 @@ ${dedicatedDirector}
 ${visualModeInstruction}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` : `[ACTOR RULES]:
 ⚠️ NAMED actors listed above are the FOCAL POINT. Their appearance (age/outfit/hair) is ISOLATED — do NOT mix between actors.
-⚠️ IF Historical Drama (사극): dragon robes(용포) = 왕/세자 ONLY. Political power ≠ royalty — even the most powerful minister wears 관복/사모관대 with 흉배, NEVER 용포. IF Modern: NO traditional clothes.
-⚠️ HEADWEAR RULE: When a character wears 사모, 갓, 익선관, or any traditional hat — ALL hair is completely hidden inside the hat. NEVER describe or render visible hair protruding above or outside the hat.
-${culture.costumeHierarchy || ''}
-⚠️ RANK-AT-TIME-OF-SCENE (사극 CRITICAL): If a character's description contains a STATUS TRANSITION note (e.g., 수양대군→세조), dress them according to their rank AT THE MOMENT of THIS script segment — NOT their final rank. If the segment is set BEFORE coronation/ascension, they wear pre-royal costume (도포, 왕자복, 갑옷 etc.), NOT 용포/익선관. Only dress them as king AFTER the coronation moment in the script.
-⚠️ AGE-AT-TIME-OF-SCENE (LIFE-SPANNING BIOGRAPHIES): the character's reference portrait/visualPrompt reflects ONE representative "prime" age. If THIS segment's chronological moment is clearly a DIFFERENT life stage than that (e.g., them as a teenager/young adult decades before their reign, or as an old/dying person decades after it), you MUST explicitly describe the age-appropriate differences in imagePrompt so the rendered age matches the story moment, not just the reference: for a YOUNGER moment — smooth unlined skin, dark/full hair, leaner build, more energetic posture; for an OLDER moment — visible grey/white hair, deeper wrinkles, frailer or more weathered build, slower posture. Do not let a fixed reference identity keep every scene looking like the same middle-aged snapshot regardless of what point in their life this segment describes.
+${sageukCostumeRule}${culture.costumeHierarchy || ''}
+${sageukRankRule}⚠️ AGE-AT-TIME-OF-SCENE (LIFE-SPANNING BIOGRAPHIES): the character's reference portrait/visualPrompt reflects ONE representative "prime" age. If THIS segment's chronological moment is clearly a DIFFERENT life stage than that (e.g., them as a teenager/young adult decades before their reign, or as an old/dying person decades after it), you MUST explicitly describe the age-appropriate differences in imagePrompt so the rendered age matches the story moment, not just the reference: for a YOUNGER moment — smooth unlined skin, dark/full hair, leaner build, more energetic posture; for an OLDER moment — visible grey/white hair, deeper wrinkles, frailer or more weathered build, slower posture. Do not let a fixed reference identity keep every scene looking like the same middle-aged snapshot regardless of what point in their life this segment describes.
 ⚠️ CRITICAL APPEARANCE OVERRIDE: YOU MUST COMPLETELY IGNORE the script's clothing descriptions.
 ⚠️ USE ACTOR TAGS: Your \`imagePrompt\` and \`action\` MUST use the EXACT [ACTOR-X] tags to refer to characters instead of their names or pronouns (e.g., "[ACTOR-A] looks at [ACTOR-B]"). DO NOT hallucinate script-based clothing.
 ⚠️ NEVER CREATE CLONES: Use each ACTOR-X tag exactly once for their single physical body.
