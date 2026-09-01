@@ -343,11 +343,21 @@ export async function generateSceneImage(
       const refImg = char.referenceThumb || char.imageUrl
       if (refImg && refImg.startsWith('data:image/')) {
         try {
-          const charIdx = bible.characters.findIndex(c => c.name === char.name)
-          const tag     = `ACTOR-${String.fromCharCode(65 + charIdx)}`
-          const data    = await resizeBase64Image(refImg, 256)
+          // findIndex가 -1이면 String.fromCharCode(64)='@'가 되어 [ACTOR-@]라는
+          // 캐스트 목록에 없는 태그로 나간다 — 모델이 이 참조 이미지를 어느 인물과
+          // 연결할지 알 수 없게 된다. 캐스트 목록(아래)과 같은 방식으로 방어한다.
+          const found   = bible.characters.findIndex(c => c.name === char.name)
+          const charIdx = found !== -1 ? found : sceneChars.indexOf(char)
+          const tag     = `ACTOR-${String.fromCharCode(65 + Math.max(0, charIdx))}`
+          // 얼굴 신원 참조는 화풍 샘플(512)보다 더 큰 해상도가 필요한데 256으로 줄여
+          // 보내고 있었다. 1:1 초상 1024px을 256으로 줄이면 얼굴은 100~130px밖에 안 남아
+          // 골격·눈매를 유지할 근거가 부족해진다. 화풍 샘플과 같은 512로 올린다.
+          const data    = await resizeBase64Image(refImg, 512)
           if (data) {
-            referenceImages.push({ text: `[${tag}, reference age ${char.age}${char.gender ? `, gender ${char.gender}` : ''}] Preserve core face identity (bone structure, eye shape, facial features) — but this is a REFERENCE for identity, not a literal age lock. If the scene description below explicitly indicates a different life stage (younger: unlined skin, dark full hair, leaner; older: grey/white hair, wrinkles, frailer build), age the face UP or DOWN accordingly while keeping it recognizably the same person. Act the scene naturally.` })
+            referenceImages.push({ text: `[${tag}] FACE REFERENCE — identity only.
+- KEEP (identity): bone structure, eye shape, nose, mouth, face proportions. These do not change with age — this must read as the SAME PERSON in every scene.
+- DO NOT COPY: the clothing, headwear, hairstyle or background in this reference image. Costume comes from the scene description and the era, not from this portrait.
+- AGE TO THE SCENE: this portrait shows the character at ${char.age || 'their main life stage'}. If this scene is set at a different point in their life, render the same face at that age — younger means unlined skin, fuller darker hair, leaner build, and little or NO facial hair; older means grey or white hair, a fuller beard if the era and rank call for one, deeper wrinkles, heavier or frailer build. Wrinkles, skin, hair colour and volume, facial hair and body build all follow the AGE OF THIS SCENE, not the reference portrait. Same person, different age.${char.gender ? ` GENDER: ${char.gender}.` : ''}` })
             referenceImages.push({ inlineData: { mimeType: 'image/png', data } })
           }
         } catch (e) {
