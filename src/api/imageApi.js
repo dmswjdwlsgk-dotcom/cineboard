@@ -297,6 +297,7 @@ export async function generateSceneImage(
   currentMode      = 'normal',
   fixedCharStyleType   = null,
   fixedCharSampleImage = null,
+  worldSetting         = null,
 ) {
   const isZImage = model === 'z-image-turbo'
   model = resolveModelId(model)
@@ -487,7 +488,10 @@ ${imagePromptText || actionText}
   //     판정 기준은 languages.js의 resolveCultureContext — 한국을 기본값으로 두고
   //     명백한 해외 배경일 때만 푸는 구조라, 한국사 대본이 누락될 위험은 낮다.
   const periodAccuracyRule = '⚠️ PERIOD ACCURACY: costume, architecture, props and hairstyles are accurate to the ERA AND REGION this scene depicts. Never modern clothing, modern buildings, or modern objects unless the scene is explicitly set in the present day.'
-  const koreanRoyalAttireRule = bible.cultureNative === false ? '' : `
+  // 화면에서 넘어온 세계관을 우선한다 — 바이블을 다시 만들지 않아도 반영되게.
+  const isWorldSetting = worldSetting === 'world'
+  const isKoreanScene  = isWorldSetting ? false : (worldSetting ? true : bible.cultureNative !== false)
+  const koreanRoyalAttireRule = !isKoreanScene ? '' : `
 ⚠️ KOREAN ROYAL ATTIRE — READ SCENE CONTEXT: If the scene is formal/official (throne room, court, royal ceremony, public setting) → king wears 익선관(翼善冠, tall black dome cap, two small rear flaps, NO wide side wings) + 곤룡포(ENTIRELY VERMILLION RED robe — ⚠️ ABSOLUTE RULE: NO blue fabric anywhere on the garment. NO blue inner sleeves. NO blue undershirt showing at wrists or collar. The ONLY non-red color allowed is the white inner collar and gold dragon embroidery). If the scene is private, informal, or pre-coronation → king may wear 평상복, 도포, or other period-appropriate casual attire. Officials/ministers always wear 사모(紗帽, wide flat horizontal side wings) + 관복, NEVER 익선관.`
 
   const compositePrompt = `[STYLE] ${resolvedStylePrompt} (NON-NEGOTIABLE)

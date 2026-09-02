@@ -187,8 +187,7 @@ export default function Step4_Scenes() {
     targetSceneCount, currentMode, visualMode, isEditorialMode, isImageTextEnabled,
     isFixedCharMode, fixedCharStyleType, fixedCharSampleImage,
     generationVersion,
-    setStep, setError, clearError,
-  } = useAppStore()
+    setStep, setError, clearError, worldSetting } = useAppStore()
 
   const genVersionRef = useRef(generationVersion)
   useEffect(() => { genVersionRef.current = generationVersion }, [generationVersion])
@@ -231,7 +230,8 @@ export default function Step4_Scenes() {
         effectiveMode,
         visualMode,
         isEditorialMode,
-        isImageTextEnabled
+        isImageTextEnabled,
+        worldSetting
       )
       if (genVersionRef.current !== myVersion) return
       setScenes(result)
@@ -299,7 +299,8 @@ export default function Step4_Scenes() {
               aspectRatio,
               true,
               currentMode,
-              ...fixedCharArgs
+              ...fixedCharArgs,
+              worldSetting
             )
             if (genVersionRef.current === myVersion) updateScene(idx, { imageUrl: url, generating: false, imageError: null })
           } catch (err) {
@@ -335,7 +336,8 @@ export default function Step4_Scenes() {
         aspectRatio,
         true,
         currentMode,
-        ...fixedCharArgs
+        ...fixedCharArgs,
+        worldSetting
       )
       updateScene(idx, { imageUrl: url, generating: false, imageError: null })
     } catch (err) {

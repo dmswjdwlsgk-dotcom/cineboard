@@ -1484,9 +1484,12 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
 }
 
 // ─── 전체 씬 생성 (어댑티브 동시성) ──────────────────────────────────────────
-export async function generateAllScenes(scriptText, bible, stylePreset, lang, onProgress, maxScenes = 30, currentMode = 'normal', visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false) {
+export async function generateAllScenes(scriptText, bible, stylePreset, lang, onProgress, maxScenes = 30, currentMode = 'normal', visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false, worldSetting = null) {
+  // 세계관은 화면에서 넘어온 값을 우선한다 — 바이블 생성 이후에 설정을 바꿔도,
+  // 또 그 전에 만들어 둔 바이블을 그대로 써도 반영되게 하기 위함. 바이블을 다시
+  // 만들면 캐릭터와 캐릭터 이미지까지 새로 뽑아야 해서 비용이 크다.
   const langConfig   = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
-  const bibleCtx     = { ...bible, _fullScript: scriptText, _culture: resolveCultureContext(lang, scriptText, bible?.worldSetting || 'auto') }
+  const bibleCtx     = { ...bible, _fullScript: scriptText, _culture: resolveCultureContext(lang, scriptText, worldSetting ?? bible?.worldSetting ?? 'auto') }
   const rawScenesSplit = await splitScriptToScenes(scriptText, maxScenes, visualMode)
   const rawScenesNamed = attachCharacterContinuityHints(rawScenesSplit, bible.characters)
   const rawScenesMode = attachSceneModeHints(rawScenesNamed, stylePreset)
