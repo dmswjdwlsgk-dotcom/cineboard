@@ -4,6 +4,7 @@ import Button from '../ui/Button.jsx'
 import { useAppStore } from '../../store/useAppStore.js'
 import { STYLES, MODELS } from '../../data/styles.js'
 import StylePreviewModal from '../StylePreviewModal.jsx'
+import { WORLD_SETTINGS } from '../../data/languages.js'
 
 const ASPECT_RATIOS = [
   { id: '16:9', label: '16:9 가로형', desc: '유튜브/영화/드라마' },
@@ -43,6 +44,7 @@ export default function Step2_Style() {
     fixedCharStyleType, setFixedCharStyleType,
     fixedCharSampleImage, setFixedCharSampleImage,
     setStep, setError, clearError,
+    worldSetting, setWorldSetting,
   } = useAppStore()
 
   const [previewStyle, setPreviewStyle] = useState(null)
@@ -249,6 +251,43 @@ export default function Step2_Style() {
               </div>
             )
           })}
+        </div>
+      </div>
+
+      {/* World setting — 채널 단위 세계관 */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">세계관 (인종·복식)</h2>
+        <p className="text-xs text-gray-500">
+          인물의 인종·복식·건축이 어느 문화권을 따를지 정합니다. 채널마다 한 번만 고르면 됩니다 —
+          조선왕조실록 채널은 &lsquo;조선&rsquo;, 그리스 신화 채널은 &lsquo;세계사·신화&rsquo;로 두세요.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {WORLD_SETTINGS.map(w => (
+            <label
+              key={w.id}
+              className={`
+                flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all
+                ${worldSetting === w.id
+                  ? 'bg-purple-900/30 border-purple-600'
+                  : 'bg-gray-800/40 border-gray-700 hover:border-gray-600'
+                }
+              `}
+            >
+              <input
+                type="radio"
+                name="worldSetting"
+                checked={worldSetting === w.id}
+                onChange={() => setWorldSetting(w.id)}
+                className="mt-0.5 accent-purple-500"
+              />
+              <div>
+                <div className={`text-sm font-semibold ${worldSetting === w.id ? 'text-purple-300' : 'text-gray-300'}`}>
+                  {w.label}
+                </div>
+                <div className="text-xs text-gray-500 mt-0.5">{w.desc}</div>
+              </div>
+            </label>
+          ))}
         </div>
       </div>
 

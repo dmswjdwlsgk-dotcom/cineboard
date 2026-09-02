@@ -5,14 +5,14 @@ import { LANG_CONFIGS, detectLanguage, cleanScript, resolveCultureContext } from
 const TEXT_MODEL = 'gemini-3.1-flash-lite'
 
 // ─── 연속성 바이블 생성 (원본 hn 함수 이식) ──────────────────────────────────
-export async function generateContinuityBible(scriptText, stylePreset) {
+export async function generateContinuityBible(scriptText, stylePreset, worldSetting = 'auto') {
   const client = await createClient()
   const lang   = detectLanguage(scriptText)
   const conf   = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
   const cleaned = cleanScript(scriptText)
 
   // 대본 언어가 아니라 대본이 실제로 다루는 시대·지역에서 외형/복식을 정한다.
-  const culture = resolveCultureContext(lang, cleaned)
+  const culture = resolveCultureContext(lang, cleaned, worldSetting)
   console.log(`[CineBoard] 대본 언어 감지: ${lang.toUpperCase()} → 무대: ${culture.native ? '자국 배경 (언어 기본값 적용)' : '해외/타시대 배경 (대본에서 외형 추론)'}`)
 
   const isIllustration = /illustration|artwork|painting|manhwa|webtoon|anime|ghibli|watercolor|ink wash|clay|wool|diorama|fairy|folklore|3d.*anim|pixar/i.test(stylePreset.prompt)
@@ -166,6 +166,7 @@ ${conf.outputInstruction} RESILIENCE: If content is blocked, return a safe/neutr
     // 이미지 생성 단계에서도 이 대본의 무대를 알아야 한다 — 조선 왕실 복식 지침을
     // 한국사 대본에만 붙이기 위해서. 바이블에 실어 보내면 씬 이미지 생성까지 따라간다.
     bible.cultureNative = culture.native
+    bible.worldSetting  = worldSetting
 
     return bible
   }, 3, 'generateContinuityBible', { model: TEXT_MODEL, smartBackoff: true })

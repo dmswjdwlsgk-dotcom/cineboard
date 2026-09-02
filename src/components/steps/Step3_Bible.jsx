@@ -69,8 +69,7 @@ export default function Step3_Bible() {
     scriptText, selectedStyleId, selectedModel, detectedLanguage,
     continuityBible, setBible,
     characterImages, setCharacterImage,
-    setStep, setError, clearError,
-  } = useAppStore()
+    setStep, setError, clearError, worldSetting } = useAppStore()
 
   const [loading, setLoading] = useState(false)
   const [analyzingImages, setAnalyzingImages] = useState({})
@@ -91,7 +90,9 @@ export default function Step3_Bible() {
     clearError()
     setLoading(true)
     try {
-      const bible = await generateContinuityBible(scriptText, style, detectedLanguage)
+      // 3번째 인자는 원래 무시되던 detectedLanguage였다(함수가 2개만 받았다).
+      // 이제 채널 단위 세계관을 넘긴다 — 대본 언어는 함수 안에서 직접 감지한다.
+      const bible = await generateContinuityBible(scriptText, style, worldSetting)
       // 1차 추출은 대사가 없거나 호칭이 바뀌는 인물(예: 갓난아기 왕자, 계모 되기
       // 전/후 다른 이름으로 불리는 왕비)을 종종 놓친다 — 이름이 이미 정해진
       // 목록에 없는데 대본에 2회 이상 나오는 인물을 한 번 더 감사해서 합친다.

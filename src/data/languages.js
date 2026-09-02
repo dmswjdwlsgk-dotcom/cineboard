@@ -222,13 +222,15 @@ You MUST determine each character's ethnicity from their NAME and the SCRIPT'S C
 // 실측: 한국사 대본 8~17회 / 한국을 스쳐 언급한 세계사 대본 1회
 // (손자병법 대본이 한산도 학익진 대목의 "조선 수군" 한 번 때문에 한국사로 확정되어
 //  100씬 전부에 조선 복식·한국인 외모가 주입됐다.)
-const KOREA_DYNASTY = /조선|고려|신라|백제|고구려|발해|고조선|대한제국|대한민국|한반도|한국전쟁|임진왜란|병자호란|일제강점기|훈민정음|한양|경복궁|창덕궁|덕수궁|판문점|휴전선|삼팔선|38선/g
+const KOREA_DYNASTY = /조선|고려\s?(?:시대|왕조|말|초|국|인)|신라|백제|고구려|발해\s?(?:시대|왕조|국|인)|고조선|대한제국|대한민국|한반도|한국전쟁|임진왜란|병자호란|일제강점기|훈민정음|한양|경복궁|창덕궁|덕수궁|판문점|휴전선|삼팔선|38선/g
 const KOREA_DYNASTY_MIN = 2
 
 // 한국을 가리키지만 세계사 대본에도 비교·단위로 한두 번 나올 수 있는 토큰.
 // 실제 대본 측정값: 한국사 대본 22~106회 / 세계사 대본 0~2회 — 개수로 가른다.
 // ⚠️ 일반 단어와 겹치는 토큰(전하→"전하죠", 가야→"오가야", 세자→"납세자",
 //    임금→임금 인상, 대비→대비하다)은 넣지 않는다. 오탐의 원인이었다.
+// ⚠️ 왕조 토큰에도 같은 문제가 있었다 — "고향으로 출발해요"의 발해, "고려하다"의 고려가
+//    걸려 그리스 신화 대본(오디세이·메두사)이 한국사로 판정됐다. 명사 형태일 때만 잡는다.
 const KOREA_WEAK = /한국|서울|남한|북한|국군|우리나라|한강|한복|한옥|양반|사대부|선비|사또|서당|과거시험|훈련도감|판서|정승|대감|이순신|세종대왕|정약용|안중근|김구|유관순|장영실|신사임당|왕건|광개토|을지문덕|계백|김유신|흥선대원군|인천상륙|낙동강|압록강|두만강/g
 const KOREA_WEAK_MIN = 5
 
@@ -261,6 +263,22 @@ const DERIVE_FROM_SCRIPT_HINT =
   'names, and state the matching appearance explicitly (e.g. ancient Near Eastern, Semitic, Mediterranean, North African, ' +
   'Persian, Turkic, Northern European). Never default to Korean or East Asian appearance for these characters.'
 
+// 조선 복식 위계(익선관·곤룡포·도포·갓)는 전근대 한국 전용이다. 한국사로 판정돼도
+// 근현대 대본(6.25, 현대인 사연)에 붙으면 틀린다 — 1950년 전쟁에 갓과 도포가 나온다.
+const KOREA_PREMODERN = /조선|고려\s?(?:시대|왕조)|신라|백제|고구려|고조선|한양|도성|경복궁|창덕궁|양반|사대부|선비|사또|서당|과거시험|훈련도감|판서|정승|임진왜란|병자호란|훈민정음/
+
+// ─── 채널 단위 세계관 지정 ──────────────────────────────────────────────────
+// 대본마다 정규식으로 추측하던 것을 사용자가 프로젝트 단위로 한 번 정한다.
+// 조선왕조실록 채널은 joseon, 그리스 신화 채널은 world로 두면 감지 자체가 없어
+// 오탐이 원천적으로 사라진다. auto는 기존 동작이고 기존 프로젝트는 여기로 떨어진다.
+export const WORLD_SETTINGS = [
+  { id: 'auto',            label: '자동 감지',   desc: '대본을 읽고 판정 (기존 동작)' },
+  { id: 'joseon',          label: '조선',       desc: '조선왕조실록·사극 채널' },
+  { id: 'korea_premodern', label: '전근대 한국',  desc: '고려·삼국·발해' },
+  { id: 'korea_modern',    label: '근현대 한국',  desc: '일제강점기·6.25·현대' },
+  { id: 'world',           label: '세계사·신화', desc: '한국 규칙 전부 해제' },
+]
+
 // 이 대본의 무대가 대본 언어의 문화권인지 판별한다. 애매하면 true(기본값 유지).
 export function isNativeSetting(lang, scriptText) {
   const text = scriptText || ''
@@ -291,10 +309,20 @@ export function resolveSceneCulture(segmentText, fallback) {
 }
 
 // 이 대본에 실제로 써야 할 외형/복식 지침을 돌려준다.
-export function resolveCultureContext(lang, scriptText) {
-  const conf = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
-  if (isNativeSetting(lang, scriptText)) {
-    return { ethnicityHint: conf.ethnicityHint, costumeHierarchy: conf.costumeHierarchy, native: true }
+export function resolveCultureContext(lang, scriptText, worldSetting = 'auto') {
+  const conf     = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
+  const korean   = { ethnicityHint: conf.ethnicityHint, costumeHierarchy: conf.costumeHierarchy, native: true }
+  // 한국인이되 조선 복식 위계는 빼는 경우 — 근현대 한국
+  const koreanNo = { ethnicityHint: conf.ethnicityHint, costumeHierarchy: '', native: true }
+  const derived  = { ethnicityHint: DERIVE_FROM_SCRIPT_HINT, costumeHierarchy: '', native: false }
+
+  switch (worldSetting) {
+    case 'joseon':
+    case 'korea_premodern': return korean
+    case 'korea_modern':    return koreanNo
+    case 'world':           return derived
+    default: break          // auto — 아래 자동 판정
   }
-  return { ethnicityHint: DERIVE_FROM_SCRIPT_HINT, costumeHierarchy: '', native: false }
+  if (!isNativeSetting(lang, scriptText)) return derived
+  return KOREA_PREMODERN.test(scriptText || '') ? korean : koreanNo
 }

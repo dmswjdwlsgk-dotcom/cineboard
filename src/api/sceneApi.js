@@ -1486,7 +1486,7 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
 // ─── 전체 씬 생성 (어댑티브 동시성) ──────────────────────────────────────────
 export async function generateAllScenes(scriptText, bible, stylePreset, lang, onProgress, maxScenes = 30, currentMode = 'normal', visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false) {
   const langConfig   = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
-  const bibleCtx     = { ...bible, _fullScript: scriptText, _culture: resolveCultureContext(lang, scriptText) }
+  const bibleCtx     = { ...bible, _fullScript: scriptText, _culture: resolveCultureContext(lang, scriptText, bible?.worldSetting || 'auto') }
   const rawScenesSplit = await splitScriptToScenes(scriptText, maxScenes, visualMode)
   const rawScenesNamed = attachCharacterContinuityHints(rawScenesSplit, bible.characters)
   const rawScenesMode = attachSceneModeHints(rawScenesNamed, stylePreset)
