@@ -1006,6 +1006,17 @@ function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate
   // 화풍 언급 자체를 막지는 않는다. 원본 앱(김씨네)은 30씬 중 16씬에 webtoon/manhwa를
   // 반복해서 넣고 충돌은 0건이며 결과가 더 선명하다 — 프롬프트 뒤쪽 씬 묘사에서 화풍을
   // 다시 못 박는 게 오히려 도움이 된다. 금지가 아니라 잠금으로 건다.
+  // ─── 현대 촬영 용어가 실제 공간으로 그려지는 문제 ───────────────────────────
+  // 유물·소품 클로즈업을 쓰려다 "in a studio setting", "on a display stand",
+  // "museum lighting" 같은 촬영 용어를 넣으면 이미지 모델이 그것을 배경으로 해석해
+  // 현대 스튜디오나 강연장을 그린다. 고대 그리스 유물 컷에 강연장이 나온 사례가 있다.
+  // 34e7056에서 같은 문제를 다뤘지만 그 규칙(NARRATOR META-ADDRESS)은
+  // watercolor_illust_v2 한 스타일에만 걸려 있어 다른 스타일은 무방비였다.
+  const noModernStagingRule = `
+⚠️ [NO MODERN STAGING WORDS]: never write "studio", "studio setting", "on a display stand", "museum display", "product shot", "against a backdrop", "stage", "lecture hall", "presentation", "podium" in imagePrompt. The image model renders these as an actual modern room and drops a lecture hall or photo studio into an ancient scene. To isolate an object or artefact, describe it in its OWN world instead: resting on worn stone, half-buried in sand, propped against a temple wall, lit by a single shaft of light in a dark chamber, with the surroundings falling away into shadow.
+⚠️ [NO INVENTED SPEAKER SCENE]: when the assigned segment is the narrator addressing the viewer, or pure commentary with no depictable event, do NOT invent a presenter-and-audience scene — no lecture hall, stage, podium, microphone, seated crowd, or person explaining to camera. Depict the SUBJECT the narration is about, or a wordless symbolic shot from the story world.
+`
+
   const artStyleLockRule = `
 ⚠️ [ART STYLE LOCK]: if imagePrompt names a rendering style or medium at all, it must name ONLY the style given in [STYLE] above, and nothing else. NEVER introduce a different medium — ink-wash/수묵화, watercolor, oil painting, painterly, charcoal, pencil sketch, woodblock, engraving, 3D render, photorealistic. This mistake happens most often in historical, dark, candlelit or contemplative scenes, where an ink-wash or painterly phrasing feels natural but directly contradicts the selected style. Describing lighting, contrast, mood and texture is fine and encouraged; naming a competing medium is not.
 `
@@ -1292,7 +1303,7 @@ GOOD imagePrompt: "EXTREME CLOSE-UP: trembling hands clutching crumpled prescrip
 - NO subtitles, captions, title cards, watermarks in the scene description.
 - The scene must be PURELY VISUAL — zero textual elements in the rendered frame.
 
-${artStyleLockRule}${noStyleRecapRule}${noHanbokDriftRule}${variedAngleRule}
+${artStyleLockRule}${noModernStagingRule}${noStyleRecapRule}${noHanbokDriftRule}${variedAngleRule}
 [MANDATORY DIALOGUE RULE]:
 ⚠️ EVERY scene MUST have dialogue field filled:
    - Provide ONLY a short snippet (around 8 seconds of speech). DO NOT copy the entire script length here!
