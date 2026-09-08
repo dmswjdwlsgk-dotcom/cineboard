@@ -326,6 +326,8 @@ function cleanSceneOutput(scene, characters) {
     videoPromptKo: replaceActorTags(scene.videoPromptKo || '', characters),
     imagePrompt:   romanizeInEnglishPrompt(scene.imagePrompt || '', characters),
     videoPromptEn: romanizeInEnglishPrompt(scene.videoPromptEn || '', characters),
+    flowPrompt:    romanizeInEnglishPrompt(scene.flowPrompt || '', characters),
+    cameraMovement: romanizeInEnglishPrompt(scene.cameraMovement || '', characters),
   }
 }
 
@@ -1293,7 +1295,26 @@ Consider: does this scene need a FACE (close-up) or a WORLD (wide shot)? Both ar
 
 [STEP 3 — WRITE THE imagePrompt]:
 Format: "[SHOT TYPE]: [what characters are doing at peak moment, specific physical actions using [ACTOR-X] tags]. [LIGHTING description]. [COLOR PALETTE / MOOD]. [KEY ENVIRONMENTAL DETAIL that amplifies emotion]."
-⚠️ [ENGLISH ONLY & NO REAL NAMES]: The 'imagePrompt' and 'videoPromptEn' fields MUST BE 100% IN ENGLISH. NO KOREAN. ONLY use tags like [ACTOR-A]!
+
+[STEP 4 — WRITE THE flowPrompt] (Google Flow image-to-video, ENGLISH ONLY):
+flowPrompt is NOT videoPromptEn. Flow receives the rendered imagePrompt as the FIRST FRAME.
+⚠️ NEVER re-describe the scene. Do not repeat the setting, the costume, the lighting, the colour
+palette, the art style, or who the characters are — all of that is already in the picture.
+Writing it again makes Flow redraw the shot and the source image is destroyed within a second.
+Write ONLY what MOVES, in about 10 seconds' worth:
+- camera movement, and the subject's motion: a turn of the head, a shift of weight, a breath, a
+  blink, a hand closing; cloth, hair, dust, smoke, water, flame; light growing or dimming.
+- Open with the camera move. e.g. "Slow push in as ...", "Whip pan left, then snap to a stop as ..."
+- Use speed contrast — hold still, then burst; fast move, then hard stop.
+- At most ONE cut. If you cut, never cut to the same person's face at a new angle (the face breaks).
+  Cut only to hands, a prop, feet, or landscape.
+- NEVER use a black frame, a fade to black, or a blackout — it reads as a broken render.
+- Do not name the art style or the palette. Do not write "cinematic 3D stylized animation".
+- End with exactly: "Keep the exact art style, character design and colour palette of the source image. No new scene, no style change."
+BAD  flowPrompt: "Slow tracking shot through a dark cavernous cave revealing [ACTOR-A] lying on the ground, soft rim lighting on jagged stone walls, cinematic 3D stylized animation."
+GOOD flowPrompt: "Slow push in. [ACTOR-A]'s fingers twitch once and go slack; his chest lifts with a shallow breath. Dust drifts down through the light shaft. [ACTOR-B]'s tail coils tighter around the bundle and its head turns slowly toward camera. Keep the exact art style, character design and colour palette of the source image. No new scene, no style change."
+
+⚠️ [ENGLISH ONLY & NO REAL NAMES]: The 'imagePrompt', 'videoPromptEn', 'flowPrompt' and 'cameraMovement' fields MUST BE 100% IN ENGLISH. NO KOREAN. ONLY use tags like [ACTOR-A]!
 
 BAD imagePrompt: "A woman stands in a pharmacy looking worried."
 GOOD imagePrompt: "EXTREME CLOSE-UP: trembling hands clutching crumpled prescription paper across a pharmacy counter at 3AM — fluorescent light harshly illuminating tear-streaked cheeks, a pharmacist's blurred silhouette in background hesitating. Ice-blue desaturated palette. A single crushed flower petal dropped on the counter."
@@ -1358,6 +1379,7 @@ export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, lang
             imagePrompt:        { type: Type.STRING },
             videoPromptKo:      { type: Type.STRING },
             videoPromptEn:      { type: Type.STRING },
+            flowPrompt:         { type: Type.STRING },
             cameraMovement:     { type: Type.STRING },
             shotType:           { type: Type.STRING },
             dialogue:           { type: Type.STRING },
@@ -1366,7 +1388,7 @@ export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, lang
             description:        { type: Type.STRING },
             involvedCharacters: { type: Type.ARRAY, items: { type: Type.STRING } },
           },
-          required: ['action','imagePromptKo','imagePrompt','videoPromptKo','videoPromptEn','cameraMovement','shotType','description','dialogue','duration','involvedCharacters'],
+          required: ['action','imagePromptKo','imagePrompt','videoPromptKo','videoPromptEn','flowPrompt','cameraMovement','shotType','description','dialogue','duration','involvedCharacters'],
         },
       },
     }, `씬 생성(${sceneRef.id})`)
@@ -1437,6 +1459,7 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
             imagePrompt:        { type: Type.STRING },
             videoPromptKo:      { type: Type.STRING },
             videoPromptEn:      { type: Type.STRING },
+            flowPrompt:         { type: Type.STRING },
             cameraMovement:     { type: Type.STRING },
             shotType:           { type: Type.STRING },
             dialogue:           { type: Type.STRING },
@@ -1444,7 +1467,7 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
             duration:           { type: Type.STRING },
             involvedCharacters: { type: Type.ARRAY, items: { type: Type.STRING } },
           },
-          required: ['action','description','imagePromptKo','imagePrompt','videoPromptKo','videoPromptEn','cameraMovement','shotType','dialogue','screenText','duration','involvedCharacters'],
+          required: ['action','description','imagePromptKo','imagePrompt','videoPromptKo','videoPromptEn','flowPrompt','cameraMovement','shotType','dialogue','screenText','duration','involvedCharacters'],
         },
       },
     }, `씬 재생성(${sceneRef.id})`)
@@ -1481,6 +1504,8 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
     imagePrompt:   raw.imagePrompt   || sceneRef.imagePrompt,
     videoPromptKo: raw.videoPromptKo || sceneRef.videoPromptKo,
     videoPromptEn: raw.videoPromptEn || sceneRef.videoPromptEn,
+    flowPrompt:    raw.flowPrompt    || sceneRef.flowPrompt,
+    cameraMovement: raw.cameraMovement || sceneRef.cameraMovement,
     dialogue:      raw.dialogue      || sceneRef.dialogue,
     screenText:    raw.screenText    || sceneRef.screenText,
   }

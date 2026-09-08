@@ -458,10 +458,13 @@ export default function Step4_Scenes() {
       if (dedicated) {
         return dedicated.includes('No new scene') ? dedicated : `${dedicated} ${FLOW_LOCK}`
       }
-      const cam    = (scene.cameraMovement || '').trim()
+      const cam    = replaceActorTags(scene.cameraMovement || '').replace(/\s*\([^)]*\)/g, '').trim().replace(/[.\s]+$/, '')
       const motion = replaceActorTags(scene.videoPromptEn || '').replace(/\n+/g, ' ').trim()
-      const head   = cam && !motion.toLowerCase().startsWith(cam.toLowerCase()) ? `${cam}. ` : ''
-      return `${head}${motion} ${FLOW_LOCK}`.replace(/\s{2,}/g, ' ').trim()
+      // "Slow zoom-in." + "Slow, cinematic zoom-in on..." 처럼 표현만 다른 중복을 걸러낸다
+      const key    = t => t.toLowerCase().replace(/[^a-z]/g, '')
+      const dup    = !cam || (key(cam) && key(motion).slice(0, 60).includes(key(cam).slice(0, 12)))
+      const head   = dup ? '' : `${cam}. `
+      return `${head}${motion} ${FLOW_LOCK}`.replace(/\.{2,}/g, '.').replace(/\s{2,}/g, ' ').trim()
     }
 
     setTimeout(() => {
