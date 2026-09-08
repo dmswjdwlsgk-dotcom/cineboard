@@ -187,7 +187,7 @@ export default function Step4_Scenes() {
     targetSceneCount, currentMode, visualMode, isEditorialMode, isImageTextEnabled,
     isFixedCharMode, fixedCharStyleType, fixedCharSampleImage,
     generationVersion,
-    setStep, setError, clearError, worldSetting } = useAppStore()
+    setStep, setError, clearError, worldSetting, videoPromptMode } = useAppStore()
 
   const genVersionRef = useRef(generationVersion)
   useEffect(() => { genVersionRef.current = generationVersion }, [generationVersion])
@@ -231,7 +231,8 @@ export default function Step4_Scenes() {
         visualMode,
         isEditorialMode,
         isImageTextEnabled,
-        worldSetting
+        worldSetting,
+        videoPromptMode
       )
       if (genVersionRef.current !== myVersion) return
       setScenes(result)
@@ -356,7 +357,12 @@ export default function Step4_Scenes() {
         sceneRef,
         continuityBible || { characters: [], environment: {}, locations: [], camera: {} },
         style,
-        langConfig
+        langConfig,
+        effectiveMode,
+        visualMode,
+        isEditorialMode,
+        isImageTextEnabled,
+        videoPromptMode
       )
       updateScene(idx, { ...newInfo, generating: false, imageUrl: null, imageError: null })
     } catch (err) {
@@ -449,40 +455,20 @@ export default function Step4_Scenes() {
     // IMG.txt — 완성 이미지 프롬프트
     const imgContent = sceneList.map(s => `--- ${s.id} ---\n${buildFullPrompt(s)}`).join('\n\n')
     download(imgContent, `${prefix}_IMG.txt`)
-
-    // FLOW.txt — 구글 Flow 이미지→비디오용 모션 프롬프트, 500ms 후
-    const FLOW_LOCK = 'Keep the exact art style, character design and colour palette of the source image. No new scene, no style change.'
-    const buildFlowPrompt = (scene) => {
-      // 인트로 확장 클립은 전용 flowPrompt를 갖고 있다. 없으면 카메라+모션으로 조립.
-      const dedicated = replaceActorTags(scene.flowPrompt || '').replace(/\n+/g, ' ').trim()
-      if (dedicated) {
-        return dedicated.includes('No new scene') ? dedicated : `${dedicated} ${FLOW_LOCK}`
-      }
-      const cam    = replaceActorTags(scene.cameraMovement || '').replace(/\s*\([^)]*\)/g, '').trim().replace(/[.\s]+$/, '')
-      const motion = replaceActorTags(scene.videoPromptEn || '').replace(/\n+/g, ' ').trim()
-      // "Slow zoom-in." + "Slow, cinematic zoom-in on..." 처럼 표현만 다른 중복을 걸러낸다
-      const key    = t => t.toLowerCase().replace(/[^a-z]/g, '')
-      const dup    = !cam || (key(cam) && key(motion).slice(0, 60).includes(key(cam).slice(0, 12)))
-      const head   = dup ? '' : `${cam}. `
-      return `${head}${motion} ${FLOW_LOCK}`.replace(/\.{2,}/g, '.').replace(/\s{2,}/g, ' ').trim()
-    }
-
-    setTimeout(() => {
-      const flowContent = sceneList.map(s => {
-        const flowPart   = buildFlowPrompt(s)
-        const dialogPart = s.dialogue ? `[대사] ${replaceActorTags(s.dialogue).replace(/\n+/g, ' ').trim()}` : ''
-        return [`--- ${s.id} ---`, flowPart, dialogPart].filter(Boolean).join('\n')
-      }).join('\n\n')
-      download(flowContent, `${prefix}_FLOW.txt`)
-    }, 500)
   }
+
 
   const handleExtractVideoPrompts = () => {
     if (scenes.length === 0) { alert('다운로드할 비디오 프롬프트가 없습니다.'); return }
+    const isFlow = scenes.some(s => s.flowPrompt)
     const content = scenes.map((s, i) => {
       const num = String(i + 1).padStart(3, '0')
+      const head = `--- ${s.id || `P${num}`} ---`
+      if (isFlow) {
+        return [head, s.flowPrompt || '', s.dialogue ? `[대사] ${s.dialogue}` : ''].filter(Boolean).join('\n')
+      }
       return [
-        `--- ${s.id || `P${num}`} ---`,
+        head,
         s.videoPromptKo ? `[KO] ${s.videoPromptKo}` : '',
         s.videoPromptEn ? `[EN] ${s.videoPromptEn}` : '',
         s.cameraMovement ? `Camera: ${s.cameraMovement}` : '',
@@ -493,12 +479,13 @@ export default function Step4_Scenes() {
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
     const a    = document.createElement('a')
     a.href     = URL.createObjectURL(blob)
-    a.download = `${date}_VIDEO_PROMPTS.txt`
+    a.download = `${date}_${isFlow ? 'FLOW' : 'VIDEO'}_PROMPTS.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(a.href)
   }
+
 
   const handleSaveImage = (idx) => {
     const scene = scenes[idx]
@@ -608,10 +595,10 @@ export default function Step4_Scenes() {
                 <FileText size={13} />
                 <span>프롬프트 추출</span>
               </div>
-              <span className="text-[9px] text-amber-500/70 font-medium">이미지 + Flow영상 (.txt)</span>
+              <span className="text-[9px] text-amber-500/70 font-medium">이미지 프롬프트 (.txt)</span>
             </button>
 
-            {scenes.some(s => s.videoPromptKo || s.videoPromptEn) && (
+            {scenes.some(s => s.videoPromptKo || s.videoPromptEn || s.flowPrompt) && (
               <button
                 onClick={handleExtractVideoPrompts}
                 disabled={isGenerating || generatingImages}
@@ -621,7 +608,7 @@ export default function Step4_Scenes() {
                   <Film size={13} />
                   <span>비디오 프롬프트</span>
                 </div>
-                <span className="text-[9px] text-violet-400/70 font-medium">Grok/Runway용 (.txt)</span>
+                <span className="text-[9px] text-violet-400/70 font-medium">{scenes.some(s => s.flowPrompt) ? '구글 Flow용 (.txt)' : 'Grok/Runway용 (.txt)'}</span>
               </button>
             )}
 

@@ -32,6 +32,12 @@ const FIXED_CHAR_STYLES = [
   { id: 'custom',      label: '🎨 커스텀',    desc: '샘플 이미지 스타일 추출' },
 ]
 
+const VIDEO_PROMPT_MODES = [
+  { id: 'none', label: '생성 안 함',   desc: '이미지 프롬프트만. 본문용 기본값 — 토큰이 가장 적게 듭니다.' },
+  { id: 'flow', label: '구글 Flow용',  desc: '이미지→비디오용 모션 프롬프트. 장면을 다시 설명하지 않고 움직임만 씁니다.' },
+  { id: 'grok', label: 'Grok/Runway용', desc: '장면 묘사가 포함된 기존 영상 프롬프트.' },
+]
+
 export default function Step2_Style() {
   const {
     selectedStyleId, setStyle,
@@ -45,6 +51,7 @@ export default function Step2_Style() {
     fixedCharSampleImage, setFixedCharSampleImage,
     setStep, setError, clearError,
     worldSetting, setWorldSetting,
+    videoPromptMode, setVideoPromptMode,
   } = useAppStore()
 
   const [previewStyle, setPreviewStyle] = useState(null)
@@ -285,6 +292,43 @@ export default function Step2_Style() {
                   {w.label}
                 </div>
                 <div className="text-xs text-gray-500 mt-0.5">{w.desc}</div>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* 비디오 프롬프트 — 필요할 때만 생성해 토큰을 아낀다 */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">비디오 프롬프트</h2>
+        <p className="text-xs text-gray-500">
+          영상용 프롬프트를 씬마다 함께 만들지 정합니다. 본문 100장은 영상화하지 않으니
+          &lsquo;생성 안 함&rsquo;으로 두고, 인트로 대본을 돌릴 때만 켜세요. 끄면 그만큼 토큰이 줄어듭니다.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {VIDEO_PROMPT_MODES.map(v => (
+            <label
+              key={v.id}
+              className={`
+                flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all
+                ${videoPromptMode === v.id
+                  ? 'bg-purple-900/30 border-purple-600'
+                  : 'bg-gray-800/40 border-gray-700 hover:border-gray-600'
+                }
+              `}
+            >
+              <input
+                type="radio"
+                name="videoPromptMode"
+                checked={videoPromptMode === v.id}
+                onChange={() => setVideoPromptMode(v.id)}
+                className="mt-0.5 accent-purple-500"
+              />
+              <div>
+                <div className={`text-sm font-semibold ${videoPromptMode === v.id ? 'text-purple-300' : 'text-gray-300'}`}>
+                  {v.label}
+                </div>
+                <div className="text-xs text-gray-500 mt-0.5">{v.desc}</div>
               </div>
             </label>
           ))}

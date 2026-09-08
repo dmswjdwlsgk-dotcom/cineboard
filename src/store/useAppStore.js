@@ -26,6 +26,7 @@ const initialState = {
   // 대본마다 정규식으로 추측하던 것을 사용자가 한 번 지정한다. 조선왕조실록 채널은
   // 'joseon', 그리스 신화 채널은 'world'로 두면 감지 자체가 필요 없다.
   worldSetting: 'auto',       // 'auto'|'joseon'|'korea_premodern'|'korea_modern'|'world'
+  videoPromptMode: 'none',    // 'none'|'flow'|'grok' — 비디오 프롬프트를 생성할지 여부
   isEditorialMode: false,     // content/infoviz/docu → true, 나머지 → false, auto/immersive → 변경없음
   isFixedCharMode: false,     // 캐릭터 고정 모드
   fixedCharStyleType: 'countryball', // 'countryball'|'stickman'|'mascot'|'chibi'|'custom'
@@ -89,6 +90,7 @@ export const useAppStore = create(
       setTargetSceneCount:   (n)         => set({ targetSceneCount: n }),
       setCurrentMode:        (mode)      => set({ currentMode: mode }),
       setWorldSetting:       (w)         => set({ worldSetting: w }),
+      setVideoPromptMode:    (m)         => set({ videoPromptMode: m }),
       setVisualMode: (mode) => {
         // auto/immersive는 isEditorialMode 변경 안 함 (원본 동일)
         const editorialMap = { content: true, infoviz: true, docu: true, character: false, webtoon: false, mv: false, hist_drama: false }
@@ -200,6 +202,7 @@ export const useAppStore = create(
         currentMode:            state.currentMode,
         visualMode:             state.visualMode,
         worldSetting:           state.worldSetting,
+        videoPromptMode:        state.videoPromptMode,
         isFixedCharMode:        state.isFixedCharMode,
         fixedCharStyleType:     state.fixedCharStyleType,
         isEditorialMode:        state.isEditorialMode,

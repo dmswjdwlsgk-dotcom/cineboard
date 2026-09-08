@@ -888,6 +888,45 @@ A king issuing an order = LOW ANGLE looking up, NOT eye-level medium shot.
 }
 
 // ─── 에디토리얼 모드 전용 씬 프롬프트 빌더 ───────────────────────────────────
+
+// ─── 비디오 프롬프트 (선택) ───────────────────────────────────────────────────
+// 본문 100장은 영상화하지 않으므로 기본은 'none'. 끄면 스키마와 지침에서 통째로
+// 빠져 입력·출력 토큰이 함께 줄어든다. 인트로를 뽑을 때만 켜면 된다.
+export const VIDEO_PROMPT_FIELDS = {
+  none: [],
+  grok: ['videoPromptKo', 'videoPromptEn', 'cameraMovement'],
+  flow: ['flowPrompt', 'cameraMovement'],
+}
+
+const FLOW_PROMPT_RULE = `
+[STEP 4 — WRITE THE flowPrompt] (Google Flow image-to-video, ENGLISH ONLY):
+flowPrompt is NOT videoPromptEn. Flow receives the rendered imagePrompt as the FIRST FRAME.
+⚠️ NEVER re-describe the scene. Do not repeat the setting, the costume, the lighting, the colour
+palette, the art style, or who the characters are — all of that is already in the picture.
+Writing it again makes Flow redraw the shot and the source image is destroyed within a second.
+Write ONLY what MOVES, in about 10 seconds' worth:
+- camera movement, and the subject's motion: a turn of the head, a shift of weight, a breath, a
+  blink, a hand closing; cloth, hair, dust, smoke, water, flame; light growing or dimming.
+- Open with the camera move. e.g. "Slow push in as ...", "Whip pan left, then snap to a stop as ..."
+- Use speed contrast — hold still, then burst; fast move, then hard stop.
+- At most ONE cut. If you cut, never cut to the same person's face at a new angle (the face breaks).
+  Cut only to hands, a prop, feet, or landscape.
+- NEVER use a black frame, a fade to black, or a blackout — it reads as a broken render.
+- Do not name the art style or the palette. Do not write "cinematic 3D stylized animation".
+- End with exactly: "Keep the exact art style, character design and colour palette of the source image. No new scene, no style change."
+BAD  flowPrompt: "Slow tracking shot through a dark cavernous cave revealing [ACTOR-A] lying on the ground, soft rim lighting on jagged stone walls, cinematic 3D stylized animation."
+GOOD flowPrompt: "Slow push in. [ACTOR-A]'s fingers twitch once and go slack; his chest lifts with a shallow breath. Dust drifts down through the light shaft. [ACTOR-B]'s tail coils tighter around the bundle and its head turns slowly toward camera. Keep the exact art style, character design and colour palette of the source image. No new scene, no style change."
+
+`
+
+function videoSchemaProps(mode) {
+  const out = {}
+  for (const f of (VIDEO_PROMPT_FIELDS[mode] || [])) out[f] = { type: Type.STRING }
+  return out
+}
+const videoRequired = (mode) => VIDEO_PROMPT_FIELDS[mode] || []
+const videoPromptRuleFor = (mode) => (mode === 'flow' ? FLOW_PROMPT_RULE : '')
+
 function buildEditorialScenePrompt(sceneRef, bible, stylePreset, langConfig) {
   const conceptRoster = (bible.characters || []).map((char, i) => {
     const tag = `KEY-${String.fromCharCode(65 + i)}`
@@ -989,7 +1028,8 @@ const DEDICATED_STYLE_DIRECTORS = {
 }
 
 // ─── 씬 생성 공통 프롬프트 빌더 ───────────────────────────────────────────────
-function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate = false, visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false) {
+function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate = false, visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false, videoMode = 'none') {
+  const videoPromptRule = videoPromptRuleFor(videoMode)
   const dedicatedDirector = DEDICATED_STYLE_DIRECTORS[stylePreset.id]
   const isIllustration = /illustration|artwork|painting|manhwa|webtoon|anime|ghibli|watercolor|ink wash|clay|wool|diorama|fairy|folklore|3d.*anim|pixar/i.test(stylePreset.prompt)
   const directorMode   = isIllustration
@@ -1296,24 +1336,7 @@ Consider: does this scene need a FACE (close-up) or a WORLD (wide shot)? Both ar
 [STEP 3 — WRITE THE imagePrompt]:
 Format: "[SHOT TYPE]: [what characters are doing at peak moment, specific physical actions using [ACTOR-X] tags]. [LIGHTING description]. [COLOR PALETTE / MOOD]. [KEY ENVIRONMENTAL DETAIL that amplifies emotion]."
 
-[STEP 4 — WRITE THE flowPrompt] (Google Flow image-to-video, ENGLISH ONLY):
-flowPrompt is NOT videoPromptEn. Flow receives the rendered imagePrompt as the FIRST FRAME.
-⚠️ NEVER re-describe the scene. Do not repeat the setting, the costume, the lighting, the colour
-palette, the art style, or who the characters are — all of that is already in the picture.
-Writing it again makes Flow redraw the shot and the source image is destroyed within a second.
-Write ONLY what MOVES, in about 10 seconds' worth:
-- camera movement, and the subject's motion: a turn of the head, a shift of weight, a breath, a
-  blink, a hand closing; cloth, hair, dust, smoke, water, flame; light growing or dimming.
-- Open with the camera move. e.g. "Slow push in as ...", "Whip pan left, then snap to a stop as ..."
-- Use speed contrast — hold still, then burst; fast move, then hard stop.
-- At most ONE cut. If you cut, never cut to the same person's face at a new angle (the face breaks).
-  Cut only to hands, a prop, feet, or landscape.
-- NEVER use a black frame, a fade to black, or a blackout — it reads as a broken render.
-- Do not name the art style or the palette. Do not write "cinematic 3D stylized animation".
-- End with exactly: "Keep the exact art style, character design and colour palette of the source image. No new scene, no style change."
-BAD  flowPrompt: "Slow tracking shot through a dark cavernous cave revealing [ACTOR-A] lying on the ground, soft rim lighting on jagged stone walls, cinematic 3D stylized animation."
-GOOD flowPrompt: "Slow push in. [ACTOR-A]'s fingers twitch once and go slack; his chest lifts with a shallow breath. Dust drifts down through the light shaft. [ACTOR-B]'s tail coils tighter around the bundle and its head turns slowly toward camera. Keep the exact art style, character design and colour palette of the source image. No new scene, no style change."
-
+${videoPromptRule}
 ⚠️ [ENGLISH ONLY & NO REAL NAMES]: The 'imagePrompt', 'videoPromptEn', 'flowPrompt' and 'cameraMovement' fields MUST BE 100% IN ENGLISH. NO KOREAN. ONLY use tags like [ACTOR-A]!
 
 BAD imagePrompt: "A woman stands in a pharmacy looking worried."
@@ -1357,11 +1380,11 @@ ${resilienceNote}`
 }
 
 // ─── 씬 1개 생성 ──────────────────────────────────────────────────────────────
-export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, langConfig, currentMode = 'normal', visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false) {
+export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, langConfig, currentMode = 'normal', visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false, videoMode = 'none') {
   const client = await createClient()
   const prompt = currentMode === 'editorial'
     ? buildEditorialScenePrompt(sceneRef, bible, stylePreset, langConfig)
-    : buildScenePrompt(sceneRef, bible, stylePreset, langConfig, false, visualMode, isEditorialMode, isImageTextEnabled)
+    : buildScenePrompt(sceneRef, bible, stylePreset, langConfig, false, visualMode, isEditorialMode, isImageTextEnabled, videoMode)
 
   const res = await withRetry(() =>
     safeGenerate(client, {
@@ -1377,10 +1400,7 @@ export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, lang
             action:             { type: Type.STRING },
             imagePromptKo:      { type: Type.STRING },
             imagePrompt:        { type: Type.STRING },
-            videoPromptKo:      { type: Type.STRING },
-            videoPromptEn:      { type: Type.STRING },
-            flowPrompt:         { type: Type.STRING },
-            cameraMovement:     { type: Type.STRING },
+            ...videoSchemaProps(videoMode),
             shotType:           { type: Type.STRING },
             dialogue:           { type: Type.STRING },
             screenText:         { type: Type.STRING },
@@ -1388,7 +1408,7 @@ export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, lang
             description:        { type: Type.STRING },
             involvedCharacters: { type: Type.ARRAY, items: { type: Type.STRING } },
           },
-          required: ['action','imagePromptKo','imagePrompt','videoPromptKo','videoPromptEn','flowPrompt','cameraMovement','shotType','description','dialogue','duration','involvedCharacters'],
+          required: ['action','imagePromptKo','imagePrompt','shotType','description','dialogue','duration','involvedCharacters', ...videoRequired(videoMode)],
         },
       },
     }, `씬 생성(${sceneRef.id})`)
@@ -1437,10 +1457,10 @@ export async function generateSingleSceneInfo(sceneRef, bible, stylePreset, lang
 }
 
 // ─── 씬 재생성 (ra 함수 이식) ─────────────────────────────────────────────────
-export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko') {
+export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko', videoMode = 'none') {
   const client     = await createClient()
   const langConfig = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
-  const prompt     = buildScenePrompt(sceneRef, bible, stylePreset, langConfig, true)
+  const prompt     = buildScenePrompt(sceneRef, bible, stylePreset, langConfig, true, 'character', false, false, videoMode)
 
   const res = await withRetry(() =>
     safeGenerate(client, {
@@ -1457,17 +1477,14 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
             description:        { type: Type.STRING },
             imagePromptKo:      { type: Type.STRING },
             imagePrompt:        { type: Type.STRING },
-            videoPromptKo:      { type: Type.STRING },
-            videoPromptEn:      { type: Type.STRING },
-            flowPrompt:         { type: Type.STRING },
-            cameraMovement:     { type: Type.STRING },
+            ...videoSchemaProps(videoMode),
             shotType:           { type: Type.STRING },
             dialogue:           { type: Type.STRING },
             screenText:         { type: Type.STRING },
             duration:           { type: Type.STRING },
             involvedCharacters: { type: Type.ARRAY, items: { type: Type.STRING } },
           },
-          required: ['action','description','imagePromptKo','imagePrompt','videoPromptKo','videoPromptEn','flowPrompt','cameraMovement','shotType','dialogue','screenText','duration','involvedCharacters'],
+          required: ['action','description','imagePromptKo','imagePrompt','shotType','dialogue','screenText','duration','involvedCharacters', ...videoRequired(videoMode)],
         },
       },
     }, `씬 재생성(${sceneRef.id})`)
@@ -1520,7 +1537,7 @@ export async function regenerateScene(sceneRef, bible, stylePreset, lang = 'ko')
 }
 
 // ─── 전체 씬 생성 (어댑티브 동시성) ──────────────────────────────────────────
-export async function generateAllScenes(scriptText, bible, stylePreset, lang, onProgress, maxScenes = 30, currentMode = 'normal', visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false, worldSetting = null) {
+export async function generateAllScenes(scriptText, bible, stylePreset, lang, onProgress, maxScenes = 30, currentMode = 'normal', visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false, worldSetting = null, videoMode = 'none') {
   // 세계관은 화면에서 넘어온 값을 우선한다 — 바이블 생성 이후에 설정을 바꿔도,
   // 또 그 전에 만들어 둔 바이블을 그대로 써도 반영되게 하기 위함. 바이블을 다시
   // 만들면 캐릭터와 캐릭터 이미지까지 새로 뽑아야 해서 비용이 크다.
@@ -1547,7 +1564,7 @@ export async function generateAllScenes(scriptText, bible, stylePreset, lang, on
       const settled = await Promise.allSettled(
         chunk.map((scene, j) =>
           new Promise(r => setTimeout(r, j * 300))
-            .then(() => generateSingleSceneInfo(scene, bibleCtx, stylePreset, langConfig, currentMode, visualMode, isEditorialMode, isImageTextEnabled))
+            .then(() => generateSingleSceneInfo(scene, bibleCtx, stylePreset, langConfig, currentMode, visualMode, isEditorialMode, isImageTextEnabled, videoMode))
         )
       )
 
