@@ -898,25 +898,50 @@ export const VIDEO_PROMPT_FIELDS = {
   flow: ['flowPrompt', 'cameraMovement'],
 }
 
-const FLOW_PROMPT_RULE = `
+export const FLOW_PROMPT_RULE = `
 [STEP 4 — WRITE THE flowPrompt] (Google Flow image-to-video, ENGLISH ONLY):
-flowPrompt is NOT videoPromptEn. Flow receives the rendered imagePrompt as the FIRST FRAME.
-⚠️ NEVER re-describe the scene. Do not repeat the setting, the costume, the lighting, the colour
-palette, the art style, or who the characters are — all of that is already in the picture.
-Writing it again makes Flow redraw the shot and the source image is destroyed within a second.
-Write ONLY what MOVES, in about 10 seconds' worth:
-- camera movement, and the subject's motion: a turn of the head, a shift of weight, a breath, a
-  blink, a hand closing; cloth, hair, dust, smoke, water, flame; light growing or dimming.
-- Open with the camera move. e.g. "Slow push in as ...", "Whip pan left, then snap to a stop as ..."
-- Use speed contrast — hold still, then burst; fast move, then hard stop.
-- At most ONE cut. If you cut, never cut to the same person's face at a new angle (the face breaks).
-  Cut only to hands, a prop, feet, or landscape.
-- NEVER use a black frame, a fade to black, or a blackout — it reads as a broken render.
-- Do not name the art style or the palette. Do not write "cinematic 3D stylized animation".
-- End with exactly: "Keep the exact art style, character design and colour palette of the source image. No new scene, no style change."
-BAD  flowPrompt: "Slow tracking shot through a dark cavernous cave revealing [ACTOR-A] lying on the ground, soft rim lighting on jagged stone walls, cinematic 3D stylized animation."
-GOOD flowPrompt: "Slow push in. [ACTOR-A]'s fingers twitch once and go slack; his chest lifts with a shallow breath. Dust drifts down through the light shaft. [ACTOR-B]'s tail coils tighter around the bundle and its head turns slowly toward camera. Keep the exact art style, character design and colour palette of the source image. No new scene, no style change."
+Flow receives the rendered imagePrompt as the FIRST FRAME and animates forward for 10 seconds.
+The picture already carries the costume, the palette and the art style, so do not spend the
+sentence listing them again. Spend every word on MOTION.
 
+⚠️ THE COMMON FAILURE IS A DEAD FRAME: one character does one small thing, the camera slowly
+zooms, and nothing else in the world moves. Never write that. Name at least TWO moving things,
+and at least ONE of them must be in the WORLD rather than the subject:
+- world: soldiers advancing, a giant taking a step, a crowd surging or recoiling, banners and
+  dust and smoke driven sideways, debris falling, water breaking, fire climbing, shadows sweeping
+  as cloud passes, an arrow or a boulder crossing the frame.
+- subject: the exact physical act — a bowstring reaching full draw, a head snapping round, a knee
+  buckling, a fist opening, a breath going out.
+
+[PACE — read THIS segment, choose, and commit]:
+⚠️ Do NOT default to a slow push-in.
+- STILL (someone thinking, watching, waiting; a landscape; an object; a held threat)
+  → slow move, no cut. The stillness is the point.
+- BUILD (drawing a weapon, approaching, deciding, a crowd gathering)
+  → begin slow, accelerate into the beat, one hard stop at the end.
+- IMPACT (a blow lands, a wall falls, a god is struck, a monster erupts, someone flees)
+  → FAST. Whip pan, crash zoom, snap to a hard stop, handheld shake. Use speed contrast: hold
+    one beat dead still, then burst.
+⚠️ If the sentence opens with "Slow", the segment must genuinely be still. Most are not.
+
+[CUTS — allowed, and welcome when the beat earns one]:
+- Ten seconds may hold one shot, or break into 2-3 beats. Action usually wants a cut; a quiet
+  beat usually does not. Write one as "CUT TO: ..." and say plainly what the new shot holds.
+- ⚠️ Only the FIRST frame is guaranteed to match the source image; after a cut the model invents
+  the shot. So cut to hands, a weapon, feet, falling debris, the crowd, the sky, or a wide of the
+  same place — NOT to a named character's face at a new angle, which is where the likeness breaks.
+- NEVER cut to black, fade to black, or leave an empty frame. It reads as a broken render.
+- Close with exactly: "Keep the art style, character design and colour palette of the source image."
+
+BAD flowPrompt (dead frame — one small action, the camera doing all the work):
+"A wide shot slowly zooming in on the archer as he stands firm on a rocky battlefield. He draws his
+bow, his face set in grim determination. Dust particles swirl in the air."
+GOOD flowPrompt (the world moves, the pace fits the beat, one earned cut):
+"Hold one beat, then crash zoom to his hands as the bowstring reaches full draw and his knuckles
+whiten. Behind him the giant's leg swings forward and lands; the frame jolts with the impact, dust
+blows sideways through the ruins and the soldiers raise their shields. CUT TO: a low wide of the
+giant's shadow sweeping across the broken columns. Keep the art style, character design and colour
+palette of the source image."
 `
 
 function videoSchemaProps(mode) {
