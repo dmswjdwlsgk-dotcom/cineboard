@@ -1385,9 +1385,16 @@ and at least ONE of them must be in the WORLD rather than the subject:
 [CUTS — allowed, and welcome when the beat earns one]:
 - Ten seconds may hold one shot, or break into 2-3 beats. Action usually wants a cut; a quiet
   beat usually does not. Write one as "CUT TO: ..." and say plainly what the new shot holds.
-- ⚠️ Only the FIRST frame is guaranteed to match the source image; after a cut the model invents
-  the shot. So cut to hands, a weapon, feet, falling debris, the crowd, the sky, or a wide of the
-  same place — NOT to a named character's face at a new angle, which is where the likeness breaks.
+- ⚠️ Only the FIRST frame is guaranteed to match the source image. After a cut the model re-invents
+  the shot: the art style, costume and colour carry over, but a face comes back close rather than
+  identical, and the SURROUNDINGS are rebuilt from scratch. Weigh that per cut:
+  - Cutting to hands, a weapon, feet, falling debris, a silhouette, the crowd or the sky costs
+    nothing — nothing there has to match. Reach for these first; they also cut harder.
+  - Cutting to a character's face is allowed. Use it when the beat wants the face.
+  - What actually breaks continuity is the BACKGROUND. If the shot's meaning depends on something
+    specific behind the character — the enemy he is aiming at, the giant looming over him, the
+    burning city — do not cut away from it and expect it back. Either stay in one shot, or name
+    that thing again in the new shot so it is rebuilt.
 - NEVER cut to black, fade to black, or leave an empty frame. It reads as a broken render.
 - Close with exactly: "Keep the art style, character design and colour palette of the source image."
 
