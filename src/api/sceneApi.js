@@ -959,6 +959,21 @@ function videoSchemaProps(mode) {
 const videoRequired = (mode) => VIDEO_PROMPT_FIELDS[mode] || []
 const videoPromptRuleFor = (mode) => (mode === 'flow' ? FLOW_PROMPT_RULE : '')
 
+// 화면 속 글자가 스타일의 일부인 경우(간판·발표 슬라이드·그래프 라벨) 금지 규칙을
+// 뒤집는다. imageApi.TEXT_ALLOWED_STYLE_IDS 와 같은 목록을 봐야 하므로 함께 관리한다.
+const SCENE_TEXT_ALLOWED_STYLE_IDS = new Set(['issue_youtube', 'bright_info', 'public_info_real'])
+
+const SCENE_TEXT_ALLOWED_RULE = `⚠️ [ON-IMAGE TEXT — PART OF THIS STYLE]:
+- This style bakes on-image text (building and agency signage, counter labels, presentation slides, chart labels, a statement or calendar on a screen) directly into the imagePrompt.
+- The imagePrompt's scene description stays in English, but the WORDING of any on-image text must be written in the script's language (Korean) and wrapped in quotes — e.g. a branch entrance sign reading "국민건강보험공단", a slide titled "2026년 주요 정책".
+- Keep it short, plain and plausible. Only text that would really be there.
+- Still NO subtitles, captions, title cards or watermarks, and no random unrelated lettering.`
+
+const SCENE_TEXT_FORBIDDEN_RULE = `⚠️ [imagePrompt ABSOLUTE PROHIBITION — NO EXCEPTIONS]:
+- NO visible text, letters, words, signs, signage, banners, posters, newspapers, books with visible text, chalkboards, whiteboards, or any surface displaying readable characters.
+- NO subtitles, captions, title cards, watermarks in the scene description.
+- The scene must be PURELY VISUAL — zero textual elements in the rendered frame.`
+
 function buildEditorialScenePrompt(sceneRef, bible, stylePreset, langConfig) {
   const conceptRoster = (bible.characters || []).map((char, i) => {
     const tag = `KEY-${String.fromCharCode(65 + i)}`
@@ -1062,6 +1077,8 @@ const DEDICATED_STYLE_DIRECTORS = {
 // ─── 씬 생성 공통 프롬프트 빌더 ───────────────────────────────────────────────
 function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate = false, visualMode = 'character', isEditorialMode = false, isImageTextEnabled = false, videoMode = 'none') {
   const videoPromptRule = videoPromptRuleFor(videoMode)
+  const sceneTextRule   = SCENE_TEXT_ALLOWED_STYLE_IDS.has(stylePreset.id)
+    ? SCENE_TEXT_ALLOWED_RULE : SCENE_TEXT_FORBIDDEN_RULE
   const dedicatedDirector = DEDICATED_STYLE_DIRECTORS[stylePreset.id]
   const isIllustration = /illustration|artwork|painting|manhwa|webtoon|anime|ghibli|watercolor|ink wash|clay|wool|diorama|fairy|folklore|3d.*anim|pixar/i.test(stylePreset.prompt)
   const directorMode   = isIllustration
@@ -1374,10 +1391,7 @@ ${videoPromptRule}
 BAD imagePrompt: "A woman stands in a pharmacy looking worried."
 GOOD imagePrompt: "EXTREME CLOSE-UP: trembling hands clutching crumpled prescription paper across a pharmacy counter at 3AM — fluorescent light harshly illuminating tear-streaked cheeks, a pharmacist's blurred silhouette in background hesitating. Ice-blue desaturated palette. A single crushed flower petal dropped on the counter."
 
-⚠️ [imagePrompt ABSOLUTE PROHIBITION — NO EXCEPTIONS]:
-- NO visible text, letters, words, signs, signage, banners, posters, newspapers, books with visible text, chalkboards, whiteboards, or any surface displaying readable characters.
-- NO subtitles, captions, title cards, watermarks in the scene description.
-- The scene must be PURELY VISUAL — zero textual elements in the rendered frame.
+${sceneTextRule}
 
 ${artStyleLockRule}${noModernStagingRule}${noStyleRecapRule}${noHanbokDriftRule}${variedAngleRule}
 [MANDATORY DIALOGUE RULE]:

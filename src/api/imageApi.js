@@ -5,7 +5,7 @@ const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
 
 // 정보 상자/말풍선/그래프 라벨처럼 이미지 안 텍스트가 스타일 핵심인 스타일들 —
 // 기본 "텍스트 절대 금지" 규칙에서 제외한다.
-const TEXT_ALLOWED_STYLE_IDS = new Set(['issue_youtube', 'bright_info'])
+export const TEXT_ALLOWED_STYLE_IDS = new Set(['issue_youtube', 'bright_info', 'public_info_real'])
 
 // ─── 왕족 복식 판별 — 왕(익선관/곤룡포)과 왕비/대비(활옷·원삼/봉황)를 구분 ─────
 // 이전엔 "왕비"도 "왕"에 포함돼 매칭되면서 왕 전용 익선관+곤룡포를 왕비한테도

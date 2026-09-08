@@ -7,6 +7,7 @@ import Spinner from '../ui/Spinner.jsx'
 import ProgressBar from '../ui/ProgressBar.jsx'
 import { useAppStore } from '../../store/useAppStore.js'
 import { STYLES, MODELS } from '../../data/styles.js'
+import { TEXT_ALLOWED_STYLE_IDS } from '../../api/imageApi.js'
 import { generateAllScenes, generateSingleSceneInfo, regenerateScene } from '../../api/sceneApi.js'
 import { generateSceneImage } from '../../api/imageApi.js'
 import { LANG_CONFIGS } from '../../data/languages.js'
@@ -475,7 +476,13 @@ export default function Step4_Scenes() {
       const styleStr = style.prompt.replace(/\n+/g, ' ').trim()
       const envStr   = (bible.environment?.visualPrompt || '').replace(/\n+/g, ' ').trim()
       const sceneStr = replaceActorTags(scene.imagePrompt || '').replace(/\n+/g, ' ').trim()
-      let full = [styleStr, envStr, sceneStr, 'cinematic lighting, 8k resolution, 100% full bleed, absolutely no text or watermarks']
+      // 화면 속 글자가 스타일의 일부인 경우엔 텍스트 금지 문구를 빼야 한다.
+      // 안 그러면 뽑아서 다른 툴에 붙였을 때 간판·슬라이드가 지워진다.
+      const textOk = TEXT_ALLOWED_STYLE_IDS.has(style.id)
+      const tail   = textOk
+        ? 'cinematic lighting, 8k resolution, 100% full bleed, render the Korean on-image text exactly as described, no watermarks'
+        : 'cinematic lighting, 8k resolution, 100% full bleed, absolutely no text or watermarks'
+      let full = [styleStr, envStr, sceneStr, tail]
         .filter(Boolean).join(', ')
       if (isEditorial && scene.screenText) {
         full += `, include text overlay EXACTLY as: "${scene.screenText}"`
