@@ -790,3 +790,98 @@ function resizeBase64Image(dataUrl, maxSize = 256) {
     img.src = dataUrl
   })
 }
+
+// ─── 씬 이미지 부분 수정 ──────────────────────────────────────────────────────
+// 재생성은 같은 프롬프트를 다시 던지므로 구도·인물·배경이 그대로 다시 나온다.
+// "이건 좋은데 자세만" 같은 요구를 들어줄 방법이 없어 사용자가 앱을 나가 다른
+// 도구에서 뽑아 오는 일이 있었다. 여기서는 지금 그림 자체를 모델에 넣고 한글
+// 지시 한 줄만 적용시킨다 — 스타일과 출연진은 유지하도록 못 박는다.
+export async function editSceneImage(
+  scene,
+  instruction,
+  bible,
+  stylePreset,
+  model = DEFAULT_IMAGE_MODEL,
+  aspectRatio = '16:9'
+) {
+  const note = (instruction || '').trim()
+  if (!note) throw new Error('수정 지시가 비어 있습니다.')
+  if (!scene?.imageUrl) throw new Error('수정할 이미지가 없습니다. 먼저 이미지를 생성하거나 등록하세요.')
+
+  const m = /^data:([^;]+);base64,(.+)$/.exec(scene.imageUrl)
+  if (!m) throw new Error('이미지 형식을 읽을 수 없습니다.')
+  const [, mimeType, base64] = m
+
+  // Z-Image는 이 편집 방식을 쓰지 않는다 — 제미나이 이미지 모델로 처리한다.
+  const editModel = resolveModelId(model === 'z-image-turbo' ? DEFAULT_IMAGE_MODEL : model)
+
+  const resolvedStylePrompt = resolveTextLangPlaceholder(stylePreset.prompt, note)
+
+  const chars     = bible?.characters || []
+  const names     = scene.involvedCharacters || []
+  const inScene   = names.length > 0
+    ? chars.filter(c => names.includes(c.name))
+    : []
+  const castInfo  = inScene.length > 0
+    ? inScene.map(c => `${c.name}: ${c.visualPrompt || c.description || ''}`).join(' / ')
+    : ''
+
+  const textRule = TEXT_ALLOWED_STYLE_IDS.has(stylePreset.id)
+    ? 'On-image Korean text that is already in the picture must stay correct and legible. Do not add unrelated lettering or watermarks.'
+    : 'No text, no signs, no subtitles, no watermarks anywhere in the frame.'
+
+  const editPrompt = `Edit the attached image. Apply ONLY the change the user asks for, written below in Korean.
+
+[USER INSTRUCTION — this is the only thing to change]
+${note}
+
+[KEEP EVERYTHING ELSE EXACTLY AS IT IS IN THE ATTACHED IMAGE]
+- The art style, rendering, line quality, brushwork and level of detail.
+- Every character's face, hair, age, build, clothing and colour — the people must
+  remain recognisably the SAME people wearing the SAME things.
+- The location, the architecture, the props and the background, including any
+  figures in the background.
+- The lighting direction, the time of day, the mood and the colour palette.
+- The camera angle, the shot size and the framing.
+⚠️ This is a targeted edit, not a re-imagining. If the instruction does not mention
+something, that thing must not change. Do not re-stage the scene, do not move the
+camera, do not swap the setting, do not restyle the picture.
+⚠️ If the instruction conflicts with the description below, the instruction wins —
+the description is there only to tell you what must be preserved.
+
+[STYLE — the edited image must still read as this style]
+${resolvedStylePrompt}
+${castInfo ? `\n[CAST — keep these people consistent]\n${castInfo}` : ''}
+
+${textRule}
+Return the edited image only: full bleed, no borders, no letterboxing, single frame.`
+
+  const client = await createClient()
+  const contents = {
+    role: 'user',
+    parts: [{ inlineData: { mimeType, data: base64 } }, { text: editPrompt }],
+  }
+
+  return withRetry(async () => {
+    const timeoutMs = getTimeout(editModel)
+    const res = await withTimeout(
+      safeGenerate(client, {
+        model: editModel,
+        contents,
+        config: {
+          safetySettings: SAFETY_SETTINGS,
+          responseModalities: ['IMAGE'],
+          imageConfig: getImageConfig(editModel, aspectRatio),
+          ...getThinkingConfig(editModel),
+        },
+      }, `editSceneImage(${scene.id})`),
+      timeoutMs,
+      `editSceneImage(${scene.id})`
+    )
+
+    if (!res?.candidates?.length) throw new Error(`수정 실패 (${scene.id}): AI가 빈 응답을 반환했습니다.`)
+    const imgPart = res.candidates[0]?.content?.parts?.find(p => p.inlineData && !p.thought)
+    if (!imgPart) throw new Error(`수정 실패 (${scene.id}): 안전 필터에 의해 차단되었거나 응답이 비어있습니다.`)
+    return `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`
+  }, 3, `editSceneImage(${scene.id})`, { model: editModel, smartBackoff: SMART_BACKOFF_MODELS.includes(editModel) })
+}

@@ -9,11 +9,12 @@ import { useAppStore } from '../../store/useAppStore.js'
 import { STYLES, MODELS } from '../../data/styles.js'
 import { TEXT_ALLOWED_STYLE_IDS } from '../../api/imageApi.js'
 import { generateAllScenes, generateSingleSceneInfo, regenerateScene } from '../../api/sceneApi.js'
-import { generateSceneImage } from '../../api/imageApi.js'
+import { generateSceneImage, editSceneImage } from '../../api/imageApi.js'
 import { LANG_CONFIGS } from '../../data/languages.js'
 import { isApiReady } from '../../api/gemini.js'
 
-function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPrompt, copiedIdx, onSavePrompt, aspectRatio, onSaveImage, onUploadImage, onZoomImage }) {
+function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPrompt, copiedIdx, onSavePrompt, aspectRatio, onSaveImage, onUploadImage, onZoomImage, onEditImage }) {
+  const [editNote, setEditNote] = useState('')
   const [editingPrompt, setEditingPrompt] = useState(false)
   const [promptDraft, setPromptDraft] = useState('')
 
@@ -116,6 +117,38 @@ function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPro
           </button>
         </div>
       </div>
+
+      {/* 수정 지시 — 지금 그림을 그대로 두고 한 군데만 고친다 */}
+      {scene.imageUrl && (
+        <div className="flex gap-1.5 px-3 pt-2.5">
+          <input
+            type="text"
+            value={editNote}
+            onChange={(e) => setEditNote(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && editNote.trim() && !scene.generating) {
+                onEditImage(idx, editNote.trim())
+                setEditNote('')
+              }
+            }}
+            disabled={scene.generating}
+            placeholder="고칠 점을 한글로 (예: 앉은 자세로)"
+            className="flex-1 bg-gray-800/70 border border-gray-700 focus:border-amber-600 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 placeholder-gray-600 outline-none transition-colors disabled:opacity-50"
+          />
+          <button
+            onClick={() => {
+              if (!editNote.trim() || scene.generating) return
+              onEditImage(idx, editNote.trim())
+              setEditNote('')
+            }}
+            disabled={!editNote.trim() || scene.generating}
+            title="이 그림을 고친다 (스타일·인물 유지)"
+            className="px-2.5 bg-amber-900/40 hover:bg-amber-800/60 border border-amber-700/40 rounded-lg text-amber-400 text-[11px] font-semibold transition-colors disabled:opacity-40"
+          >
+            수정
+          </button>
+        </div>
+      )}
 
       {/* Info */}
       <div className="p-3 space-y-2">
@@ -386,6 +419,28 @@ export default function Step4_Scenes() {
       updateScene(idx, { imageUrl: url, generating: false, imageError: null })
     } catch (err) {
       updateScene(idx, { imageError: err.message, generating: false })
+    }
+  }
+
+  // 지금 그림을 입력으로 넣고 지시 한 줄만 적용한다. 재생성과 달리 구도·인물·
+  // 배경이 유지되므로 "이건 좋은데 자세만" 같은 요구를 처리할 수 있다.
+  const handleEditImage = async (idx, instruction) => {
+    const scene = scenes[idx]
+    if (!scene?.imageUrl) return
+    clearError()
+    updateScene(idx, { generating: true, imageError: null })
+    try {
+      const url = await editSceneImage(
+        scene,
+        instruction,
+        continuityBible || { characters: [] },
+        style,
+        modelId,
+        aspectRatio
+      )
+      updateScene(idx, { imageUrl: url, generating: false, imageError: null })
+    } catch (err) {
+      updateScene(idx, { generating: false, imageError: err.message })
     }
   }
 
@@ -745,6 +800,7 @@ export default function Step4_Scenes() {
               onSaveImage={handleSaveImage}
               onUploadImage={handleUploadImage}
               onZoomImage={setZoomIdx}
+              onEditImage={handleEditImage}
               aspectRatio={aspectRatio}
             />
           ))}
