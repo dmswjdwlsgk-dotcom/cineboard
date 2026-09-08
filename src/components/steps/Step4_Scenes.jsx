@@ -12,7 +12,7 @@ import { generateSceneImage } from '../../api/imageApi.js'
 import { LANG_CONFIGS } from '../../data/languages.js'
 import { isApiReady } from '../../api/gemini.js'
 
-function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPrompt, copiedIdx, onSavePrompt, aspectRatio, onSaveImage }) {
+function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPrompt, copiedIdx, onSavePrompt, aspectRatio, onSaveImage, onUploadImage }) {
   const [editingPrompt, setEditingPrompt] = useState(false)
   const [promptDraft, setPromptDraft] = useState('')
 
@@ -55,13 +55,22 @@ function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPro
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
             <div className="text-gray-700 text-2xl">🖼️</div>
-            <button
-              onClick={() => onRegenerateImage(idx)}
-              className="text-xs bg-gray-700/80 text-gray-400 px-3 py-1 rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-1"
-            >
-              <Image size={11} />
-              이미지 생성
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => onRegenerateImage(idx)}
+                className="text-xs bg-gray-700/80 text-gray-400 px-3 py-1 rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-1"
+              >
+                <Image size={11} />
+                이미지 생성
+              </button>
+              <button
+                onClick={() => onUploadImage(idx)}
+                className="text-xs bg-gray-700/80 text-gray-400 px-3 py-1 rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-1"
+              >
+                <Upload size={11} />
+                등록
+              </button>
+            </div>
           </div>
         )}
 
@@ -81,6 +90,13 @@ function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPro
               <Download size={11} />
             </button>
           )}
+          <button
+            onClick={() => onUploadImage(idx)}
+            title="이 씬에 이미지 등록"
+            className="w-6 h-6 bg-black/70 hover:bg-amber-700 rounded flex items-center justify-center text-white transition-colors"
+          >
+            <Upload size={11} />
+          </button>
           <button
             onClick={() => onRegenerateImage(idx)}
             title="이미지 재생성"
@@ -214,7 +230,9 @@ export default function Step4_Scenes() {
 
   const [copiedIdx, setCopiedIdx]           = useState(null)
   const [generatingImages, setGeneratingImages] = useState(false)
-  const bulkImgRef = useRef(null)
+  const bulkImgRef   = useRef(null)
+  const singleImgRef = useRef(null)
+  const uploadTargetIdx = useRef(null)
 
   // 이전 세션에서 isGenerating이 stuck된 경우 초기화
   useEffect(() => {
@@ -388,6 +406,27 @@ export default function Step4_Scenes() {
     } catch (err) {
       updateScene(idx, { generating: false, imageError: err.message })
     }
+  }
+
+  // 씬 하나에만 이미지를 붙인다. 파일명 규칙(P01…)을 안 따라도 되고,
+  // 일괄 등록에서 한 장만 잘못 들어갔을 때 그 자리만 갈아끼울 수 있다.
+  const handleUploadImage = (idx) => {
+    uploadTargetIdx.current = idx
+    singleImgRef.current?.click()
+  }
+
+  const handleSingleImageImport = async (e) => {
+    const file = e.target.files?.[0]
+    const idx  = uploadTargetIdx.current
+    e.target.value = ''
+    if (!file || idx == null || idx < 0 || idx >= scenes.length) return
+    const dataUrl = await new Promise(resolve => {
+      const reader = new FileReader()
+      reader.onload = ev => resolve(ev.target.result)
+      reader.readAsDataURL(file)
+    })
+    updateScene(idx, { imageUrl: dataUrl, generating: false, imageError: null })
+    uploadTargetIdx.current = null
   }
 
   const handleBulkImageImport = async (e) => {
@@ -595,6 +634,13 @@ export default function Step4_Scenes() {
               className="hidden"
               onChange={handleBulkImageImport}
             />
+            <input
+              ref={singleImgRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleSingleImageImport}
+            />
 
             <button
               onClick={() => handleExtractPrompts('main')}
@@ -671,6 +717,7 @@ export default function Step4_Scenes() {
               copiedIdx={copiedIdx}
               onSavePrompt={(i, newPrompt) => updateScene(i, { imagePrompt: newPrompt })}
               onSaveImage={handleSaveImage}
+              onUploadImage={handleUploadImage}
               aspectRatio={aspectRatio}
             />
           ))}
