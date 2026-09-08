@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
-import { ChevronRight, ChevronLeft, Play, RefreshCw, Copy, Check, Image, AlertTriangle, Zap, Edit3, Upload, FileText, Download, Film } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Play, RefreshCw, Copy, Check, Image, AlertTriangle, Zap, Edit3, Upload, FileText, Download, Film, X } from 'lucide-react'
 import Button from '../ui/Button.jsx'
 import Spinner from '../ui/Spinner.jsx'
 import ProgressBar from '../ui/ProgressBar.jsx'
@@ -13,7 +13,7 @@ import { generateSceneImage } from '../../api/imageApi.js'
 import { LANG_CONFIGS } from '../../data/languages.js'
 import { isApiReady } from '../../api/gemini.js'
 
-function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPrompt, copiedIdx, onSavePrompt, aspectRatio, onSaveImage, onUploadImage }) {
+function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPrompt, copiedIdx, onSavePrompt, aspectRatio, onSaveImage, onUploadImage, onZoomImage }) {
   const [editingPrompt, setEditingPrompt] = useState(false)
   const [promptDraft, setPromptDraft] = useState('')
 
@@ -34,7 +34,9 @@ function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPro
           <img
             src={scene.imageUrl}
             alt={`씬 ${idx + 1}`}
-            className="w-full h-full object-cover"
+            onClick={() => onZoomImage(idx)}
+            title="클릭하면 크게 보기"
+            className="w-full h-full object-cover cursor-zoom-in"
           />
         ) : scene.imageError ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center p-3">
@@ -231,6 +233,8 @@ export default function Step4_Scenes() {
 
   const [copiedIdx, setCopiedIdx]           = useState(null)
   const [generatingImages, setGeneratingImages] = useState(false)
+  const [zoomIdx, setZoomIdx] = useState(null)
+
   const bulkImgRef   = useRef(null)
   const singleImgRef = useRef(null)
   const uploadTargetIdx = useRef(null)
@@ -459,6 +463,21 @@ export default function Step4_Scenes() {
     }
     e.target.value = ''
   }
+
+  // 라이트박스 — Esc 로 닫고 ←/→ 로 이미지가 있는 씬 사이를 옮겨 다닌다
+  useEffect(() => {
+    if (zoomIdx == null) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setZoomIdx(null); return }
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      const step = e.key === 'ArrowRight' ? 1 : -1
+      for (let i = zoomIdx + step; i >= 0 && i < scenes.length; i += step) {
+        if (scenes[i]?.imageUrl) { setZoomIdx(i); return }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [zoomIdx, scenes])
 
   const resolveActorTags = makeActorTagResolver(continuityBible || { characters: [] })
 
@@ -725,6 +744,7 @@ export default function Step4_Scenes() {
               onSavePrompt={(i, newPrompt) => updateScene(i, { imagePrompt: newPrompt })}
               onSaveImage={handleSaveImage}
               onUploadImage={handleUploadImage}
+              onZoomImage={setZoomIdx}
               aspectRatio={aspectRatio}
             />
           ))}
@@ -746,6 +766,45 @@ export default function Step4_Scenes() {
           <ChevronRight size={18} />
         </Button>
       </div>
+
+      {/* 이미지 확대 보기 */}
+      {zoomIdx != null && scenes[zoomIdx]?.imageUrl && (
+        <div
+          onClick={() => setZoomIdx(null)}
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+        >
+          <img
+            src={scenes[zoomIdx].imageUrl}
+            alt={`씬 ${zoomIdx + 1}`}
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full object-contain rounded-lg cursor-default"
+          />
+
+          <div className="absolute top-4 left-4 bg-black/70 text-white text-sm font-mono px-3 py-1.5 rounded-lg">
+            씬 {zoomIdx + 1} / {scenes.length}
+          </div>
+
+          <button
+            onClick={() => setZoomIdx(null)}
+            title="닫기 (Esc)"
+            className="absolute top-4 right-4 w-9 h-9 bg-black/70 hover:bg-red-700 rounded-lg flex items-center justify-center text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
+
+          <button
+            onClick={(e) => { e.stopPropagation(); handleSaveImage(zoomIdx) }}
+            title="이미지 저장"
+            className="absolute bottom-4 right-4 w-9 h-9 bg-black/70 hover:bg-emerald-700 rounded-lg flex items-center justify-center text-white transition-colors"
+          >
+            <Download size={18} />
+          </button>
+
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[11px] text-gray-500">
+            ← → 로 이동 · Esc 로 닫기
+          </div>
+        </div>
+      )}
     </div>
   )
 }
