@@ -177,6 +177,26 @@ function SceneCard({ scene, idx, onRegenerateImage, onRegenerateScene, onCopyPro
   )
 }
 
+// ACTOR/KEY 태그 → 실제 이름. 두 곳(이미지 추출·비디오 추출)에서 함께 쓴다.
+// 태그를 그대로 내보내면 Grok·Flow가 "ACTOR-B"를 뜻 모를 글자로 읽는다.
+function makeActorTagResolver(bible) {
+  return (text, isEditorial = false, sigil = '@') => {
+    if (!text || !bible) return text || ''
+    const tagPrefix = isEditorial ? 'KEY' : 'ACTOR'
+    let result = text
+    ;(bible.characters || []).forEach((char, i) => {
+      const letter = String.fromCharCode(65 + i)
+      ;[
+        new RegExp(`\\[${tagPrefix}-${letter}\\]`, 'gi'),
+        new RegExp(`\\(${tagPrefix}-${letter}\\)`, 'gi'),
+        new RegExp(`${tagPrefix}[-_]${letter}`, 'gi'),
+        new RegExp(`${tagPrefix}${letter}`, 'gi'),
+      ].forEach(re => { result = result.replace(re, `${sigil}${char.name}`) })
+    })
+    return result
+  }
+}
+
 export default function Step4_Scenes() {
   const {
     scriptText, selectedStyleId, selectedModel, imageEngine, aspectRatio,
@@ -400,29 +420,16 @@ export default function Step4_Scenes() {
     e.target.value = ''
   }
 
+  const resolveActorTags = makeActorTagResolver(continuityBible || { characters: [] })
+
   const handleExtractPrompts = (type = 'main') => {
     const sceneList = type === 'shorts' ? [] : scenes // shorts/intro는 미구현시 빈 배열
     if (sceneList.length === 0) { alert('다운로드할 프롬프트가 없습니다.'); return }
 
     const bible = continuityBible || { characters: [], environment: {} }
     const isEditorial = effectiveMode === 'editorial'
-    const tagPrefix  = isEditorial ? 'KEY' : 'ACTOR'
 
-    // ACTOR 태그 → 실제 이름 치환
-    const replaceActorTags = (text) => {
-      if (!text || !bible) return text || ''
-      let result = text
-      ;(bible.characters || []).forEach((char, i) => {
-        const letter = String.fromCharCode(65 + i)
-        ;[
-          new RegExp(`\\[${tagPrefix}-${letter}\\]`, 'gi'),
-          new RegExp(`\\(${tagPrefix}-${letter}\\)`, 'gi'),
-          new RegExp(`${tagPrefix}[-_]${letter}`, 'gi'),
-          new RegExp(`${tagPrefix}${letter}`, 'gi'),
-        ].forEach(re => { result = result.replace(re, `@${char.name}`) })
-      })
-      return result
-    }
+    const replaceActorTags = (text) => resolveActorTags(text, isEditorial, '@')
 
     // 완성 이미지 프롬프트 조립
     const buildFullPrompt = (scene) => {
@@ -464,14 +471,17 @@ export default function Step4_Scenes() {
     const content = scenes.map((s, i) => {
       const num = String(i + 1).padStart(3, '0')
       const head = `--- ${s.id || `P${num}`} ---`
+      // Flow는 이름만, Grok은 기존대로 @이름
+      const ko = (t) => resolveActorTags(t, isEditorialMode, '')
+      const en = (t) => resolveActorTags(t, isEditorialMode, isFlow ? '' : '@')
       if (isFlow) {
-        return [head, s.flowPrompt || '', s.dialogue ? `[대사] ${s.dialogue}` : ''].filter(Boolean).join('\n')
+        return [head, en(s.flowPrompt), s.dialogue ? `[대사] ${ko(s.dialogue)}` : ''].filter(Boolean).join('\n')
       }
       return [
         head,
-        s.videoPromptKo ? `[KO] ${s.videoPromptKo}` : '',
-        s.videoPromptEn ? `[EN] ${s.videoPromptEn}` : '',
-        s.cameraMovement ? `Camera: ${s.cameraMovement}` : '',
+        s.videoPromptKo ? `[KO] ${ko(s.videoPromptKo)}` : '',
+        s.videoPromptEn ? `[EN] ${en(s.videoPromptEn)}` : '',
+        s.cameraMovement ? `Camera: ${en(s.cameraMovement)}` : '',
         s.shotType       ? `Shot: ${s.shotType}` : '',
       ].filter(Boolean).join('\n')
     }).join('\n\n')
