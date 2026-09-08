@@ -234,6 +234,12 @@ const KOREA_DYNASTY_MIN = 2
 const KOREA_WEAK = /한국|서울|남한|북한|국군|우리나라|한강|한복|한옥|양반|사대부|선비|사또|서당|과거시험|훈련도감|판서|정승|대감|이순신|세종대왕|정약용|안중근|김구|유관순|장영실|신사임당|왕건|광개토|을지문덕|계백|김유신|흥선대원군|인천상륙|낙동강|압록강|두만강/g
 const KOREA_WEAK_MIN = 5
 
+// 현대 한국 신호 — 기관·제도·행정 이름. KOREA_WEAK(역사 인물·지명 위주)이
+// 현대 대본을 하나도 못 잡아 "한국이 아님"으로 판정하던 문제를 막는다.
+// 고독사·통합돌봄 대본에서 보건복지부·통계청·경북 구미가 전부 미검출이었다.
+const KOREA_MODERN = /보건복지부|행정안전부|기획재정부|고용노동부|교육부|국토교통부|여성가족부|통계청|국세청|질병관리청|경찰청|소방청|국민건강보험공단|국민연금공단|근로복지공단|건강보험심사평가원|한국토지주택공사|행정복지센터|주민센터|보건소|읍사무소|면사무소|시청|군청|구청|지방자치단체|기초연금|국민연금|건강보험|장기요양|노인장맞춤|노인맞춤돌봄|통합돌봄|기초생활수급|근로장려금|자녀장려금|고독사|치매안심센터|119|120다산콜|주민등록|재난지원금/g
+const KOREA_MODERN_MIN = 2
+
 // 외국 무대 신호 — 종류별로 묶어서, 2종류 이상 걸릴 때만 "확실한 외국 배경"으로 본다
 const FOREIGN_SETTING_GROUPS = [
   /메소포타미아|바빌론|수메르|아시리아|가나안|유프라테스|티그리스/,
@@ -287,6 +293,8 @@ export function isNativeSetting(lang, scriptText) {
   if (dynasty >= KOREA_DYNASTY_MIN) return true         // 왕조·국가명이 반복되면 한국사
   const weak = (text.match(KOREA_WEAK) || []).length
   if (weak >= KOREA_WEAK_MIN) return true               // 한국 관련어가 충분히 반복되면 한국사
+  const modern = (text.match(KOREA_MODERN) || []).length
+  if (modern >= KOREA_MODERN_MIN) return true           // 한국 기관·제도명이면 현대 한국 대본
   const foreign = FOREIGN_SETTING_GROUPS.filter(re => re.test(text)).length
   return foreign < 2                                    // 외국 무대 신호가 2종류 미만이면 기본값 유지
 }
@@ -311,10 +319,10 @@ export function resolveSceneCulture(segmentText, fallback) {
 // 이 대본에 실제로 써야 할 외형/복식 지침을 돌려준다.
 export function resolveCultureContext(lang, scriptText, worldSetting = 'auto') {
   const conf     = LANG_CONFIGS[lang] || LANG_CONFIGS.ko
-  const korean   = { ethnicityHint: conf.ethnicityHint, costumeHierarchy: conf.costumeHierarchy, native: true }
+  const korean   = { ethnicityHint: conf.ethnicityHint, costumeHierarchy: conf.costumeHierarchy, native: true, premodern: true }
   // 한국인이되 조선 복식 위계는 빼는 경우 — 근현대 한국
-  const koreanNo = { ethnicityHint: conf.ethnicityHint, costumeHierarchy: '', native: true }
-  const derived  = { ethnicityHint: DERIVE_FROM_SCRIPT_HINT, costumeHierarchy: '', native: false }
+  const koreanNo = { ethnicityHint: conf.ethnicityHint, costumeHierarchy: '', native: true, premodern: false }
+  const derived  = { ethnicityHint: DERIVE_FROM_SCRIPT_HINT, costumeHierarchy: '', native: false, premodern: false }
 
   switch (worldSetting) {
     case 'joseon':

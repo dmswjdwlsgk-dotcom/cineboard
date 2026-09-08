@@ -489,8 +489,18 @@ ${imagePromptText || actionText}
   //     명백한 해외 배경일 때만 푸는 구조라, 한국사 대본이 누락될 위험은 낮다.
   const periodAccuracyRule = '⚠️ PERIOD ACCURACY: costume, architecture, props and hairstyles are accurate to the ERA AND REGION this scene depicts. Never modern clothing, modern buildings, or modern objects unless the scene is explicitly set in the present day.'
   // 화면에서 넘어온 세계관을 우선한다 — 바이블을 다시 만들지 않아도 반영되게.
+  // ⚠️ 예전엔 `worldSetting ? true : ...` 이었다. 'auto'와 'korea_modern'도 문자열이라
+  //    참으로 읽혀, 세계관을 나눈 의미가 사라지고 조선 왕실 복식 지침이 현대·자동감지
+  //    대본에까지 붙었다(2026년 고독사·통합돌봄 대본에서 조선 병사가 생성됨).
+  //    어떤 값이 조선 복식을 부르는지 명시적으로 적는다.
+  const KOREAN_PERIOD_SETTINGS = new Set(['joseon', 'korea_premodern'])
+  const NON_KOREAN_SETTINGS    = new Set(['world', 'korea_modern'])
   const isWorldSetting = worldSetting === 'world'
-  const isKoreanScene  = isWorldSetting ? false : (worldSetting ? true : bible.cultureNative !== false)
+  const isKoreanScene  = KOREAN_PERIOD_SETTINGS.has(worldSetting) ? true
+                       : NON_KOREAN_SETTINGS.has(worldSetting)    ? false
+                       // ⚠️ cultureNative가 아니라 culturePremodern을 본다. 현대 한국 대본도
+                       //    native는 참이라, native로 재면 조선 복식이 그대로 다시 붙는다.
+                       : bible.culturePremodern === true
   const koreanRoyalAttireRule = !isKoreanScene ? '' : `
 ⚠️ KOREAN ROYAL ATTIRE — READ SCENE CONTEXT: If the scene is formal/official (throne room, court, royal ceremony, public setting) → king wears 익선관(翼善冠, tall black dome cap, two small rear flaps, NO wide side wings) + 곤룡포(ENTIRELY VERMILLION RED robe — ⚠️ ABSOLUTE RULE: NO blue fabric anywhere on the garment. NO blue inner sleeves. NO blue undershirt showing at wrists or collar. The ONLY non-red color allowed is the white inner collar and gold dragon embroidery). If the scene is private, informal, or pre-coronation → king may wear 평상복, 도포, or other period-appropriate casual attire. Officials/ministers always wear 사모(紗帽, wide flat horizontal side wings) + 관복, NEVER 익선관.`
 
