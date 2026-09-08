@@ -450,16 +450,27 @@ export default function Step4_Scenes() {
     const imgContent = sceneList.map(s => `--- ${s.id} ---\n${buildFullPrompt(s)}`).join('\n\n')
     download(imgContent, `${prefix}_IMG.txt`)
 
-    // GROK.txt — 이미지+영상+대사 (Grok/AI영상툴용), 500ms 후
+    // FLOW.txt — 구글 Flow 이미지→비디오용 모션 프롬프트, 500ms 후
+    const FLOW_LOCK = 'Keep the exact art style, character design and colour palette of the source image. No new scene, no style change.'
+    const buildFlowPrompt = (scene) => {
+      // 인트로 확장 클립은 전용 flowPrompt를 갖고 있다. 없으면 카메라+모션으로 조립.
+      const dedicated = replaceActorTags(scene.flowPrompt || '').replace(/\n+/g, ' ').trim()
+      if (dedicated) {
+        return dedicated.includes('No new scene') ? dedicated : `${dedicated} ${FLOW_LOCK}`
+      }
+      const cam    = (scene.cameraMovement || '').trim()
+      const motion = replaceActorTags(scene.videoPromptEn || '').replace(/\n+/g, ' ').trim()
+      const head   = cam && !motion.toLowerCase().startsWith(cam.toLowerCase()) ? `${cam}. ` : ''
+      return `${head}${motion} ${FLOW_LOCK}`.replace(/\s{2,}/g, ' ').trim()
+    }
+
     setTimeout(() => {
-      const grokContent = sceneList.map(s => {
-        const imgPart    = replaceActorTags(s.imagePrompt || '').replace(/\n+/g, ' ').trim()
-        const motionPart = s.videoPromptEn ? `Motion: ${replaceActorTags(s.videoPromptEn).replace(/\n+/g, ' ').trim()}` : ''
-        const dialogPart = s.dialogue ? `Speech Dialog (Korean): "${replaceActorTags(s.dialogue).replace(/\n+/g, ' ').trim()}"` : ''
-        const combined   = [imgPart, motionPart, dialogPart].filter(Boolean).join(', ')
-        return `--- ${s.id} ---\n${combined}`
+      const flowContent = sceneList.map(s => {
+        const flowPart   = buildFlowPrompt(s)
+        const dialogPart = s.dialogue ? `[대사] ${replaceActorTags(s.dialogue).replace(/\n+/g, ' ').trim()}` : ''
+        return [`--- ${s.id} ---`, flowPart, dialogPart].filter(Boolean).join('\n')
       }).join('\n\n')
-      download(grokContent, `${prefix}_GROK.txt`)
+      download(flowContent, `${prefix}_FLOW.txt`)
     }, 500)
   }
 
@@ -594,7 +605,7 @@ export default function Step4_Scenes() {
                 <FileText size={13} />
                 <span>프롬프트 추출</span>
               </div>
-              <span className="text-[9px] text-amber-500/70 font-medium">AutoFlow용 (.txt)</span>
+              <span className="text-[9px] text-amber-500/70 font-medium">이미지 + Flow영상 (.txt)</span>
             </button>
 
             {scenes.some(s => s.videoPromptKo || s.videoPromptEn) && (

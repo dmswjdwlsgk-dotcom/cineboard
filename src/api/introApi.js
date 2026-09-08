@@ -102,6 +102,16 @@ ${characterRoster || '(등장인물 정보 없음)'}
 - duration: 항상 "8s"
 - 이미지 프롬프트(imagePrompt)는 영어로, 300자 이상 상세하게
 ${langConfig.outputInstruction}
+[flowPrompt 규칙 — Google Flow 이미지→비디오용, 영어로만]:
+⚠️ flowPrompt는 videoPromptEn과 다르다. 장면을 다시 설명하지 마라.
+Flow는 imagePrompt로 만든 그림을 첫 프레임으로 받는다. 그림에 이미 보이는 것(인물 외모, 의상, 배경, 색감, 구도)을 다시 적으면 Flow가 장면을 새로 그려버려 시작 그림이 곧바로 깨진다.
+- 10초 분량. 오직 “무엇이 움직이는가”만 쓴다: 카메라 움직임, 인물의 동작·시선·호흡, 천·머리카락·먼지·불꽃의 흔들림, 빛의 변화.
+- 문장은 카메라 움직임으로 시작한다. (예: "Slow push in as ...", "Whip pan left, then snap to a stop on ...")
+- 속도 대비를 써라: 멈췄다가 터지기, 느린 모션 뒤 급정지.
+- 컷은 최대 1번까지만 허용. 컷한다면 같은 인물의 얼굴을 다른 각도로 비추지 말 것(얼굴이 무너진다). 손·소품·발밑·풍경 등 얼굴이 아닌 곳으로만 컷한다.
+- 검은 화면·페이드아웃·블랙아웃 금지. 사고난 영상처럼 보인다.
+- 마지막은 반드시 이 문장으로 끝난다: "Keep the exact art style, character design and colour palette of the source image. No new scene, no style change."
+
 ⚠️ [ENGLISH ONLY & NO REAL NAMES]: The 'imagePrompt' and 'videoPromptEn' fields MUST BE 100% IN ENGLISH. NO KOREAN. NEVER use real Korean names in these fields. ONLY use tags like [ACTOR-A]!`
 
   return withRetry(async () => {
@@ -125,6 +135,7 @@ ${langConfig.outputInstruction}
                   imagePrompt:        { type: Type.STRING },
                   videoPromptKo:      { type: Type.STRING },
                   videoPromptEn:      { type: Type.STRING },
+                  flowPrompt:         { type: Type.STRING },
                   cameraMovement:     { type: Type.STRING },
                   shotType:           { type: Type.STRING },
                   dialogue:           { type: Type.STRING },
@@ -132,7 +143,7 @@ ${langConfig.outputInstruction}
                   clipScript:         { type: Type.STRING },
                   hookType:           { type: Type.STRING },
                 },
-                required: ['action','description','imagePromptKo','imagePrompt','videoPromptKo','videoPromptEn','cameraMovement','shotType','dialogue','involvedCharacters','clipScript','hookType'],
+                required: ['action','description','imagePromptKo','imagePrompt','videoPromptKo','videoPromptEn','flowPrompt','cameraMovement','shotType','dialogue','involvedCharacters','clipScript','hookType'],
               },
             },
           },
@@ -185,6 +196,7 @@ ${langConfig.outputInstruction}
       imagePrompt:      clip.imagePrompt   || '',
       videoPromptKo:    clip.videoPromptKo || '',
       videoPromptEn:    clip.videoPromptEn || '',
+      flowPrompt:       clip.flowPrompt || '',
       isGeneratingImage: false,
       generationError:  undefined,
       clipDuration:     8,
