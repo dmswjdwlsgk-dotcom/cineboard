@@ -259,6 +259,7 @@ const FOREIGN_SETTING_GROUPS = [
   /일본|도쿄|교토|오사카|에도 막부|에도 시대|막부|사무라이|쇼군|메이지 유신/,
   /몽골|칭기즈|초원 제국/,
   /러시아|모스크바|소련|차르|시베리아/,
+  /미국|워싱턴|뉴욕|백악관|알래스카|하와이|캘리포니아|텍사스|링컨|남북전쟁|독립선언|월스트리트/,
   /북유럽|바이킹|스칸디나비아|노르드/,
 ]
 
@@ -296,7 +297,10 @@ export function isNativeSetting(lang, scriptText) {
   const modern = (text.match(KOREA_MODERN) || []).length
   if (modern >= KOREA_MODERN_MIN) return true           // 한국 기관·제도명이면 현대 한국 대본
   const foreign = FOREIGN_SETTING_GROUPS.filter(re => re.test(text)).length
-  return foreign < 2                                    // 외국 무대 신호가 2종류 미만이면 기본값 유지
+  // 여기까지 왔다는 건 한국 신호(왕조·관련어·기관)가 하나도 없다는 뜻이다. 그런 대본에
+  // 외국 무대 신호가 하나라도 있으면 외국이다. 예전엔 2종류를 요구해서 러시아만 나오는
+  // 대본(알래스카 매각)이 한국으로 판정됐다. 조선 대본은 위에서 왕조명으로 먼저 잡힌다.
+  return foreign === 0                                  // 아무 신호도 없을 때만 기본값(한국) 유지
 }
 
 // 씬 단위 재판별 — 한 대본 안에서 무대가 갈리는 경우를 위한 것.
@@ -307,9 +311,16 @@ export function isNativeSetting(lang, scriptText) {
 export function resolveSceneCulture(segmentText, fallback) {
   const t = segmentText || ''
   if (!t) return fallback
-  const korean = (t.match(KOREA_DYNASTY) || []).length > 0 || (t.match(KOREA_WEAK) || []).length > 0
+  // ⚠️ 전체 대본이 조선·전근대 한국이 아닌데, 한 씬에 '남한' '한국' 같은 말이 한 마디 있다고
+  //    그 씬을 조선 복식으로 뒤집지 않는다. 알래스카 대본의 "남한 면적의 두 배 가까운 땅"
+  //    한 줄 때문에 러시아 재무장관이 관복에 갓을 쓰고 나왔다. 이미 조선 대본이면 약한 신호도
+  //    받아들이되, 그렇지 않으면 왕조명(강한 신호)이 2건 이상일 때만 한국 씬으로 본다.
+  const dynasty = (t.match(KOREA_DYNASTY) || []).length
+  const weak    = (t.match(KOREA_WEAK) || []).length
+  const alreadyKorean = fallback?.native === true && fallback?.premodern === true
+  const korean = alreadyKorean ? (dynasty > 0 || weak > 0) : dynasty >= KOREA_DYNASTY_MIN
   if (korean) return LANG_CONFIGS.ko.costumeHierarchy
-    ? { ethnicityHint: LANG_CONFIGS.ko.ethnicityHint, costumeHierarchy: LANG_CONFIGS.ko.costumeHierarchy, native: true }
+    ? { ethnicityHint: LANG_CONFIGS.ko.ethnicityHint, costumeHierarchy: LANG_CONFIGS.ko.costumeHierarchy, native: true, premodern: true }
     : fallback
   const foreign = FOREIGN_SETTING_GROUPS.some(re => re.test(t))
   if (foreign) return { ethnicityHint: DERIVE_FROM_SCRIPT_HINT, costumeHierarchy: '', native: false }
