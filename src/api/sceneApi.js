@@ -203,7 +203,7 @@ function detectSceneModeSignal(segment) {
 // 뒤 다시 켠다. 켤 때는 detect-then-cap이 아니라 attachSceneSettingHints(fb45f8d)처럼
 // 강제 분배 방식으로 바꿔야 한다 — 지금 방식은 96씬 중 93씬이 A로 떨어지고 캡은 한 번도
 // 발동하지 않는다(대본 3종 시뮬레이션에서 전부 0회).
-const FLAT_EDITORIAL_MODE_INJECTION = false
+const FLAT_EDITORIAL_MODE_INJECTION = true
 
 function attachSceneModeHints(rawScenes, stylePreset) {
   if (!FLAT_EDITORIAL_MODE_INJECTION) return rawScenes
