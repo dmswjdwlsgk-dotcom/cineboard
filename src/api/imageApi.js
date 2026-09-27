@@ -5,6 +5,10 @@ const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image'
 
 // 정보 상자/말풍선/그래프 라벨처럼 이미지 안 텍스트가 스타일 핵심인 스타일들 —
 // 기본 "텍스트 절대 금지" 규칙에서 제외한다.
+// 현대를 전제로 하는 스타일 — 장르상 사극 복식이 나올 수 없다.
+// 자동감지 정규식이 또 뚫려도(한글엔 단어 경계가 없어 오탐이 반복된다) 여기서 막는다.
+export const PRESENT_DAY_STYLE_IDS = new Set(['public_info_real'])
+
 export const TEXT_ALLOWED_STYLE_IDS = new Set(['issue_youtube', 'bright_info', 'public_info_real'])
 
 // ─── 왕족 복식 판별 — 왕(익선관/곤룡포)과 왕비/대비(활옷·원삼/봉황)를 구분 ─────
@@ -496,7 +500,8 @@ ${imagePromptText || actionText}
   const KOREAN_PERIOD_SETTINGS = new Set(['joseon', 'korea_premodern'])
   const NON_KOREAN_SETTINGS    = new Set(['world', 'korea_modern'])
   const isWorldSetting = worldSetting === 'world'
-  const isKoreanScene  = KOREAN_PERIOD_SETTINGS.has(worldSetting) ? true
+  const isKoreanScene  = PRESENT_DAY_STYLE_IDS.has(stylePreset.id)             ? false
+                       : KOREAN_PERIOD_SETTINGS.has(worldSetting) ? true
                        : NON_KOREAN_SETTINGS.has(worldSetting)    ? false
                        // ⚠️ cultureNative가 아니라 culturePremodern을 본다. 현대 한국 대본도
                        //    native는 참이라, native로 재면 조선 복식이 그대로 다시 붙는다.

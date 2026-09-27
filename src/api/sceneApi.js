@@ -1,3 +1,4 @@
+import { PRESENT_DAY_STYLE_IDS } from './imageApi.js'
 import { createClient, SAFETY_SETTINGS, withRetry, safeGenerate, parseJson } from './gemini.js'
 import { Type } from '@google/genai'
 import { LANG_CONFIGS, detectLanguage, cleanScript, resolveCultureContext, resolveSceneCulture } from '../data/languages.js'
@@ -1155,10 +1156,14 @@ function buildScenePrompt(sceneRef, bible, stylePreset, langConfig, isRegenerate
   // 곤룡포 차림으로 나온 경로 중 하나다. imageApi 쪽 두 경로(getRoyalAttireTag,
   // KOREAN ROYAL ATTIRE 블록)는 막았지만 여기가 남아 있었다.
   // 바로 아래 culture.costumeHierarchy와 같은 기준으로 묶는다.
-  const sageukCostumeRule = culture.native === false ? '' : `⚠️ IF Historical Drama (사극): dragon robes(용포) = 왕/세자 ONLY. Political power ≠ royalty — even the most powerful minister wears 관복/사모관대 with 흉배, NEVER 용포. IF Modern: NO traditional clothes.
+  // 스타일이 현대를 전제하면 사극 블록을 보내지 않는다. 곤룡포·갓·수양대군이 매 씬
+  // 프롬프트에 붙어 있으면, 그릴 것이 없는 추상적인 문장에서 LLM이 사극·전쟁 이미지로
+  // 은유를 찾아간다 — 장례비 영수증 대목에 조선 군대 행군 대열이 나온 경로다.
+  const isPresentDayStyle = PRESENT_DAY_STYLE_IDS.has(stylePreset.id)
+  const sageukCostumeRule = (culture.native === false || isPresentDayStyle) ? '' : `⚠️ IF Historical Drama (사극): dragon robes(용포) = 왕/세자 ONLY. Political power ≠ royalty — even the most powerful minister wears 관복/사모관대 with 흉배, NEVER 용포. IF Modern: NO traditional clothes.
 ⚠️ HEADWEAR RULE: When a character wears 사모, 갓, 익선관, or any traditional hat — ALL hair is completely hidden inside the hat. NEVER describe or render visible hair protruding above or outside the hat.
 `
-  const sageukRankRule = culture.native === false ? '' : `⚠️ RANK-AT-TIME-OF-SCENE (사극 CRITICAL): If a character's description contains a STATUS TRANSITION note (e.g., 수양대군→세조), dress them according to their rank AT THE MOMENT of THIS script segment — NOT their final rank. If the segment is set BEFORE coronation/ascension, they wear pre-royal costume (도포, 왕자복, 갑옷 etc.), NOT 용포/익선관. Only dress them as king AFTER the coronation moment in the script.
+  const sageukRankRule = (culture.native === false || isPresentDayStyle) ? '' : `⚠️ RANK-AT-TIME-OF-SCENE (사극 CRITICAL): If a character's description contains a STATUS TRANSITION note (e.g., 수양대군→세조), dress them according to their rank AT THE MOMENT of THIS script segment — NOT their final rank. If the segment is set BEFORE coronation/ascension, they wear pre-royal costume (도포, 왕자복, 갑옷 etc.), NOT 용포/익선관. Only dress them as king AFTER the coronation moment in the script.
 `
 
   const isInfoviz = visualMode === 'infoviz'
@@ -1336,7 +1341,7 @@ ${dedicatedDirector}
 ${visualModeInstruction}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` : `[ACTOR RULES]:
 ⚠️ NAMED actors listed above are the FOCAL POINT. Their appearance (age/outfit/hair) is ISOLATED — do NOT mix between actors.
-${sageukCostumeRule}${culture.costumeHierarchy || ''}
+${sageukCostumeRule}${isPresentDayStyle ? '' : (culture.costumeHierarchy || '')}
 ${sageukRankRule}⚠️ AGE-AT-TIME-OF-SCENE (LIFE-SPANNING BIOGRAPHIES): the character's reference portrait/visualPrompt reflects ONE representative "prime" age. If THIS segment's chronological moment is clearly a DIFFERENT life stage than that (e.g., them as a teenager/young adult decades before their reign, or as an old/dying person decades after it), you MUST explicitly describe the age-appropriate differences in imagePrompt so the rendered age matches the story moment, not just the reference: for a YOUNGER moment — smooth unlined skin, dark/full hair, leaner build, more energetic posture; for an OLDER moment — visible grey/white hair, deeper wrinkles, frailer or more weathered build, slower posture. Do not let a fixed reference identity keep every scene looking like the same middle-aged snapshot regardless of what point in their life this segment describes.
 ⚠️ CRITICAL APPEARANCE OVERRIDE: YOU MUST COMPLETELY IGNORE the script's clothing descriptions.
 ⚠️ USE ACTOR TAGS: Your \`imagePrompt\` and \`action\` MUST use the EXACT [ACTOR-X] tags to refer to characters instead of their names or pronouns (e.g., "[ACTOR-A] looks at [ACTOR-B]"). DO NOT hallucinate script-based clothing.
