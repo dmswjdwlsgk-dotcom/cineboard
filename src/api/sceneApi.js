@@ -252,8 +252,11 @@ const INTERIOR_CUES = /서재|책상|방 안|실내|막사|장막|궁궐|전각|
 // 문단이 텍스트·기록을 논하는지 판정 — 두루마리/죽간 그림을 부르는 문단들이다.
 const TEXT_CUES     = /원문|구절|문장|편에|편의|기록|적었|적어|썼습니다|책|병법서|주석|번역|죽간/
 
-// 야외로 돌릴 때 쓸 배경 — 대본 어디에나 있을 수 있는 범용 카테고리로만 구성
-const OUTDOOR_FALLBACKS = [
+// 야외로 돌릴 때 쓸 배경.
+// ⚠️ 원래 목록 하나로 전 대본에 돌렸다. 그 목록은 손자병법 100씬용이라 전투·행군이
+//    들어 있었는데, 장례 행정 대본(2026)에도 그대로 배정돼 "영수증이 없으면 인정받지
+//    못합니다" 대목에 조선 군대 행군 대열이 나왔다. 전쟁터는 사극·역사 대본에서만 쓴다.
+const OUTDOOR_FALLBACKS_PREMODERN = [
   'open terrain — a field, ridge, plain or road under open sky',
   'a battlefield or a marching column seen from a distance',
   'water — a river bank, a ford, a shoreline, a boat deck',
@@ -262,13 +265,24 @@ const OUTDOOR_FALLBACKS = [
   'a crowd or a street with many small figures',
 ]
 
-function attachSceneSettingHints(rawScenes, visualMode) {
+// 현대 대본용 — 같은 자리를 메우되 오늘의 한국에 실제로 있는 장소로만.
+const OUTDOOR_FALLBACKS_MODERN = [
+  'the exterior of a public building seen from the street — an agency, a hospital, a district office, its sign legible',
+  'a street with people — a pavement, a crossing, shopfronts, passers-by',
+  'a threshold — an entrance, an automatic door, a car park, a lobby seen from outside',
+  'weather and sky — rain on asphalt, snow, dawn light, a city at night',
+  'a park or a walking path',
+  'transit — inside a car or a bus, a stop, a station platform',
+]
+
+function attachSceneSettingHints(rawScenes, visualMode, isPremodern = true) {
   // 인포그래픽 계열은 배경 개념이 달라서 제외한다(Step4_Scenes.jsx의 EDITORIAL_MODES와 동일).
   if (['content', 'infoviz', 'docu'].includes(visualMode)) return rawScenes
 
   if (!rawScenes.length) return rawScenes
 
   const subjectCount = {}
+  let outdoorTurn = 0
 
   return rawScenes.map((scene, i) => {
     const segment = scene.fullScriptSegment || scene.scriptReference || ''
@@ -278,7 +292,11 @@ function attachSceneSettingHints(rawScenes, visualMode) {
     //    (강제하지 않은 씬은 지금처럼 자유롭게 고르게 두어 대본 내용을 거스르지 않는다)
     const wantsInterior   = INTERIOR_CUES.test(segment)
     const forceOutdoor    = !wantsInterior && n % OUTDOOR_FORCE_EVERY === 0
-    const assignedSetting = forceOutdoor ? OUTDOOR_FALLBACKS[i % OUTDOOR_FALLBACKS.length] : ''
+    const fallbacks       = isPremodern ? OUTDOOR_FALLBACKS_PREMODERN : OUTDOOR_FALLBACKS_MODERN
+    // ⚠️ 예전엔 fallbacks[i % 6]이었다. 야외 강제는 짝수 씬에서만 걸리는데 색인은 i를
+    //    그대로 써서 홀수 색인 3개(1·3·5)만 순환했다 — 목록의 절반이 한 번도 안 쓰였고,
+    //    사극 목록에서는 '전쟁터'가 야외 세 컷 중 한 컷씩 돌아왔다. 배정될 때만 센다.
+    const assignedSetting = forceOutdoor ? fallbacks[outdoorTurn++ % fallbacks.length] : ''
 
     // ── 인물 없는 컷: 정해진 주기마다. 텍스트를 논하는 문단이면 그쪽을 우선 고른다.
     const figureFree = n % FIGURE_FREE_EVERY === 0
@@ -1224,7 +1242,12 @@ If a named human character appears in this scene, it should almost always be one
   const spreadHint = (() => {
     const parts = []
     if (sceneRef.assignedSetting && sceneRef.assignedSetting !== 'interior') {
-      parts.push(`SETTING — CODE-ASSIGNED FACT, NOT YOUR JUDGMENT CALL: this scene must be set OUTDOORS, specifically ${sceneRef.assignedSetting}. Too many neighbouring scenes are already indoors. Even if the narration talks about a book, a document, a plan or a conversation, place THIS scene outdoors and show what the words refer to — the battle, the terrain, the march, the consequence — never a room, a study, a tent interior or a desk.`)
+      // ⚠️ 예전엔 뒷문장이 "the battle, the terrain, the march"로 고정돼 있어서, 현대
+      //    대본에서도 코드가 대본을 무시하고 전투를 그리라고 지시하는 꼴이 됐다.
+      const whatToShow = culture.premodern === true
+        ? 'the battle, the terrain, the march, the consequence'
+        : 'the place the words actually refer to — the building, the street, the entrance, the journey'
+      parts.push(`SETTING — CODE-ASSIGNED FACT, NOT YOUR JUDGMENT CALL: this scene must be set OUTDOORS, specifically ${sceneRef.assignedSetting}. Too many neighbouring scenes are already indoors. Even if the narration talks about a book, a document, a plan or a conversation, place THIS scene outdoors and show ${whatToShow} — never a room, a study or a desk.`)
     }
     if (sceneRef.figureFree) {
       parts.push('NO HUMAN FIGURE — CODE-ASSIGNED FACT: this scene must contain NO person at all. Use terrain, weather, architecture seen from outside, an object, an animal, tracks, wreckage, or an empty aftermath. Do NOT render anyone holding, reading, writing or pointing at anything.')
@@ -1597,7 +1620,7 @@ export async function generateAllScenes(scriptText, bible, stylePreset, lang, on
   const rawScenesSplit = await splitScriptToScenes(scriptText, maxScenes, visualMode)
   const rawScenesNamed = attachCharacterContinuityHints(rawScenesSplit, bible.characters)
   const rawScenesMode = attachSceneModeHints(rawScenesNamed, stylePreset)
-  const rawScenes     = attachSceneSettingHints(rawScenesMode, visualMode)
+  const rawScenes     = attachSceneSettingHints(rawScenesMode, visualMode, bibleCtx._culture?.premodern === true)
   const total        = rawScenes.length
   const results      = new Array(total).fill(null)
 
