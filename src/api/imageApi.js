@@ -83,7 +83,7 @@ function resolveTextLangPlaceholder(stylePrompt, scriptSample) {
   const langName = TEXT_LANG_NAMES[lang] || TEXT_LANG_NAMES.ko
   return stylePrompt.replaceAll('{{TEXT_LANG}}', langName)
 }
-const SMART_BACKOFF_MODELS = ['gemini-3.1-flash-lite-image', 'gemini-3.1-flash-image'] // 나노바나나 2 (라이트+일반) — 둘 다 동일한 429 이슈 확인됨
+const SMART_BACKOFF_MODELS = ['gemini-3.1-flash-lite-image', 'gemini-nano-banana-2.1'] // 나노바나나 2 (라이트+일반) — 둘 다 동일한 429 이슈 확인됨
 const ZIMAGE_API_BASE     = 'https://api.kie.ai/api/v1'
 const ZIMAGE_UPLOAD_URL   = 'https://kieai.redpandaai.co/api/file-stream-upload'
 const ZIMAGE_MAX_PROMPT   = 800
@@ -93,13 +93,13 @@ const _uploadCache = new Map()
 
 // ─── 모델별 이미지 설정 ───────────────────────────────────────────────────────
 function getImageConfig(model, aspectRatio) {
-  const isPro    = model === 'gemini-3-pro-image'
-  const isFlash2 = model === 'gemini-3.1-flash-image'
+  const isPro  = model === 'gemini-3-pro-image'
+  const isNB21 = model === 'gemini-nano-banana-2.1'
   return {
     aspectRatio,
     numberOfImages: 1,
-    ...(isPro    ? { imageSize: '2K' } : {}),
-    ...(isFlash2 ? { imageSize: '1K' } : {}),
+    // 2.1은 1K/2K/4K를 고른다(기본 1K). 앞세대(3.1 flash)는 1K 고정이었다.
+    ...(isPro || isNB21 ? { imageSize: '2K' } : {}),
   }
 }
 
@@ -108,7 +108,10 @@ function getThinkingConfig(model) {
 }
 
 function getTimeout(model) {
-  return model === 'gemini-3-pro-image' ? 120000 : 60000
+  // 2K 출력은 1K보다 오래 걸린다 — 60초로는 끊긴다.
+  if (model === 'gemini-3-pro-image')      return 120000
+  if (model === 'gemini-nano-banana-2.1')  return 90000
+  return 60000
 }
 
 // ─── 고정 캐릭터 스타일 프롬프트 ─────────────────────────────────────────────

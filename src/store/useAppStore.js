@@ -172,11 +172,14 @@ export const useAppStore = create(
     }),
     {
       name: 'cineboard-storage',
-      version: 1,
+      version: 2,
       migrate: (persistedState, version) => {
         const state = { ...persistedState }
+        // gemini-3.1-flash-image는 2.1 출시(2026-10-06)와 함께 deprecated됐다.
+        // 저장된 선택이 사라진 모델이면 조용히 후속 모델로 옮긴다.
         const RETIRED_MODEL_IDS = {
-          'gemini-3.1-flash-image-preview': 'gemini-3.1-flash-image',
+          'gemini-3.1-flash-image-preview': 'gemini-nano-banana-2.1',
+          'gemini-3.1-flash-image':         'gemini-nano-banana-2.1',
           'gemini-3-pro-image-preview':     'gemini-3-pro-image',
         }
         if (state.imageEngine in RETIRED_MODEL_IDS) {

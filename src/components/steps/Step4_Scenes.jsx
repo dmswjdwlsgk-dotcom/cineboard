@@ -329,7 +329,7 @@ export default function Step4_Scenes() {
     let completed = 0
     const myVersion = genVersionRef.current
 
-    const isNanoBanana2 = modelId === 'gemini-3.1-flash-lite-image' || modelId === 'gemini-3.1-flash-image' // 프로젝트 전역 429 이슈 확인된 모델군 — 라이트/일반 둘 다
+    const isNanoBanana2 = modelId === 'gemini-3.1-flash-lite-image' || modelId === 'gemini-nano-banana-2.1' // 프로젝트 전역 429 이슈 확인된 모델군 — 라이트/일반 둘 다
     const isLite  = modelId.includes('lite')
     const isFlash = modelId.includes('flash') && !modelId.includes('pro') && !isLite
     const isPro   = modelId.includes('pro')

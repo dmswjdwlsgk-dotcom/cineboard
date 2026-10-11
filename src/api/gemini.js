@@ -352,7 +352,7 @@ export async function safeGenerate(client, params, label) {
 // 정상 페이스로 복귀한다. (원본: minIntervalMs=2000, 나노바나나2 계열 429 시
 // 7초 쿨다운, 그 외 3초)
 const FAST_IMAGE_MODEL      = 'gemini-2.5-flash-image'
-const NANO_BANANA_2_MODELS  = new Set(['gemini-3.1-flash-image', 'gemini-3.1-flash-lite-image', 'gemini-3-pro-image'])
+const NANO_BANANA_2_MODELS  = new Set(['gemini-nano-banana-2.1', 'gemini-3.1-flash-lite-image', 'gemini-3-pro-image'])
 const slotsForImageModel    = model => model === FAST_IMAGE_MODEL ? 3 : 1
 // 나노바나나2 계열은 2초 간격으로도 429가 한 칸씩 걸러 나는(퐁당퐁당) 현상이 실측
 // 재현됨 — 참조 이미지 기능(캐릭터 얼굴 일관성) 활성화 이후 요청당 페이로드가 커진

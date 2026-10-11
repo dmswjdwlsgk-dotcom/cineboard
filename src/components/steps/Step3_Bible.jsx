@@ -213,7 +213,7 @@ export default function Step3_Bible() {
     if (!isApiReady()) { setError('API 키가 설정되지 않았습니다.'); return }
     const characters = continuityBible?.characters || []
     const modelId = MODELS[useAppStore.getState().selectedModel]?.id || MODELS[0].id
-    const isNanoBanana2 = modelId === 'gemini-3.1-flash-lite-image' || modelId === 'gemini-3.1-flash-image'
+    const isNanoBanana2 = modelId === 'gemini-3.1-flash-lite-image' || modelId === 'gemini-nano-banana-2.1'
     const isLite  = modelId.includes('lite')
     const isFlash = modelId.includes('flash') && !modelId.includes('pro') && !isLite
     const isPro   = modelId.includes('pro')
