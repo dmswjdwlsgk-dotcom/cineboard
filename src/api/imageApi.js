@@ -99,7 +99,9 @@ function getImageConfig(model, aspectRatio) {
     aspectRatio,
     numberOfImages: 1,
     // 2.1은 1K/2K/4K를 고른다(기본 1K). 앞세대(3.1 flash)는 1K 고정이었다.
-    ...(isPro || isNB21 ? { imageSize: '2K' } : {}),
+    // 본문 씬은 장당 수십 장이라 토큰을 아끼려 1K로 둔다. 2K가 필요하면 프로를 쓴다.
+    ...(isPro  ? { imageSize: '2K' } : {}),
+    ...(isNB21 ? { imageSize: '1K' } : {}),
   }
 }
 
@@ -108,7 +110,8 @@ function getThinkingConfig(model) {
 }
 
 function getTimeout(model) {
-  // 2K 출력은 1K보다 오래 걸린다 — 60초로는 끊긴다.
+  // 2.1은 1K여도 thinking 단계가 있어 앞세대보다 느릴 수 있다. 여유를 둔다
+  // (일찍 끝나면 그대로 끝나므로, 상한을 높여도 빠른 응답에는 손해가 없다).
   if (model === 'gemini-3-pro-image')      return 120000
   if (model === 'gemini-nano-banana-2.1')  return 90000
   return 60000

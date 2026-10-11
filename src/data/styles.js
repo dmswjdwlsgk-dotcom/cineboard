@@ -418,7 +418,7 @@ export const MODELS = [
   },
   {
     id: 'gemini-nano-banana-2.1',
-    label: '나노바나나 2.1 (2K)',
+    label: '나노바나나 2.1 (1K)',
     description: '프로급 지능 + 속도 최적화, 인물 일관성 강화',
     icon: 'zap',
   },
