@@ -256,7 +256,19 @@ const TEXT_CUES     = /원문|구절|문장|편에|편의|기록|적었|적어|�
 // ⚠️ 원래 목록 하나로 전 대본에 돌렸다. 그 목록은 손자병법 100씬용이라 전투·행군이
 //    들어 있었는데, 장례 행정 대본(2026)에도 그대로 배정돼 "영수증이 없으면 인정받지
 //    못합니다" 대목에 조선 군대 행군 대열이 나왔다. 전쟁터는 사극·역사 대본에서만 쓴다.
-const OUTDOOR_FALLBACKS_PREMODERN = [
+// 야담·민담·생활사처럼 전쟁이 없는 전근대 대본용. 까막눈 아버지의 혼서 대본(2026-10)에
+// 조선 군대 행군 대열이 네 컷 나왔다 — 전근대라는 이유로 손자병법용 목록을 쓴 탓이다.
+const OUTDOOR_FALLBACKS_PREMODERN_DAILY = [
+  'a market or an inn yard — stalls, carts, haggling, people coming and going',
+  'fields and a country path — paddies, hedgerows, an ox, someone walking',
+  'a mountain path or a ridge crossing under open sky',
+  'water — a stream, a ferry landing, a well, a washing place',
+  'the edge of the village — a gate, a low stone wall seen from outside, a lone tree',
+  'weather and sky — rain, snow, dust, night sky, dawn light',
+]
+
+// 전쟁·군사 대본용 (손자병법류)
+const OUTDOOR_FALLBACKS_PREMODERN_WAR = [
   'open terrain — a field, ridge, plain or road under open sky',
   'a battlefield or a marching column seen from a distance',
   'water — a river bank, a ford, a shoreline, a boat deck',
@@ -275,7 +287,31 @@ const OUTDOOR_FALLBACKS_MODERN = [
   'transit — inside a car or a bus, a stop, a station platform',
 ]
 
-function attachSceneSettingHints(rawScenes, visualMode, isPremodern = true) {
+// 대본 전체에 전쟁이 실제로 있는지. 전근대라고 다 전쟁이 아니다.
+const WAR_CUES = /전쟁|전투|싸움|군사|병사|장수|출정|진영|적군|아군|왜군|오랑캐|병법|무기|칼날|활을|전사|정벌|반란|의병|성을 쌓|포위/g
+const WAR_CUE_MIN = 3
+
+
+// ─── 이 컷이 그려야 할 '순간' 뽑기 ────────────────────────────────────────────
+// ⚠️ 한 구간은 서너 문장(110~140자)이고, 이미지는 그중 하나만 그린다. 그런데 매 호출이
+//    독립이라 "제일 그리기 좋은 문장"으로 수렴한다 — 혼서 대본 100씬에서 66컷에 종이가
+//    나왔고, 그중 38컷은 자막 문장과 아무 상관이 없었다("그날 저녁 밥상에는 손도 대지
+//    않았습니다" → 종이). 이미지는 구간이 시작될 때 화면에 뜨므로, 그 순간 낭독되는
+//    앞머리 문장을 그려야 자막과 그림이 맞는다. 판단에 맡기지 않고 코드가 잘라 통보한다.
+function extractOpeningMoment(segment) {
+  const t = (segment || '').replace(/\s+/g, ' ').trim()
+  if (!t) return ''
+  const sentences = t.match(/[^.!?]*[.!?]+|[^.!?]+$/g) || [t]
+  let out = ''
+  for (const sent of sentences) {
+    if (out && (out + sent).length > 75) break
+    out += sent
+    if (out.length >= 35) break
+  }
+  return (out || t).trim()
+}
+
+function attachSceneSettingHints(rawScenes, visualMode, isPremodern = true, scriptText = '') {
   // 인포그래픽 계열은 배경 개념이 달라서 제외한다(Step4_Scenes.jsx의 EDITORIAL_MODES와 동일).
   if (['content', 'infoviz', 'docu'].includes(visualMode)) return rawScenes
 
@@ -283,6 +319,7 @@ function attachSceneSettingHints(rawScenes, visualMode, isPremodern = true) {
 
   const subjectCount = {}
   let outdoorTurn = 0
+  const isWarScript = ((scriptText || '').match(WAR_CUES) || []).length >= WAR_CUE_MIN
 
   return rawScenes.map((scene, i) => {
     const segment = scene.fullScriptSegment || scene.scriptReference || ''
@@ -292,7 +329,9 @@ function attachSceneSettingHints(rawScenes, visualMode, isPremodern = true) {
     //    (강제하지 않은 씬은 지금처럼 자유롭게 고르게 두어 대본 내용을 거스르지 않는다)
     const wantsInterior   = INTERIOR_CUES.test(segment)
     const forceOutdoor    = !wantsInterior && n % OUTDOOR_FORCE_EVERY === 0
-    const fallbacks       = isPremodern ? OUTDOOR_FALLBACKS_PREMODERN : OUTDOOR_FALLBACKS_MODERN
+    const fallbacks       = !isPremodern ? OUTDOOR_FALLBACKS_MODERN
+                          : isWarScript  ? OUTDOOR_FALLBACKS_PREMODERN_WAR
+                                         : OUTDOOR_FALLBACKS_PREMODERN_DAILY
     // ⚠️ 예전엔 fallbacks[i % 6]이었다. 야외 강제는 짝수 씬에서만 걸리는데 색인은 i를
     //    그대로 써서 홀수 색인 3개(1·3·5)만 순환했다 — 목록의 절반이 한 번도 안 쓰였고,
     //    사극 목록에서는 '전쟁터'가 야외 세 컷 중 한 컷씩 돌아왔다. 배정될 때만 센다.
@@ -1250,7 +1289,7 @@ If a named human character appears in this scene, it should almost always be one
       parts.push(`SETTING — CODE-ASSIGNED FACT, NOT YOUR JUDGMENT CALL: this scene must be set OUTDOORS, specifically ${sceneRef.assignedSetting}. Too many neighbouring scenes are already indoors. Even if the narration talks about a book, a document, a plan or a conversation, place THIS scene outdoors and show ${whatToShow} — never a room, a study or a desk.`)
     }
     if (sceneRef.figureFree) {
-      parts.push('NO HUMAN FIGURE — CODE-ASSIGNED FACT: this scene must contain NO person at all. Use terrain, weather, architecture seen from outside, an object, an animal, tracks, wreckage, or an empty aftermath. Do NOT render anyone holding, reading, writing or pointing at anything.')
+      parts.push('NO HUMAN FIGURE — CODE-ASSIGNED FACT: this scene must contain NO person at all. Use terrain, weather, architecture seen from outside, an empty room or yard, an animal, tracks, or an empty aftermath. \u26a0\ufe0f Do NOT fall back on a close-up of the story\u2019s recurring object (a letter, a document, a keepsake) \u2014 those close-ups look identical to each other and this scene must not be one of them. Show a PLACE. Do NOT render anyone holding, reading, writing or pointing at anything.')
     }
     if (sceneRef.subjectBlocked) {
       parts.push(`SUBJECT CAP — CODE-ASSIGNED FACT: ${sceneRef.subjectBlocked} already carries too many images in this video. Do NOT make ${sceneRef.subjectBlocked} the subject of this frame. Feature instead the event, the place, the object, the opposing side, or a secondary person this segment names.`)
@@ -1289,6 +1328,12 @@ ${cleanScript(bible._fullScript || sceneRef.scriptReference || '')}
 
 [ORIGINAL SCRIPT CONTEXT — FULL ASSIGNED SEGMENT]:
 ${sceneRef.fullScriptSegment || sceneRef.scriptReference}
+
+[THIS CUT'S MOMENT — CODE-EXTRACTED FACT, NOT YOUR JUDGMENT CALL]:
+${extractOpeningMoment(sceneRef.fullScriptSegment || sceneRef.scriptReference || '')}
+⚠️ This image appears on screen at the START of the segment, while the line above is being read aloud. Depict THAT moment — the action, the place and the people in the line above.
+⚠️ The later sentences of your segment are context for tone only. If a more "paintable" beat sits further down the segment (a letter being unfolded, someone poring over handwriting, a keepsake in close-up), you MUST NOT jump to it. A viewer hearing the line above and seeing that other beat sees a mismatch.
+⚠️ If the line above does not mention a document, letter or writing, then NO document, letter or writing appears in this frame — not in a hand, not on a table, not in the background.
 
 [SEARCH ANCHOR (30-char display only — do NOT use for content generation)]:
 ${(sceneRef.scriptReference || '').slice(0, 60)}
@@ -1620,7 +1665,7 @@ export async function generateAllScenes(scriptText, bible, stylePreset, lang, on
   const rawScenesSplit = await splitScriptToScenes(scriptText, maxScenes, visualMode)
   const rawScenesNamed = attachCharacterContinuityHints(rawScenesSplit, bible.characters)
   const rawScenesMode = attachSceneModeHints(rawScenesNamed, stylePreset)
-  const rawScenes     = attachSceneSettingHints(rawScenesMode, visualMode, bibleCtx._culture?.premodern === true)
+  const rawScenes     = attachSceneSettingHints(rawScenesMode, visualMode, bibleCtx._culture?.premodern === true, scriptText)
   const total        = rawScenes.length
   const results      = new Array(total).fill(null)
 
